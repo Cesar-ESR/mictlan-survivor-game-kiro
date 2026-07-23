@@ -44,6 +44,15 @@ graph TD
         PS[PauseSystem]
     end
 
+    subgraph Map Generation
+        MG[MapGenerator]
+        MV[MapValidator]
+        TC[TileCatalog]
+        SR[SeededRandom]
+        MGC[MapGenerationConfig]
+        ML[MapLayers]
+    end
+
     subgraph Entities
         PL[Player - Guerrero Jaguar]
         EN[Enemy Pool]
@@ -65,6 +74,13 @@ graph TD
     PS --> WPS
     PS --> OC
 
+    GS --> MG
+    MG --> TC
+    MG --> SR
+    MG --> MV
+    MG --> MGC
+    MG --> ML
+
     PM --> PL
     SM --> EN
     SM --> ER
@@ -76,6 +92,21 @@ graph TD
     XPS -.event.-> UI
     WM -.event.-> UI
 ```
+
+### Dependencias del Sistema de Generación de Mapa
+
+```mermaid
+graph LR
+    GS[GameScene] --> MG[MapGenerator]
+    MG --> TC[TileCatalog]
+    MG --> SR[SeededRandom]
+    MG --> MV[MapValidator]
+```
+
+- **GameScene** coordina la creación del mapa: construye `MapGenerationConfig`, invoca `MapGenerator.generate()`, y reacciona al resultado (éxito → configurar world bounds y colisiones; fallo → mostrar error/retry).
+- **GameScene NO contiene** el algoritmo procedural directamente. Toda la lógica de generación reside en `MapGenerator`.
+- **MapGenerator** es el orquestador de generación: usa `TileCatalog` para resolver referencias de tiles, `SeededRandom` para decisiones aleatorias deterministas, y `MapValidator` para verificar accesibilidad.
+- **TileCatalog** es puro/estático: no depende de estado de runtime.
 
 ### Flujo del Game Loop (cada frame)
 
@@ -136,6 +167,69 @@ stateDiagram-v2
 
 - **Modo Campaña**: Tiene un `finalWave` configurado (e.g., 10). Al completar esa oleada, se muestra pantalla de Victoria.
 - **Modo Infinito**: `finalWave: null`. Las oleadas continúan indefinidamente; cuando se supera la última oleada configurada, se repiten sus parámetros SIN escalado de dificultad adicional.
+
+### Flujo de Creación del Mapa en GameScene
+
+```mermaid
+sequenceDiagram
+    participant BS as BootScene
+    participant GS as GameScene
+    participant MGC as MapGenerationConfig
+    participant MG as MapGenerator
+    participant SR as SeededRandom
+    participant TC as TileCatalog
+    participant MV as MapValidator
+    participant ERR as Error/Retry Flow
+
+    BS->>BS: preload() carga 5 tilesets como spritesheets (32×32 frames)
+    Note over BS: ground, borders, liquids, walls, decorations
+    BS->>GS: scene.start('GameScene')
+
+    GS->>MGC: Construir config (seed, densities, safeZone, etc.)
+    GS->>MG: generate(config)
+
+    loop Hasta map válido o maxGenerationAttempts
+        MG->>SR: new SeededRandom(config.seed)
+        MG->>MG: generateGround() - cubre todas las celdas walkable
+        MG->>MG: generateLiquidRegions() - grupos contiguos
+        MG->>MG: generateWallsAndCliffs() - estructuras con colisión
+        MG->>MG: generateObstacles() - bloqueadores de movimiento
+        MG->>MG: generateDecorations() - visual-only
+        MG->>MG: clearSafeZone() - limpiar zona central
+        MG->>MV: validate(logicalGrid, config)
+        MV->>MV: BFS/flood-fill desde centro
+
+        alt Mapa válido (reachableRatio >= minimum)
+            MV-->>MG: MapValidationResult { valid: true }
+            MG->>MG: buildPhaserLayers(scene, tilemap, logicalGrid)
+            MG-->>GS: GeneratedMap { valid, layers, validation }
+        else Mapa inválido
+            MV-->>MG: MapValidationResult { valid: false }
+            MG->>MG: Incrementar attempt, nueva seed derivada
+        end
+    end
+
+    alt Generación exitosa
+        GS->>GS: Configurar world bounds (3200×3200)
+        GS->>GS: Configurar colisiones (walls, obstacles)
+        GS->>GS: Continuar inicialización del juego (player, systems, HUD)
+    else maxGenerationAttempts alcanzados
+        MG-->>GS: Error: no valid map generated
+        GS->>ERR: Mostrar error, permitir retry sin recargar página
+    end
+
+    alt generationTimeMs > maxGenerationTimeMs
+        MG-->>GS: Error: generation timeout
+        GS->>ERR: Mostrar error, permitir retry
+    end
+```
+
+**Notas del flujo**:
+- BootScene carga los 5 tilesets como spritesheets con `frameWidth: 32, frameHeight: 32`, NO como imágenes completas (TileSprite).
+- GameScene es el coordinador pero NO contiene el algoritmo de generación; delega completamente a MapGenerator.
+- Si la validación falla, MapGenerator deriva una nueva seed (e.g., `hash(originalSeed + attempt)`) para el siguiente intento.
+- El timeout de 3s cubre todo el ciclo: generación + validación de todos los intentos.
+- En caso de fallo final, el usuario puede reintentar sin recargar la página (se re-invoca `generate()` con nueva config/seed).
 
 ## Components and Interfaces
 
@@ -670,13 +764,361 @@ interface Upgrade {
 type UpgradePool = Upgrade[];
 ```
 
-### Configuración del Mapa
+### Configuración del Mapa y Generación Procedural
 
 ```typescript
-interface MapConfig {
-  width: number;      // 3200px
-  height: number;     // 3200px
+// ─── MapGenerationConfig ───
+interface MapGenerationConfig {
+  widthInTiles: number;            // default: 100
+  heightInTiles: number;           // default: 100
+  tileSize: number;                // default: 32
+  seed: string | number;
+  safeZoneRadius: number;          // default: 5 (tiles)
+  minimumReachableRatio: number;   // default: 0.85
+  wallDensity: number;             // configurable balance parameter [0, 1)
+  obstacleDensity: number;         // configurable balance parameter [0, 1)
+  liquidDensity: number;           // configurable balance parameter [0, 1)
+  decorationDensity: number;       // configurable balance parameter [0, 1)
+  maxGenerationAttempts: number;   // default: 5
+  maxGenerationTimeMs: number;     // default: 3000
 }
+
+// Computed from config:
+// worldWidth = widthInTiles * tileSize = 100 * 32 = 3200
+// worldHeight = heightInTiles * tileSize = 100 * 32 = 3200
+```
+
+```typescript
+// ─── TileCatalog ───
+type TilesetKey = 'ground' | 'borders' | 'liquids' | 'walls' | 'decorations';
+
+interface TileReference {
+  tileset: TilesetKey;
+  frame: number;
+}
+
+/**
+ * Clasifica TODOS los frames de los 5 tilesets por su función.
+ * Evita que GameScene o MapGenerator contengan frame numbers dispersos.
+ * Cada frame se identifica por su tileset + índice dentro del spritesheet.
+ */
+interface TileCatalogDefinition {
+  groundBase: TileReference[];           // tiles de suelo principal (siempre walkable)
+  groundVariations: TileReference[];     // variaciones visuales de suelo
+  liquidCenters: TileReference[];        // centros de regiones líquidas
+  liquidEdges: TileReference[];          // bordes de transición líquido-suelo
+  borders: TileReference[];             // transiciones visuales entre capas
+  wallTops: TileReference[];            // parte superior de muros
+  wallSides: TileReference[];           // laterales de muros
+  wallCorners: TileReference[];         // esquinas de muros
+  cliffs: TileReference[];             // acantilados
+  obstacles: TileReference[];           // bloqueadores de movimiento
+  decorations: TileReference[];         // elementos visuales sin colisión
+  emptyOrTransparent: TileReference[];  // tiles vacíos/transparentes (NUNCA usar en Ground)
+}
+
+class TileCatalog {
+  private catalog: TileCatalogDefinition;
+
+  constructor(definition: TileCatalogDefinition);
+
+  /** Obtiene tiles válidos para la capa Ground */
+  getGroundTiles(): TileReference[];
+
+  /** Obtiene tiles por categoría */
+  getByCategory(category: keyof TileCatalogDefinition): TileReference[];
+
+  /** Valida que un TileReference pertenezca a una categoría permitida */
+  isPermittedForLayer(ref: TileReference, layer: MapLayerName): boolean;
+
+  /** Verifica que un tile NO sea emptyOrTransparent */
+  isValidGroundTile(ref: TileReference): boolean;
+
+  /** Retorna todas las categorías permitidas para una capa */
+  getPermittedCategories(layer: MapLayerName): (keyof TileCatalogDefinition)[];
+
+  /**
+   * Modo debug: genera lista de todos los frames con su índice,
+   * textura y clasificación para validación visual.
+   */
+  debugListAllFrames(): DebugTileInfo[];
+}
+
+type MapLayerName = 'ground' | 'liquids' | 'borders' | 'walls' | 'obstacles' | 'decorations';
+
+interface DebugTileInfo {
+  tileset: TilesetKey;
+  frame: number;
+  category: keyof TileCatalogDefinition;
+  description?: string;
+}
+```
+
+```typescript
+// ─── MapLayers ───
+interface MapLayers {
+  ground: Phaser.Tilemaps.TilemapLayer;      // Cubre TODAS las celdas walkable
+  liquids: Phaser.Tilemaps.TilemapLayer;     // Regiones líquidas contiguas
+  borders: Phaser.Tilemaps.TilemapLayer;     // Transiciones visuales
+  walls: Phaser.Tilemaps.TilemapLayer;       // Estructuras CON colisión
+  obstacles: Phaser.Tilemaps.TilemapLayer;   // Bloqueadores CON colisión
+  decorations: Phaser.Tilemaps.TilemapLayer; // Visual-only, SIN colisión
+}
+
+/**
+ * Responsabilidades por capa:
+ * - Ground: cubre todas las celdas transitables. No usa emptyOrTransparent.
+ * - Liquids: forman regiones contiguas. Behavior configurable per-type.
+ * - Borders: transiciones visuales. No son sustituto del suelo base.
+ * - Walls: estructuras con collision body. Bloquean jugador y enemigos.
+ * - Obstacles: bloqueadores con collision body. Bloquean jugador y enemigos.
+ * - Decorations: sin collision. Puramente visuales.
+ *
+ * Colisiones:
+ * - Solo Walls y Obstacles aplican colisión por defecto.
+ * - Liquids aplican colisión SOLO si su LiquidConfig.behavior === 'blocking'.
+ *
+ * PENDING DECISION: Colisiones proyectil-muro NO implementadas hasta que
+ * los requisitos lo definan explícitamente. Registrado como decisión pendiente.
+ */
+```
+
+```typescript
+// ─── Liquid Behavior ───
+type LiquidBehavior = 'walkable' | 'blocking' | 'damaging';
+
+interface LiquidConfig {
+  type: string;                  // e.g., 'lava', 'water', 'poison'
+  behavior: LiquidBehavior;
+  damagePerSecond?: number;      // solo aplica si behavior === 'damaging'
+}
+
+/**
+ * PENDING BALANCE DECISION: Los valores concretos de damagePerSecond por tipo
+ * de líquido no están definidos en los requisitos. Se dejan como configurables.
+ * El sistema soporta la mecánica pero los valores numéricos se ajustarán
+ * durante la fase de balanceo.
+ */
+```
+
+```typescript
+// ─── SeededRandom ───
+class SeededRandom {
+  private state: number;
+
+  constructor(seed: string | number);
+
+  /** Retorna float en [0, 1) - determinista */
+  next(): number;
+
+  /** Retorna entero en [min, max] inclusive */
+  integer(min: number, max: number): number;
+
+  /** Selecciona un elemento aleatorio del array */
+  pick<T>(items: readonly T[]): T;
+
+  /** Selecciona con peso - items con mayor weight tienen más probabilidad */
+  weightedPick<T>(items: WeightedItem<T>[]): T;
+
+  /** Retorna boolean con probabilidad p */
+  chance(p: number): boolean;
+
+  /** Shuffle determinista (Fisher-Yates con seed) */
+  shuffle<T>(items: T[]): T[];
+}
+
+interface WeightedItem<T> {
+  item: T;
+  weight: number;
+}
+
+/**
+ * INVARIANTE: Misma seed + misma secuencia de llamadas = mismos resultados.
+ * MapGenerator NUNCA debe usar Math.random(). Solo SeededRandom.
+ */
+```
+
+```typescript
+// ─── MapGenerator ───
+class MapGenerator {
+  private tileCatalog: TileCatalog;
+  private validator: MapValidator;
+
+  constructor(tileCatalog: TileCatalog, validator: MapValidator);
+
+  /**
+   * Genera un mapa completo. Reintenta con nuevas seeds si la validación falla.
+   * Retorna GeneratedMap con validation.valid === true, o error si se agotan intentos/tiempo.
+   */
+  generate(config: MapGenerationConfig): GeneratedMap;
+
+  /** Fase 1: Llena toda la grid con tiles de suelo válidos (nunca transparentes) */
+  private generateGround(grid: MapCell[][], rng: SeededRandom): void;
+
+  /** Fase 2: Coloca regiones de líquido como grupos contiguos */
+  private generateLiquidRegions(grid: MapCell[][], rng: SeededRandom, config: MapGenerationConfig): void;
+
+  /** Fase 3: Genera muros y acantilados usando reglas/templates */
+  private generateWallsAndCliffs(grid: MapCell[][], rng: SeededRandom, config: MapGenerationConfig): void;
+
+  /** Fase 4: Coloca obstáculos respetando reglas de path */
+  private generateObstacles(grid: MapCell[][], rng: SeededRandom, config: MapGenerationConfig): void;
+
+  /** Fase 5: Añade decoraciones (visual-only, no bloquean) */
+  private generateDecorations(grid: MapCell[][], rng: SeededRandom, config: MapGenerationConfig): void;
+
+  /** Fase 6: Limpia la zona central segura de todo elemento bloqueante */
+  private clearSafeZone(grid: MapCell[][], config: MapGenerationConfig): void;
+
+  /** Convierte la representación lógica en capas de Phaser Tilemap */
+  private buildPhaserLayers(scene: Phaser.Scene, grid: MapCell[][]): MapLayers;
+}
+
+/**
+ * Algoritmo de generación (reglas configurables, NO Wave Function Collapse):
+ *
+ * 1. Ground: Llenar 100% de celdas con groundBase + variaciones aleatorias.
+ * 2. Liquids: Seleccionar N puntos semilla aleatorios, expandir con flood-fill
+ *    limitado por liquidDensity. Garantiza contiguidad.
+ * 3. Walls/Cliffs: Usar generación por chunks/templates o reglas de vecindad.
+ *    Formar estructuras coherentes (no placement puramente aleatorio).
+ *    Respetar wallDensity como porcentaje máximo de tiles.
+ * 4. Obstacles: Colocar en celdas walkable que no sean safeZone.
+ *    Respetar obstacleDensity. Evitar bloquear paths principales.
+ * 5. Decorations: Colocar en celdas walkable sin obstáculos.
+ *    Respetar decorationDensity. No bloquean nada.
+ * 6. Safe Zone: Forzar limpieza de radio safeZoneRadius desde centro.
+ *    Eliminar walls, obstacles, blocking liquids del área.
+ *
+ * RESTRICCIONES:
+ * - NO usar Math.random() — solo SeededRandom.
+ * - NO colocar tiles transparentes/vacíos en la capa Ground.
+ * - NO generar líquidos como tiles aislados (deben ser contiguos).
+ * - NO usar placement puramente aleatorio sin estructura para walls.
+ * - Cada tile referenciado debe existir en TileCatalog para su capa.
+ * - Decoraciones NO deben bloquear paths principales.
+ * - Permitir regeneración si validación falla (nueva seed derivada).
+ */
+```
+
+```typescript
+// ─── MapValidator ───
+interface MapValidationResult {
+  valid: boolean;
+  reachableTiles: number;
+  totalWalkableTiles: number;
+  reachableRatio: number;         // reachableTiles / totalWalkableTiles
+  errors: MapValidationError[];
+}
+
+interface MapValidationError {
+  code: string;                    // e.g., 'CENTER_NOT_WALKABLE', 'LOW_REACHABILITY'
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+class MapValidator {
+  /**
+   * Valida un mapa lógico usando BFS/flood-fill.
+   *
+   * Checks:
+   * 1. Centro (50, 50) es walkable.
+   * 2. Safe zone (radio configurable) no contiene walls, obstacles, ni liquids blocking.
+   * 3. Al menos minimumReachableRatio de celdas walkable son accesibles desde centro.
+   * 4. Jugador no está encerrado (reachableTiles > 1).
+   *
+   * El resultado se emite ANTES de construir las capas Phaser.
+   * Un mapa inválido nunca llega a buildPhaserLayers().
+   */
+  validate(grid: MapCell[][], config: MapGenerationConfig): MapValidationResult;
+
+  /** BFS desde punto central, cuenta celdas walkable alcanzables */
+  private floodFill(grid: MapCell[][], startX: number, startY: number): number;
+
+  /** Verifica que la safe zone esté completamente libre */
+  private validateSafeZone(grid: MapCell[][], centerX: number, centerY: number, radius: number): MapValidationError[];
+}
+```
+
+```typescript
+// ─── GeneratedMap ───
+interface GeneratedMap {
+  seed: string | number;
+  widthInTiles: number;            // siempre 100
+  heightInTiles: number;           // siempre 100
+  logicalGrid: MapCell[][];        // representación lógica [100][100]
+  layers: MapLayers | null;        // null si generación falló
+  validation: MapValidationResult;
+  generationTimeMs: number;        // tiempo total de generación+validación
+  attempts: number;                // intentos realizados
+  error?: MapGenerationError;      // presente solo si generación falló
+}
+
+/**
+ * Tipos de celda en el mapa lógico.
+ * Diferencia al mínimo: walkable, liquid, blocking, decoration, safeZone.
+ */
+interface MapCell {
+  walkable: boolean;               // true si jugador/enemigos pueden atravesar
+  ground: TileReference | null;    // tile de suelo (nunca null en celdas walkable)
+  liquid: TileReference | null;    // tile de líquido (si aplica)
+  liquidConfig: LiquidConfig | null;
+  wall: TileReference | null;      // tile de muro (implica walkable=false)
+  obstacle: TileReference | null;  // tile de obstáculo (implica walkable=false)
+  decoration: TileReference | null; // tile decorativo (no afecta walkable)
+  border: TileReference | null;    // tile de transición visual
+  inSafeZone: boolean;            // true si está dentro del radio seguro
+}
+
+interface MapGenerationError {
+  code: 'MAX_ATTEMPTS_REACHED' | 'GENERATION_TIMEOUT' | 'MISSING_TILESET' |
+        'INCOMPLETE_CATALOG' | 'EMPTY_GROUND_TILE_USED' | 'LAYER_CREATION_FAILED';
+  message: string;
+  attempts: number;
+  elapsedMs: number;
+  lastValidation?: MapValidationResult;
+}
+```
+
+### Profundidad Visual y Colisiones de Capas
+
+```typescript
+/**
+ * Orden de renderizado (depth) — de menor a mayor:
+ *
+ * 1. Ground Layer (depth: 0)
+ * 2. Liquids Layer (depth: 1)
+ * 3. Borders Layer (depth: 2)
+ * 4. Lower Decorations (depth: 3)   — decoraciones bajo el jugador
+ * 5. Walls & Obstacles (depth: 4)
+ * 6. Player & Enemies (depth: 5)
+ * 7. Upper Decorations (depth: 6)   — decoraciones sobre el jugador
+ * 8. HUDScene (overlay scene, renderizada encima de todo)
+ *
+ * Colisiones por capa:
+ * - Ground: NO collision
+ * - Liquids: per LiquidConfig.behavior ('blocking' → collision; otros → no)
+ * - Borders: NO collision (visual only)
+ * - Walls: SÍ collision (bloquean jugador y enemigos)
+ * - Obstacles: SÍ collision (bloquean jugador y enemigos)
+ * - Decorations: NO collision
+ *
+ * PENDING DECISION: Colisiones proyectil↔muro NO implementadas.
+ * Los requisitos actuales no definen este comportamiento.
+ * Se registra como decisión pendiente de diseño de gameplay.
+ */
+
+const MAP_LAYER_DEPTHS = {
+  ground: 0,
+  liquids: 1,
+  borders: 2,
+  lowerDecorations: 3,
+  walls: 4,
+  obstacles: 4,
+  player: 5,
+  enemies: 5,
+  upperDecorations: 6,
+} as const;
 ```
 
 ### Escalado de Dificultad (Fórmulas Exponenciales)
@@ -937,11 +1379,84 @@ const GAME_CONSTANTS = {
 
 **Validates: Requirements 2.1, 3.3, 4.1, 4.4, 6.1, 6.3, 8.2, 8.4**
 
+### Property 27: Map Dimensions Invariant
+
+*For any* seed and valid MapGenerationConfig, the generated map SHALL always have exactly 100 × 100 tiles with tileSize of 32 pixels, producing world bounds of exactly 3200 × 3200 pixels. The logicalGrid SHALL always be a 100×100 2D array.
+
+**Validates: Requirements 10.1**
+
+### Property 28: No Transparent Ground
+
+*For any* generated map and any cell marked as walkable in the logicalGrid, the cell's ground TileReference SHALL NOT be null and SHALL NOT reference a tile classified as `emptyOrTransparent` in the TileCatalog. Every walkable cell must have a valid, visible ground tile.
+
+**Validates: Requirements 10.3**
+
+### Property 29: Safe Zone Clear
+
+*For any* generated map that passes validation, all cells within `safeZoneRadius` tiles of the map center (50, 50) SHALL have `walkable === true` and SHALL NOT contain walls, obstacles, or liquids with `behavior === 'blocking'`.
+
+**Validates: Requirements 10.8**
+
+### Property 30: Tile Category Integrity
+
+*For any* generated map, every TileReference placed in a layer SHALL belong to a category permitted by the TileCatalog for that layer. Specifically: Ground layer uses only `groundBase` and `groundVariations`; Liquids layer uses only `liquidCenters` and `liquidEdges`; Borders layer uses only `borders`; Walls layer uses only `wallTops`, `wallSides`, `wallCorners`, and `cliffs`; Obstacles layer uses only `obstacles`; Decorations layer uses only `decorations`. No layer SHALL use tiles from `emptyOrTransparent` or from categories assigned to other layers.
+
+**Validates: Requirements 10.5, 10.14**
+
+### Property 31: Collision Layer Integrity
+
+*For any* generated map, all tiles in the Walls and Obstacles layers SHALL have physics collision enabled. All tiles in the Decorations layer SHALL NOT have physics collision. Ground and Borders layers SHALL NOT have collision. Liquids have collision only when their LiquidConfig.behavior === 'blocking'.
+
+**Validates: Requirements 10.6, 10.7**
+
+### Property 32: Deterministic Generation
+
+*For any* seed S and MapGenerationConfig C and TileCatalog T, invoking MapGenerator.generate() twice with the same (S, C, T) SHALL produce identical logicalGrid contents — same MapCell values at every (x, y) coordinate.
+
+**Validates: Requirements 10.13**
+
+### Property 33: Accessibility Validation
+
+*For any* generated map that passes validation (validation.valid === true), the center cell SHALL be walkable, and the ratio of walkable cells reachable from center (via BFS over walkable cells) to total walkable cells SHALL be greater than or equal to `minimumReachableRatio` (default 0.85).
+
+**Validates: Requirements 10.9, 10.10**
+
+### Property 34: Generation Attempts Bounded
+
+*For any* invocation of MapGenerator.generate(), the total number of generation attempts SHALL NOT exceed `maxGenerationAttempts`. If no valid map is produced within that limit, the result SHALL contain an error with code `MAX_ATTEMPTS_REACHED` and `layers === null`.
+
+**Validates: Requirements 10.11, 10.12**
+
+### Property 35: Generation Time Limit
+
+*For any* invocation of MapGenerator.generate(), the total elapsed time (generationTimeMs) for all attempts including validation SHALL NOT exceed `maxGenerationTimeMs` (default 3000ms). If time is exceeded, generation SHALL abort and return an error with code `GENERATION_TIMEOUT`.
+
+**Validates: Requirements 10.15**
+
+### Property 36: Contiguous Liquid Regions
+
+*For any* generated map, all liquid tiles in the Liquids layer SHALL form contiguous groups — each liquid tile SHALL be 4-connected (up, down, left, right) to at least one other liquid tile in the same region. No isolated single-tile liquid regions SHALL exist.
+
+**Validates: Requirements 10.4**
+
 ## Error Handling
 
 ### Scene Loading Failure (Req 1.4)
 - Si la carga de assets falla o excede 3 segundos, se cancela la carga, se muestra un mensaje de error descriptivo, y se permite reintentar desde el menú principal.
 - Los assets individuales que fallen se registran en consola para debugging.
+
+### Map Generation Errors (Req 10.11, 10.12, 10.15)
+
+| Error Code | Causa | Comportamiento |
+|---|---|---|
+| `MISSING_TILESET` | Uno de los 5 tilesets no fue cargado por BootScene | Cancelar generación, mostrar error con nombre del tileset faltante |
+| `INCOMPLETE_CATALOG` | TileCatalog no tiene tiles suficientes para alguna categoría requerida (e.g., groundBase vacío) | Cancelar generación, indicar categoría faltante |
+| `EMPTY_GROUND_TILE_USED` | Un tile clasificado como emptyOrTransparent fue asignado a la capa Ground durante generación (bug interno) | Abortar intento actual, registrar en consola, reintentar con nueva seed |
+| `MAX_ATTEMPTS_REACHED` | Ningún mapa válido se generó en `maxGenerationAttempts` intentos | Cancelar inicialización, mostrar error al usuario, permitir retry sin recargar página |
+| `GENERATION_TIMEOUT` | Tiempo total de generación+validación excede `maxGenerationTimeMs` (3000ms) | Abortar generación, mostrar error, permitir retry |
+| `LAYER_CREATION_FAILED` | Error al crear Phaser.Tilemaps.TilemapLayer (tileset reference inválida, tilemap no creado) | Cancelar generación, registrar error Phaser en consola, permitir retry |
+
+**Flujo de recovery**: En todos los casos de error, el sistema permite reintentar la generación sin recargar la página. GameScene invoca nuevamente `MapGenerator.generate()` con una nueva seed o config modificada.
 
 ### Pool Overflow
 - **Enemigos** (Req 3.5): Cuando los enemigos activos alcanzan el maxEnemies configurado para la oleada (default 100), el SpawnManager detiene generación hasta que haya espacio.
@@ -978,7 +1493,7 @@ const GAME_CONSTANTS = {
 
 Este proyecto usa una estrategia de testing dual:
 
-1. **Property-Based Tests** (fast-check) — para validar propiedades universales (26 propiedades)
+1. **Property-Based Tests** (fast-check) — para validar propiedades universales (36 propiedades)
 2. **Unit Tests** (Vitest) — para escenarios específicos, edge cases, e integración
 
 ### Property-Based Testing
@@ -991,7 +1506,7 @@ Este proyecto usa una estrategia de testing dual:
 - Tag format: `Feature: mictlan-survivor-core, Property {N}: {title}`
 - Implementar cada propiedad con UN SOLO test property-based
 
-**Scope de las 26 propiedades**:
+**Scope de las 36 propiedades**:
 - Movimiento: normalización de velocidad, cancelación de ejes, boundary clamping (Props 1-3)
 - Spawn: triple constraint de posición, cancellation (Prop 4)
 - Enemigos: persecución, defeat→orb, caps, despawn, wave mapping (Props 5-8, 19)
@@ -1001,6 +1516,7 @@ Este proyecto usa una estrategia de testing dual:
 - HUD: health bar, XP bar con exceso, timer format (Props 20-22)
 - Orbes: atracción, lifetime, cap FIFO (Props 23-25)
 - Frame-rate: delta time independence (Prop 26)
+- Map generation: dimensiones, ground coverage, safe zone, tile categories, collisions, determinismo, accesibilidad, attempts, time limit, liquid contiguity (Props 27-36)
 
 ### Unit Tests (Example-Based)
 
@@ -1017,6 +1533,42 @@ Este proyecto usa una estrategia de testing dual:
 - Victoria en Modo Campaña (Req 6.4)
 - Enemigos sobreviven transición de oleada (Req 3.7)
 - Edge cases: empty upgrade pool (Req 5.9), nivel 20 behavior (Req 5.10, 5.11, 8.6)
+- Map generation retry: configs con alta densidad que fuerzan múltiples intentos (Req 10.11)
+- Map generation error flow: max attempts, timeout handling (Req 10.12)
+
+### Map Generation Testing Strategy
+
+**Principio clave**: Las pruebas de lógica de generación de mapa DEBEN ejecutarse sin el renderer de Phaser cuando sea posible. La lógica pura (SeededRandom, MapValidator BFS, TileCatalog clasificación, generación del logicalGrid) se extrae en funciones testables independientemente del engine.
+
+**Property-Based Tests para Map Generation (Props 27-36)**:
+
+| Propiedad | Qué se genera | Qué se verifica |
+|---|---|---|
+| Prop 27 (Dimensions) | Seeds aleatorias, configs válidas | grid siempre 100×100, world 3200×3200 |
+| Prop 28 (No Transparent Ground) | Seeds aleatorias | Ninguna celda walkable usa tile emptyOrTransparent |
+| Prop 29 (Safe Zone) | Seeds aleatorias, safeZoneRadius variado | Zona central libre de blockers |
+| Prop 30 (Tile Categories) | Seeds aleatorias | Cada tile pertenece a categoría permitida para su capa |
+| Prop 31 (Collisions) | Mapas generados | Walls/Obstacles → collision; Decorations → no collision |
+| Prop 32 (Determinism) | Pairs de seeds idénticas | Doble generación produce grid idéntico |
+| Prop 33 (Accessibility) | Seeds aleatorias con configs balanceadas | reachableRatio >= minimumReachableRatio en mapas válidos |
+| Prop 34 (Attempts) | Configs imposibles (alta densidad + alto reachable ratio) | No más de maxGenerationAttempts intentos |
+| Prop 35 (Time Limit) | Seeds aleatorias | generationTimeMs <= 3000 |
+| Prop 36 (Contiguous Liquids) | Seeds aleatorias con liquidDensity > 0 | Todos los liquid tiles forman grupos 4-connected |
+
+**Unit Tests para Map Generation**:
+- SeededRandom: distribución uniforme de next(), integer bounds, pick from array, determinismo
+- TileCatalog: clasificación correcta, isPermittedForLayer(), isValidGroundTile(), debugListAllFrames()
+- MapValidator: BFS on hand-crafted grids (walkable island, blocked center, exact ratio boundaries)
+- MapGenerator: retry con seed derivada, clearSafeZone efectivo, manejo de timeout
+- Liquid contiguity: edge case de densidad 0 (no liquids = valid)
+- Error cases: missing tileset, incomplete catalog, empty ground tile detection
+
+**fast-check generators para Map Generation**:
+- `arbitraryMapSeed()`: genera seeds string/number variadas
+- `arbitraryMapConfig()`: genera configs con densidades en [0, 0.3] (rango razonable)
+- `arbitraryLogicalGrid(width, height)`: genera grids con distribución controlada para testing de validator
+- `arbitraryTileReference(tileset)`: genera references válidas dentro de un tileset
+- `arbitrarySafeZoneRadius()`: genera radios entre 3 y 10
 
 ### Test Architecture
 
@@ -1035,6 +1587,18 @@ src/
 │   │   ├── orb-collector.property.test.ts  (Props 23, 24, 25)
 │   │   ├── delta-time.property.test.ts     (Prop 26)
 │   │   └── *.unit.test.ts
+├── map/
+│   ├── __tests__/
+│   │   ├── map-generator.property.test.ts  (Props 27, 28, 29, 34, 35)
+│   │   ├── map-validator.property.test.ts  (Props 33)
+│   │   ├── tile-catalog.property.test.ts   (Props 30)
+│   │   ├── map-layers.property.test.ts     (Props 31)
+│   │   ├── seeded-random.property.test.ts  (Prop 32)
+│   │   ├── liquid-regions.property.test.ts (Prop 36)
+│   │   ├── seeded-random.unit.test.ts
+│   │   ├── tile-catalog.unit.test.ts
+│   │   ├── map-validator.unit.test.ts
+│   │   └── map-generator.unit.test.ts
 ```
 
 ### Key Testing Decisions
@@ -1113,6 +1677,21 @@ src/
 | 9.3 | Enemy subclasses | — |
 | 9.4 | WaveManager, SpawnManager | Prop 19 |
 | 9.5 | EnemyRegistry | — |
+| 10.1 | MapGenerator, MapGenerationConfig, GameScene | Prop 27 |
+| 10.2 | MapGenerator, MapLayers | Prop 30 |
+| 10.3 | MapGenerator, TileCatalog | Prop 28 |
+| 10.4 | MapGenerator (generateLiquidRegions) | Prop 36 |
+| 10.5 | MapGenerator, TileCatalog, Borders layer | Prop 30 |
+| 10.6 | MapGenerator (buildPhaserLayers), GameScene (collision setup) | Prop 31 |
+| 10.7 | MapGenerator (buildPhaserLayers), Decorations layer | Prop 31 |
+| 10.8 | MapGenerator (clearSafeZone) | Prop 29 |
+| 10.9 | MapValidator (validate, floodFill) | Prop 33 |
+| 10.10 | MapValidator (validate), MapGenerationConfig | Prop 33 |
+| 10.11 | MapGenerator (generate loop), SeededRandom | Prop 34 |
+| 10.12 | MapGenerator (generate loop), GameScene (error flow) | Prop 34 |
+| 10.13 | SeededRandom, MapGenerator | Prop 32 |
+| 10.14 | TileCatalog (isPermittedForLayer), MapGenerator | Prop 30 |
+| 10.15 | MapGenerator (time tracking), MapGenerationConfig | Prop 35 |
 | NFR-Perf | Object Pooling, Game Loop | — |
 | NFR-DeltaTime | Todos los sistemas | Prop 26 |
 | NFR-Maintain | Estructura modular de sistemas | — |
