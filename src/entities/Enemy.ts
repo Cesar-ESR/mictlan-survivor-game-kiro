@@ -1,4 +1,16 @@
 import Phaser from 'phaser';
+
+export interface IEnemy {
+  hp: number;
+  maxHp: number;
+  speed: number;
+  damage: number;
+  xpReward: number;
+  update(delta: number, playerPos: { x: number; y: number }): void;
+  takeDamage(amount: number): void;
+  onDefeat(): void;
+}
+
 import type { IEnemy } from '../types/interfaces';
 
 /**
@@ -23,6 +35,8 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite implements IEne
     scene.add.existing(this);
     scene.physics.add.existing(this);
   }
+
+  abstract update(delta: number, playerPos: { x: number; y: number }): void;
 
   /**
    * Subclass-specific behavior called every frame.
@@ -51,6 +65,8 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite implements IEne
       y: this.y,
       xpReward: this.xpReward,
     });
+    this.setActive(false);
+    this.setVisible(false);
 
     this.setActive(false);
     this.setVisible(false);
