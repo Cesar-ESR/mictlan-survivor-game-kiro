@@ -168,7 +168,13 @@ export class GameScene extends Phaser.Scene {
       // Keys 1-6: toggle layer visibility
       this.input.keyboard.on('keydown-ONE', () => { this._mapLayers?.ground.setVisible(!this._mapLayers.ground.visible); });
       this.input.keyboard.on('keydown-TWO', () => { this._mapLayers?.liquids.setVisible(!this._mapLayers.liquids.visible); });
-      this.input.keyboard.on('keydown-THREE', () => { this._mapLayers?.borders.setVisible(!this._mapLayers.borders.visible); });
+      this.input.keyboard.on('keydown-THREE', () => {
+        if (this._mapLayers) {
+          const vis = !this._mapLayers.bordersPrimary.visible;
+          this._mapLayers.bordersPrimary.setVisible(vis);
+          this._mapLayers.bordersSecondary.setVisible(vis);
+        }
+      });
       this.input.keyboard.on('keydown-FOUR', () => { this._mapLayers?.decorations.setVisible(!this._mapLayers.decorations.visible); });
       this.input.keyboard.on('keydown-FIVE', () => { this._mapLayers?.walls.setVisible(!this._mapLayers.walls.visible); });
       this.input.keyboard.on('keydown-SIX', () => { this._mapLayers?.obstacles.setVisible(!this._mapLayers.obstacles.visible); });

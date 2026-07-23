@@ -458,12 +458,12 @@ describe('ObstacleGenerator', () => {
     const rng = new SeededRandom('obs-no-empty-gen');
     generateObstacles(grid, config, rng, catalog);
 
+    const permittedObstacleFrames = [21, 26];
     for (let r = 0; r < 100; r++) {
       for (let c = 0; c < 100; c++) {
         const obs = grid[r][c].obstacle;
         if (obs !== null && obs.tileset === 'walls') {
-          expect(obs.frame).toBeGreaterThanOrEqual(27);
-          expect(obs.frame).toBeLessThanOrEqual(34);
+          expect(permittedObstacleFrames).toContain(obs.frame);
         }
       }
     }

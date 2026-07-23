@@ -6,11 +6,13 @@ import { DefeatScene } from './scenes/DefeatScene';
 import { VictoryScene } from './scenes/VictoryScene';
 import { TileDebugScene } from './scenes/TileDebugScene';
 import { MappingsDebugScene } from './scenes/MappingsDebugScene';
+import { BorderCalibrationScene } from './scenes/BorderCalibrationScene';
 
 /**
  * Determina el modo de debug desde la URL.
  * - ?debug=tiles → escena de inspección individual de tiles
  * - ?debug=mappings → escena de calibración de mapeos
+ * - ?debug=borders → escena interactiva de calibración de bordes
  * - ?debug=map → juego normal con overlay de info de generación de mapa
  *
  * Requirements: 1.1, 1.2
@@ -27,6 +29,9 @@ function getScenes(): Phaser.Types.Scenes.SceneType[] {
   }
   if (debugMode === 'mappings') {
     return [MappingsDebugScene];
+  }
+  if (debugMode === 'borders') {
+    return [BorderCalibrationScene];
   }
   // Normal game (including debug=map which uses GameScene with debug overlay)
   return [BootScene, GameScene, HUDScene, DefeatScene, VictoryScene];

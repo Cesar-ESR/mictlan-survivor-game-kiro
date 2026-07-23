@@ -22,7 +22,8 @@
 import Phaser from 'phaser';
 import type { LogicalMapGrid } from './MapCell';
 import { TileIndexResolver } from './TileIndexResolver';
-import { resolveStructureFrame } from './VisualTileMappings';
+import { resolveWallPlacement, resolveBorderPlacements, invertBorderMask } from './VisualTileMappings';
+import type { LiquidFamily } from './VisualTileMappings';
 
 // ─── Layer depths ───
 
@@ -60,7 +61,10 @@ const TEXTURE_KEYS = {
 export interface MapLayers {
   ground: Phaser.Tilemaps.TilemapLayer;
   liquids: Phaser.Tilemaps.TilemapLayer;
+  /** @deprecated Use bordersPrimary instead. Alias for bordersPrimary. */
   borders: Phaser.Tilemaps.TilemapLayer;
+  bordersPrimary: Phaser.Tilemaps.TilemapLayer;
+  bordersSecondary: Phaser.Tilemaps.TilemapLayer;
   walls: Phaser.Tilemaps.TilemapLayer;
   obstacles: Phaser.Tilemaps.TilemapLayer;
   decorations: Phaser.Tilemaps.TilemapLayer;
@@ -110,8 +114,11 @@ export class PhaserMapLayerBuilder {
     const liquidsLayer = tilemap.createBlankLayer(
       'liquids', liquidsTileset, 0, 0, width, height, tileSize, tileSize,
     )!;
-    const bordersLayer = tilemap.createBlankLayer(
-      'borders', bordersTileset, 0, 0, width, height, tileSize, tileSize,
+    const bordersPrimaryLayer = tilemap.createBlankLayer(
+      'borders_primary', bordersTileset, 0, 0, width, height, tileSize, tileSize,
+    )!;
+    const bordersSecondaryLayer = tilemap.createBlankLayer(
+      'borders_secondary', bordersTileset, 0, 0, width, height, tileSize, tileSize,
     )!;
     const wallsLayer = tilemap.createBlankLayer(
       'walls', wallsTileset, 0, 0, width, height, tileSize, tileSize,
@@ -126,7 +133,8 @@ export class PhaserMapLayerBuilder {
     // 4. Set depths
     groundLayer.setDepth(LAYER_DEPTHS.ground);
     liquidsLayer.setDepth(LAYER_DEPTHS.liquids);
-    bordersLayer.setDepth(LAYER_DEPTHS.borders);
+    bordersPrimaryLayer.setDepth(LAYER_DEPTHS.borders);
+    bordersSecondaryLayer.setDepth(LAYER_DEPTHS.borders);
     decorationsLayer.setDepth(LAYER_DEPTHS.decorations);
     wallsLayer.setDepth(LAYER_DEPTHS.walls);
     obstaclesLayer.setDepth(LAYER_DEPTHS.obstacles);
@@ -135,7 +143,8 @@ export class PhaserMapLayerBuilder {
     this.populateLayers(grid, {
       groundLayer,
       liquidsLayer,
-      bordersLayer,
+      bordersPrimaryLayer,
+      bordersSecondaryLayer,
       wallsLayer,
       obstaclesLayer,
       decorationsLayer,
@@ -153,7 +162,9 @@ export class PhaserMapLayerBuilder {
     return {
       ground: groundLayer,
       liquids: liquidsLayer,
-      borders: bordersLayer,
+      borders: bordersPrimaryLayer,
+      bordersPrimary: bordersPrimaryLayer,
+      bordersSecondary: bordersSecondaryLayer,
       walls: wallsLayer,
       obstacles: obstaclesLayer,
       decorations: decorationsLayer,
@@ -162,14 +173,15 @@ export class PhaserMapLayerBuilder {
   }
 
   /**
-   * Populate all 6 layers from the logical grid.
+   * Populate all layers from the logical grid.
    */
   private populateLayers(
     grid: LogicalMapGrid,
     layers: {
       groundLayer: Phaser.Tilemaps.TilemapLayer;
       liquidsLayer: Phaser.Tilemaps.TilemapLayer;
-      bordersLayer: Phaser.Tilemaps.TilemapLayer;
+      bordersPrimaryLayer: Phaser.Tilemaps.TilemapLayer;
+      bordersSecondaryLayer: Phaser.Tilemaps.TilemapLayer;
       wallsLayer: Phaser.Tilemaps.TilemapLayer;
       obstaclesLayer: Phaser.Tilemaps.TilemapLayer;
       decorationsLayer: Phaser.Tilemaps.TilemapLayer;
@@ -191,22 +203,59 @@ export class PhaserMapLayerBuilder {
         // Liquids: only where liquid is present
         if (cell.liquid) {
           const index = this.resolver.resolve(cell.liquid);
-          layers.liquidsLayer.putTileAt(index, col, row);
+          const tile = layers.liquidsLayer.putTileAt(index, col, row);
+          if (tile) {
+            if (cell.liquidRotation) {
+              tile.rotation = (cell.liquidRotation * Math.PI) / 180;
+            }
+            if (cell.liquidFlipX) {
+              tile.flipX = true;
+            }
+            if (cell.liquidFlipY) {
+              tile.flipY = true;
+            }
+          }
         }
 
-        // Borders: TEMPORARILY DISABLED — uncalibrated mask→frame mapping
-        // TODO: Re-enable after calibration in ?debug=mappings scene
-        // if (cell.borderMask !== null) {
-        //   const frameIndex = resolveBorderFrame(cell.borderMask);
-        //   layers.bordersLayer.putTileAt(frameIndex, col, row);
-        // }
+        // Borders: place confirmed mappings using family resolution
+        if (cell.borderMask !== null && cell.borderMask > 0) {
+          const family = this.resolveBorderFamily(grid, row, col, cell.borderMask);
+          if (family) {
+            const visualMask = invertBorderMask(cell.borderMask);
+            const placements = resolveBorderPlacements(visualMask, family);
+            if (placements.length > 0) {
+              // Primary placement
+              const p0 = placements[0];
+              const tile0 = layers.bordersPrimaryLayer.putTileAt(p0.frame, col, row);
+              if (tile0) {
+                if (p0.rotation !== 0) tile0.rotation = (p0.rotation * Math.PI) / 180;
+                if (p0.flipX) tile0.flipX = true;
+                if (p0.flipY) tile0.flipY = true;
+              }
+              // Secondary placement (for corners)
+              if (placements.length > 1) {
+                const p1 = placements[1];
+                const tile1 = layers.bordersSecondaryLayer.putTileAt(p1.frame, col, row);
+                if (tile1) {
+                  if (p1.rotation !== 0) tile1.rotation = (p1.rotation * Math.PI) / 180;
+                  if (p1.flipX) tile1.flipX = true;
+                  if (p1.flipY) tile1.flipY = true;
+                }
+              }
+            }
+          }
+        }
 
         // Walls: only where wall is present
         if (cell.wall) {
           // Use structureMask for visual variant if available
           if (cell.structureMask !== null) {
-            const frameIndex = resolveStructureFrame('wall', cell.structureMask);
-            layers.wallsLayer.putTileAt(frameIndex, col, row);
+            const placement = resolveWallPlacement(cell.structureMask);
+            const tile = layers.wallsLayer.putTileAt(placement.frame, col, row);
+            if (tile && placement.rotation !== 0) {
+              // Phaser rotation is in radians for tiles
+              tile.rotation = (placement.rotation * Math.PI) / 180;
+            }
           } else {
             const index = this.resolver.resolve(cell.wall);
             layers.wallsLayer.putTileAt(index, col, row);
@@ -226,6 +275,51 @@ export class PhaserMapLayerBuilder {
         }
       }
     }
+  }
+
+  /**
+   * Determines the liquid family for a border cell by inspecting its liquid neighbors.
+   * Returns null if neighbors are mixed or spectral (no border rendered).
+   */
+  private resolveBorderFamily(
+    grid: LogicalMapGrid,
+    row: number,
+    col: number,
+    mask: number,
+  ): LiquidFamily | null {
+    const height = grid.length;
+    const width = grid[0].length;
+    const bits: Array<[number, number, number]> = [
+      [-1, 0, 1], // N
+      [0, 1, 2],  // E
+      [1, 0, 4],  // S
+      [0, -1, 8], // W
+    ];
+
+    let detectedFamily: LiquidFamily | null = null;
+
+    for (const [dr, dc, bit] of bits) {
+      if (!(mask & bit)) continue;
+      const nr = row + dr;
+      const nc = col + dc;
+      if (nr < 0 || nr >= height || nc < 0 || nc >= width) continue;
+      const neighbor = grid[nr][nc];
+      if (!neighbor.liquidConfig) continue;
+
+      const neighborFamily = neighbor.liquidConfig.type as LiquidFamily;
+
+      // Skip spectral — no borders for spectral
+      if (neighborFamily === 'spectral') return null;
+
+      if (detectedFamily === null) {
+        detectedFamily = neighborFamily;
+      } else if (detectedFamily !== neighborFamily) {
+        // Mixed families — don't render border
+        return null;
+      }
+    }
+
+    return detectedFamily;
   }
 
   /**

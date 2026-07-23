@@ -72,14 +72,14 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Ambas con botón/opción de volver al menú principal
     - _Requirements: 4.5, 6.4_
 
-- [ ] 3. Generación Procedural del Mapa
-  - [ ] 3.1 Inspeccionar dimensiones reales de los 5 tilesets y documentar metadatos
+- [x] 3. Generación Procedural del Mapa
+  - [x] 3.1 Inspeccionar dimensiones reales de los 5 tilesets y documentar metadatos
     - Cargar las imágenes: `michlan_tiled_ground.png`, `michlan_tiled_borders.png`, `michlan_tiled_liquids.png`, `michlan_tiled_walls_cliff.png`, `Mictlan_decoration.png`
     - Registrar dimensiones (width×height), calcular cantidad de frames (32×32) por tileset
     - Documentar nombres normalizados y paths en `src/config/tile-catalog-data.ts`
     - _Requirements: 10.14_
 
-  - [ ] 3.2 Crear escena de debug para visualizar frames de cada tileset
+  - [x] 3.2 Crear escena de debug para visualizar frames de cada tileset
     - Crear `src/scenes/TileDebugScene.ts` que muestre cada frame con: tileset key, frame index, posición en el sheet
     - Permitir identificar visualmente frames vacíos/transparentes vs. frames útiles
     - Esta escena es herramienta de desarrollo, no se incluye en el build de producción
@@ -91,7 +91,7 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Identificar y registrar todos los frames vacíos/transparentes para exclusión
     - _Requirements: 10.3, 10.14_
 
-  - [ ] 3.4 Implementar interfaces `TileReference` y `TileCatalogDefinition`
+  - [x] 3.4 Implementar interfaces `TileReference` y `TileCatalogDefinition`
     - Crear `src/map/TileCatalog.ts` con la clase TileCatalog
     - Implementar métodos: `getGroundTiles()`, `getByCategory()`, `isPermittedForLayer()`, `isValidGroundTile()`, `getPermittedCategories()`, `debugListAllFrames()`
     - Instanciar con los datos clasificados en 3.3
@@ -140,20 +140,20 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Asignar `LiquidConfig` (behavior: walkable/blocking/damaging, damagePerSecond configurable) a cada región
     - _Requirements: 10.4, Property 36_
 
-  - [ ] 3.12 Implementar Borders y transiciones visuales
+  - [x] 3.12 Implementar Borders y transiciones visuales
     - Fase que analiza vecindad y coloca tiles de `borders` en transiciones suelo↔líquido, suelo↔muro
     - Los borders NO son sustituto del suelo base ni aplican colisión
     - Topología lógica implementada (borderMask, BorderKind); selección visual de frames queda PROVISIONAL hasta verificar correspondencia máscara→frame
     - _Requirements: 10.5_
 
-  - [x] 3.13 Implementar generación de Walls y Cliffs
+  - [x] 3.13 Implementar generación de Walls y Cliffs (PARCIAL — Walls implementados, Cliffs tipados pero no generados)
     - Fase `generateWallsAndCliffs()`: generar estructuras coherentes usando reglas de vecindad o templates
     - Usar categorías `wallTops`, `wallSides`, `wallCorners`, `cliffs` del TileCatalog
     - Respetar wallDensity como porcentaje máximo de tiles
     - Marcar celdas como `walkable=false`
     - NO usar placement puramente aleatorio sin estructura
     - Visual frame selection es PROVISIONAL (clasificación semántica pendiente de confirmación visual)
-    - **Nota (Cliff Audit):** StructureGenerator actualmente asigna `structureKind: 'wall'` para TODAS las estructuras. NUNCA genera `structureKind: 'cliff'` como tipo distinto. La generación de cliffs como kind separado está tipada pero no implementada aún.
+    - **ESTADO:** Walls completamente implementados con templates. Cliffs soportados por tipo `structureKind: 'cliff'` pero StructureGenerator NUNCA genera cliffs como kind distinto. La capacidad está tipada y el renderer la soporta, pero no se produce durante la generación lógica.
     - _Requirements: 10.6, Property 30_
 
   - [x] 3.14 Implementar generación de Obstacles
@@ -251,7 +251,7 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Test: error GENERATION_TIMEOUT si se excede maxGenerationTimeMs
     - **Validates: Requirements 10.9, 10.10, 10.11, 10.12, 10.13, 10.15**
 
-  - [ ] 3.28 Validación visual del mapa generado
+  - [x] 3.28 Validación visual del mapa generado
     - Ejecutar GameScene y verificar visualmente que el mapa renderiza correctamente
     - Confirmar que no hay tiles transparentes visibles en Ground
     - Confirmar que las 6 capas se superponen correctamente según depth order
@@ -259,7 +259,7 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Confirmar que decoraciones NO bloquean al jugador
     - _Requirements: 10.2, 10.3, 10.6, 10.7_
 
-- [ ] 4. Checkpoint - Verificar mapa procedural completo
+- [x] 4. Checkpoint - Verificar mapa procedural completo
   - Ensure all tests pass, ask the user if questions arise.
   - **Done criteria**:
     1. No se repite un sheet completo como TileSprite

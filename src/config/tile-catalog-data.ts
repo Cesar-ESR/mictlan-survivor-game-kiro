@@ -173,13 +173,23 @@ const liquidEdges: TileReference[] = range('liquids', 16, 44);
 /**
  * WALLS/CLIFF TILESET (35 frames válidos: 0–34)
  * Clasificación semántica PROVISIONAL.
- * División interna estimada; debe refinarse visualmente.
+ * División interna refinada:
+ * - wallTops: frames 0–20, 22–25, 27 (all valid wall frames except obstacles and cliffs)
+ * - obstacles: frames 21, 26 (isolated blockers)
+ * - cliffs: frames 28–34 (deferred cliff/chasm candidates)
  */
-const wallTops: TileReference[] = range('walls', 0, 7);
-const wallSides: TileReference[] = range('walls', 8, 11);
-const wallCorners: TileReference[] = range('walls', 12, 15);
-const cliffs: TileReference[] = range('walls', 16, 26);
-const obstacles: TileReference[] = range('walls', 27, 34);
+const wallTops: TileReference[] = [
+  ...range('walls', 0, 20),
+  ...range('walls', 22, 25),
+  { tileset: 'walls', frame: 27 },
+];
+const wallSides: TileReference[] = [];
+const wallCorners: TileReference[] = [];
+const cliffs: TileReference[] = range('walls', 28, 34);
+const obstacles: TileReference[] = [
+  { tileset: 'walls', frame: 21 },
+  { tileset: 'walls', frame: 26 },
+];
 
 /**
  * DECORATIONS TILESET (52 frames válidos: 0–51)
