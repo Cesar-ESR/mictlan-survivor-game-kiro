@@ -73,14 +73,14 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - _Requirements: 4.5, 6.4_
 
 - [ ] 3. Guerrero Jaguar y movimiento normalizado
-  - [ ] 3.1 Crear `src/entities/Player.ts` con la clase Player extendiendo Phaser.Physics.Arcade.Sprite
+  - [x] 3.1 Crear `src/entities/Player.ts` con la clase Player extendiendo Phaser.Physics.Arcade.Sprite
     - Propiedades: hp, maxHp, level, levelXp, totalXp, xpThreshold, speed
     - Métodos: `takeDamage(amount)`, `heal(amount)`, `addXP(value): LevelUpResult`
     - `addXP` implementa lógica dual: incrementa levelXp y totalXp, detecta level-up con carry-over de exceso
     - En nivel 20: solo incrementa totalXp, levelXp queda clamped al threshold
     - _Requirements: 1.5, 5.1, 5.2, 5.6, 5.7, 5.10, 5.11_
 
-  - [ ] 3.2 Crear `src/systems/PlayerManager.ts` con lógica de input y movimiento
+  - [x] 3.2 Crear `src/systems/PlayerManager.ts` con lógica de input y movimiento
     - Capturar input WASD y flechas
     - `calculateDirection()`: cancelación independiente por eje (W+S→0 en Y, pero D→1 en X)
     - Normalizar vector resultante para mantener magnitud = speed en diagonales
@@ -89,13 +89,13 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Clamp posición a [0, 3200]×[0, 3200]
     - _Requirements: 2.1, 2.2, 2.3, 2.5, 2.6_
 
-  - [ ]* 3.3 Escribir property tests para movimiento (`src/systems/__tests__/movement.property.test.ts`)
+  - [x]* 3.3 Escribir property tests para movimiento (`src/systems/__tests__/movement.property.test.ts`)
     - **Property 1: Movement Speed Normalization** — magnitud del vector siempre = 200 para cualquier input válido
     - **Property 2: Axis-Independent Opposing Key Cancellation** — W+S+D→(200,0), A+D→(0,0)
     - **Property 3: Player Boundary Clamping** — posición siempre dentro de [0,3200]×[0,3200]
     - **Validates: Requirements 2.1, 2.2, 2.5, 2.6**
 
-  - [ ]* 3.4 Escribir unit tests para PlayerManager (`src/systems/__tests__/movement.unit.test.ts`)
+  - [x]* 3.4 Escribir unit tests para PlayerManager (`src/systems/__tests__/movement.unit.test.ts`)
     - Test: parada inmediata al soltar teclas (1 frame)
     - Test: 8 direcciones cardinales y diagonales producen velocidad correcta
     - Test: input diagonal produce magnitud normalizada igual a velocidad base
