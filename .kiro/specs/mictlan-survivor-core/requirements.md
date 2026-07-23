@@ -146,6 +146,70 @@ Las mecánicas core incluyen: game loop principal, movimiento del personaje, spa
 4. THE Spawn_Manager SHALL configurar la aparición de enemigos por oleada: oleadas 1-3 solo Esqueletos; oleadas 4-6 Esqueletos y Murciélagos; oleadas 7-8 Esqueletos, Murciélagos y Calaveras Llameantes; oleadas 9-10 los 4 tipos.
 5. THE Spawn_Manager SHALL soportar la adición de nuevos tipos de enemigos sin modificar la arquitectura de enemigos existente, mediante un registro de tipos de enemigos (EnemyRegistry).
 
+### Requirement 10: Generación del Mapa
+
+**User Story:** Como jugador, quiero explorar un mapa variado con suelo,
+muros, obstáculos, líquidos y decoración, para que el escenario sea
+visualmente atractivo y afecte las decisiones de movimiento.
+
+#### Acceptance Criteria
+
+1. WHEN inicia una partida, THE Map_Generator SHALL construir un mapa de
+100 × 100 tiles utilizando tiles de 32 × 32 píxeles, produciendo un mundo
+de 3200 × 3200 píxeles.
+
+2. THE Map_Generator SHALL crear capas independientes para:
+Ground, Liquids, Borders, Walls, Obstacles y Decorations.
+
+3. THE Ground_Layer SHALL cubrir todas las celdas transitables del mapa sin
+utilizar tiles vacíos o transparentes y SHALL aplicar variaciones visuales
+configurables.
+
+4. THE Liquid_Layer SHALL generar áreas de líquido utilizando grupos de tiles
+contiguos y SHALL permitir configurar cada tipo de líquido como transitable,
+bloqueante o dañino.
+
+5. THE Border_Layer SHALL representar las transiciones visuales entre el suelo,
+los líquidos, los muros y los acantilados, y SHALL no utilizarse como sustituto
+del suelo base.
+
+6. THE Wall_Layer y THE Obstacle_Layer SHALL aplicar colisiones físicas al
+Guerrero_Jaguar y a los Enemigos.
+
+7. THE Decoration_Layer SHALL no aplicar colisiones. Los elementos decorativos
+que deban bloquear el movimiento SHALL clasificarse y colocarse en la
+Obstacle_Layer.
+
+8. WHEN se genera el mapa, THE Map_Generator SHALL mantener libre de muros,
+obstáculos y líquidos bloqueantes un área segura configurable alrededor del
+punto central donde aparece el Guerrero_Jaguar.
+
+9. WHEN termina la generación, THE Map_Validator SHALL comprobar que el punto
+inicial del Guerrero_Jaguar sea transitable y que las zonas principales del
+mapa destinadas al gameplay sean accesibles desde dicho punto.
+
+10. THE Map_Validator SHALL comprobar que al menos el porcentaje mínimo
+configurado de las celdas transitables pertenezca a una misma región accesible
+desde el punto inicial.
+
+11. IF el mapa generado no cumple las reglas de accesibilidad, THEN THE
+Map_Generator SHALL descartarlo y generar uno nuevo utilizando una semilla
+diferente, sin exceder el número máximo de intentos configurado.
+
+12. IF ningún mapa válido puede generarse dentro del número máximo de intentos,
+THEN THE Map_Generator SHALL cancelar la inicialización, registrar el motivo
+del fallo y permitir reintentar la generación.
+
+13. THE Map_Generator SHALL aceptar una semilla configurable. WHEN se utiliza
+la misma semilla, la misma configuración y el mismo catálogo de tiles, THEN
+THE Map_Generator SHALL producir la misma distribución del mapa.
+
+14. THE Map_Generator SHALL utilizar exclusivamente tiles registrados y
+clasificados en el Tile_Catalog correspondiente a cada capa.
+
+15. THE Map_Generator SHALL completar la generación y validación del mapa
+dentro del límite máximo de carga de 3 segundos definido para la escena.
+
 ## Non-Functional Requirements
 
 ### Performance
