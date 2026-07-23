@@ -108,8 +108,8 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - La cámara se detiene en los bordes del mapa (comportamiento nativo de Phaser con setBounds)
     - _Requirements: 2.4, 2.5_
 
-- [ ] 5. Enemy base y EnemyRegistry
-  - [ ] 5.1 Crear `src/entities/Enemy.ts` con la clase abstracta Enemy
+- [x] 5. Enemy base y EnemyRegistry
+  - [x] 5.1 Crear `src/entities/Enemy.ts` con la clase abstracta Enemy
     - Extender `Phaser.Physics.Arcade.Sprite`, implementar `IEnemy`
     - Propiedades abstractas: hp, maxHp, speed, damage, xpReward
     - `takeDamage(amount)`: reduce HP, si HP ≤ 0 llama `onDefeat()`
@@ -117,7 +117,7 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Método abstracto `update(delta, playerPos)` para comportamiento específico
     - _Requirements: 9.2, 9.3_
 
-  - [ ] 5.2 Crear `src/systems/EnemyRegistry.ts` con el patrón factory/registry
+  - [x] 5.2 Crear `src/systems/EnemyRegistry.ts` con el patrón factory/registry
     - Map de `string → EnemyFactory`
     - Métodos: `register(type, factory)`, `create(type, scene, x, y, config)`, `has(type)`, `getRegisteredTypes()`
     - Permite agregar nuevos tipos sin modificar código existente (Open/Closed Principle)

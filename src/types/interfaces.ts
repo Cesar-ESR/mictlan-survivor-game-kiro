@@ -64,6 +64,18 @@ export interface EnemySpawnConfig {
   speedMultiplier: number;
 }
 
+/** Common interface for all enemy entities */
+export interface IEnemy {
+  hp: number;
+  maxHp: number;
+  speed: number;
+  damage: number;
+  xpReward: number;
+  update(delta: number, playerPos: { x: number; y: number }): void;
+  takeDamage(amount: number): void;
+  onDefeat(): void;
+}
+
 /** Player state representation */
 export interface PlayerState {
   hp: number;
