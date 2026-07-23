@@ -18,6 +18,8 @@ import type { LogicalMapGrid, LiquidConfig, LiquidBehavior } from './MapCell';
 import type { MapGenerationConfig } from './MapGenerationConfig';
 import { SeededRandom } from './SeededRandom';
 import { TileCatalog } from './TileCatalog';
+import { LIQUID_FAMILIES } from './VisualTileMappings';
+import type { LiquidFamilyConfig } from './VisualTileMappings';
 
 // ─── Configuración de líquidos ───
 
@@ -40,7 +42,7 @@ export interface LiquidGenerationConfig {
 
 export const DEFAULT_LIQUID_CONFIG: LiquidGenerationConfig = {
   minRegionSize: 4,
-  maxRegionSize: 60,
+  maxRegionSize: 40,
   behaviorWeights: [
     { behavior: 'walkable', weight: 7 },
     { behavior: 'blocking', weight: 3 },
@@ -120,8 +122,11 @@ export function generateLiquidRegions(
 
     // Pick behavior for this region
     const behavior = pickBehavior(rng, liquidConfig.behaviorWeights);
+
+    // Select a liquid family using weighted pick
+    const family = pickLiquidFamily(rng);
     const regionLiquidConfig: LiquidConfig = {
-      type: liquidConfig.liquidType,
+      type: family.family,
       behavior,
     };
 
@@ -139,8 +144,9 @@ export function generateLiquidRegions(
       continue;
     }
 
-    // Pick a representative liquid tile for this region
-    const liquidTile = rng.pick(liquidTiles);
+    // Use the family's single centerFrame for ALL cells in this region
+    // This ensures visual uniformity (no circle pattern artifacts)
+    const liquidTile = { tileset: 'liquids' as const, frame: family.centerFrame };
 
     // Apply liquid to all cells in the region
     for (const [row, col] of regionCells) {
@@ -221,6 +227,20 @@ function pickBehavior(
     if (roll <= 0) return entry.behavior;
   }
   return weights[weights.length - 1].behavior;
+}
+
+/**
+ * Picks a LiquidFamily using weighted selection from LIQUID_FAMILIES.
+ */
+function pickLiquidFamily(rng: SeededRandom): LiquidFamilyConfig {
+  const families = LIQUID_FAMILIES;
+  const totalWeight = families.reduce((s, f) => s + f.weight, 0);
+  let roll = rng.next() * totalWeight;
+  for (const family of families) {
+    roll -= family.weight;
+    if (roll <= 0) return family;
+  }
+  return families[families.length - 1];
 }
 
 /**

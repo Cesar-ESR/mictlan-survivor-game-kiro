@@ -5,13 +5,32 @@ import { HUDScene } from './scenes/HUDScene';
 import { DefeatScene } from './scenes/DefeatScene';
 import { VictoryScene } from './scenes/VictoryScene';
 import { TileDebugScene } from './scenes/TileDebugScene';
+import { MappingsDebugScene } from './scenes/MappingsDebugScene';
 
 /**
- * Determina si se debe iniciar en modo debug de tiles.
- * Usar ?debug=tiles en la URL para activar la escena de debug.
+ * Determina el modo de debug desde la URL.
+ * - ?debug=tiles → escena de inspección individual de tiles
+ * - ?debug=mappings → escena de calibración de mapeos
+ * - ?debug=map → juego normal con overlay de info de generación de mapa
+ *
+ * Requirements: 1.1, 1.2
  */
 const urlParams = new URLSearchParams(window.location.search);
 const debugMode = urlParams.get('debug');
+
+/**
+ * Selecciona escenas según modo debug.
+ */
+function getScenes(): Phaser.Types.Scenes.SceneType[] {
+  if (debugMode === 'tiles') {
+    return [TileDebugScene];
+  }
+  if (debugMode === 'mappings') {
+    return [MappingsDebugScene];
+  }
+  // Normal game (including debug=map which uses GameScene with debug overlay)
+  return [BootScene, GameScene, HUDScene, DefeatScene, VictoryScene];
+}
 
 /**
  * Configuración principal de Phaser para Mictlán Survivor.
@@ -27,12 +46,13 @@ const config: Phaser.Types.Core.GameConfig = {
     default: 'arcade',
     arcade: {
       gravity: { x: 0, y: 0 },
-      debug: false,
+      debug: debugMode === 'map',
     },
   },
-  scene: debugMode === 'tiles'
-    ? [TileDebugScene]
-    : [BootScene, GameScene, HUDScene, DefeatScene, VictoryScene],
+  scene: getScenes(),
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+
+// Store debug mode globally for scenes to check
+game.registry.set('debugMode', debugMode);

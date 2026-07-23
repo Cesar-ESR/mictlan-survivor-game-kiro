@@ -153,6 +153,7 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Marcar celdas como `walkable=false`
     - NO usar placement puramente aleatorio sin estructura
     - Visual frame selection es PROVISIONAL (clasificación semántica pendiente de confirmación visual)
+    - **Nota (Cliff Audit):** StructureGenerator actualmente asigna `structureKind: 'wall'` para TODAS las estructuras. NUNCA genera `structureKind: 'cliff'` como tipo distinto. La generación de cliffs como kind separado está tipada pero no implementada aún.
     - _Requirements: 10.6, Property 30_
 
   - [x] 3.14 Implementar generación de Obstacles
@@ -161,50 +162,50 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Evitar bloquear paths principales (validación posterior por MapValidator)
     - _Requirements: 10.6_
 
-  - [ ] 3.15 Implementar generación de Decorations sin colisión
+  - [x] 3.15 Implementar generación de Decorations sin colisión
     - Fase `generateDecorations()`: colocar en celdas walkable sin obstáculos
     - Respetar decorationDensity
     - NO marcar como blocking, NO aplicar colisión
     - Elementos decorativos que deban bloquear van en Obstacles (Req 10.7)
     - _Requirements: 10.7_
 
-  - [ ] 3.16 Implementar limpieza de zona central segura (safe zone)
+  - [x] 3.16 Implementar limpieza de zona central segura (safe zone)
     - Fase `clearSafeZone()`: limpiar radio `safeZoneRadius` tiles desde centro (50,50)
     - Eliminar walls, obstacles, blocking liquids del área
     - Todas las celdas en safe zone deben tener `walkable=true` y `inSafeZone=true`
     - _Requirements: 10.8, Property 29_
 
-  - [ ] 3.17 Implementar MapValidator con BFS/flood-fill
+  - [x] 3.17 Implementar MapValidator con BFS/flood-fill
     - Crear `src/map/MapValidator.ts` con clase MapValidator
     - Implementar `validate(grid, config): MapValidationResult`
     - Checks: centro walkable, safe zone libre, reachableRatio >= minimumReachableRatio (0.85)
     - Implementar `floodFill()` desde centro para contar celdas accesibles
     - _Requirements: 10.9, 10.10, Property 33_
 
-  - [ ] 3.18 Implementar cálculo de reachableRatio
+  - [x] 3.18 Implementar cálculo de reachableRatio
     - `reachableRatio = reachableTiles / totalWalkableTiles`
     - Si ratio < minimumReachableRatio → mapa inválido
     - Retornar `MapValidationResult` con métricas detalladas
     - _Requirements: 10.10, Property 33_
 
-  - [ ] 3.19 Implementar bounded retries con seeds derivadas
+  - [x] 3.19 Implementar bounded retries con seeds derivadas
     - En MapGenerator: si validación falla, derivar nueva seed (hash(originalSeed + attempt))
     - Máximo `maxGenerationAttempts` intentos (default 5)
     - Si todos fallan → retornar error `MAX_ATTEMPTS_REACHED` con `layers=null`
     - _Requirements: 10.11, 10.12, Property 34_
 
-  - [ ] 3.20 Implementar límite de tiempo de generación (3000ms)
+  - [x] 3.20 Implementar límite de tiempo de generación (3000ms)
     - Medir tiempo total de generación + validación de todos los intentos
     - Si excede `maxGenerationTimeMs` → abortar con error `GENERATION_TIMEOUT`
     - _Requirements: 10.15, Property 35_
 
-  - [ ] 3.21 Construir Phaser Tilemap layers desde grid lógica
+  - [x] 3.21 Construir Phaser Tilemap layers desde grid lógica
     - Implementar `buildPhaserLayers()`: crear tilemap con 6 capas independientes
     - Capas: Ground (depth 0), Liquids (depth 1), Borders (depth 2), Walls (depth 4), Obstacles (depth 4), Decorations (depth 3/6)
     - Actualizar BootScene para cargar tilesets como spritesheets (frameWidth: 32, frameHeight: 32) en lugar de imágenes completas
     - _Requirements: 10.2, Property 30_
 
-  - [ ] 3.22 Asignar colisiones por capa según requirements.md y design.md
+  - [x] 3.22 Asignar colisiones por capa según requirements.md y design.md
     - Walls layer: colisión habilitada (bloquea jugador y enemigos)
     - Obstacles layer: colisión habilitada (bloquea jugador y enemigos)
     - Liquids layer: colisión solo si `LiquidConfig.behavior === 'blocking'`
@@ -212,14 +213,14 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - PENDING: colisiones proyectil↔muro NO implementadas (decisión pendiente)
     - _Requirements: 10.6, 10.7, Property 31_
 
-  - [ ] 3.23 Integrar MapGenerator en GameScene
+  - [x] 3.23 Integrar MapGenerator en GameScene
     - En `GameScene.create()`: construir MapGenerationConfig, invocar `MapGenerator.generate()`
     - Si éxito: configurar world bounds (3200×3200), configurar colisiones con capas
     - Si fallo: mostrar error, permitir retry sin recargar página
     - Configurar player/enemies collide con Walls y Obstacles layers
     - _Requirements: 10.1, 10.11, 10.12_
 
-  - [ ] 3.24 Eliminar el uso incorrecto de TileSprite en GameScene
+  - [x] 3.24 Eliminar el uso incorrecto de TileSprite en GameScene
     - Remover toda referencia a TileSprite para el fondo/mapa
     - El mapa ahora se renderiza exclusivamente via las 6 capas del Tilemap generado
     - Verificar que no queden assets cargados como imagen completa para el mapa
