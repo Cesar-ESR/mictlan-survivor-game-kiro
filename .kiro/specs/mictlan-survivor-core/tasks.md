@@ -140,7 +140,7 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Asignar `LiquidConfig` (behavior: walkable/blocking/damaging, damagePerSecond configurable) a cada región
     - _Requirements: 10.4, Property 36_
 
-  - [ ] 3.12 Implementar Borders y transiciones visuales
+  - [x] 3.12 Implementar Borders y transiciones visuales
     - Fase que analiza vecindad y coloca tiles de `borders` en transiciones suelo↔líquido, suelo↔muro
     - Los borders NO son sustituto del suelo base ni aplican colisión
     - Topología lógica implementada (borderMask, BorderKind); selección visual de frames queda PROVISIONAL hasta verificar correspondencia máscara→frame
@@ -272,15 +272,15 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     9. Mapa renderiza correctamente en browser
     10. Tile indices usados están registrados en TileCatalog
 
-- [ ] 5. Guerrero Jaguar y movimiento normalizado
-  - [ ] 5.1 Crear `src/entities/Player.ts` con la clase Player extendiendo Phaser.Physics.Arcade.Sprite
+- [x] 5. Guerrero Jaguar y movimiento normalizado
+  - [x] 5.1 Crear `src/entities/Player.ts` con la clase Player extendiendo Phaser.Physics.Arcade.Sprite
     - Propiedades: hp, maxHp, level, levelXp, totalXp, xpThreshold, speed
     - Métodos: `takeDamage(amount)`, `heal(amount)`, `addXP(value): LevelUpResult`
     - `addXP` implementa lógica dual: incrementa levelXp y totalXp, detecta level-up con carry-over de exceso
     - En nivel 20: solo incrementa totalXp, levelXp queda clamped al threshold
     - _Requirements: 1.5, 5.1, 5.2, 5.6, 5.7, 5.10, 5.11_
 
-  - [ ] 5.2 Crear `src/systems/PlayerManager.ts` con lógica de input y movimiento
+  - [x] 5.2 Crear `src/systems/PlayerManager.ts` con lógica de input y movimiento
     - Capturar input WASD y flechas
     - `calculateDirection()`: cancelación independiente por eje (W+S→0 en Y, pero D→1 en X)
     - Normalizar vector resultante para mantener magnitud = speed en diagonales
@@ -289,13 +289,13 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Clamp posición a [0, 3200]×[0, 3200]
     - _Requirements: 2.1, 2.2, 2.3, 2.5, 2.6_
 
-  - [ ]* 5.3 Escribir property tests para movimiento (`src/systems/__tests__/movement.property.test.ts`)
+  - [x]* 5.3 Escribir property tests para movimiento (`src/systems/__tests__/movement.property.test.ts`)
     - **Property 1: Movement Speed Normalization** — magnitud del vector siempre = 200 para cualquier input válido
     - **Property 2: Axis-Independent Opposing Key Cancellation** — W+S+D→(200,0), A+D→(0,0)
     - **Property 3: Player Boundary Clamping** — posición siempre dentro de [0,3200]×[0,3200]
     - **Validates: Requirements 2.1, 2.2, 2.5, 2.6**
 
-  - [ ]* 5.4 Escribir unit tests para PlayerManager (`src/systems/__tests__/movement.unit.test.ts`)
+  - [x]* 5.4 Escribir unit tests para PlayerManager (`src/systems/__tests__/movement.unit.test.ts`)
     - Test: parada inmediata al soltar teclas (1 frame)
     - Test: 8 direcciones cardinales y diagonales producen velocidad correcta
     - Test: input diagonal produce magnitud normalizada igual a velocidad base
