@@ -302,8 +302,8 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Test: input diagonal produce magnitud normalizada igual a velocidad base
     - **Validates: Requirements 2.1, 2.2, 2.3**
 
-- [ ] 6. Cámara y límites del mapa
-  - [ ] 6.1 Configurar cámara en `GameScene.ts` para seguir al Player
+- [x] 6. Cámara y límites del mapa
+  - [x] 6.1 Configurar cámara en `GameScene.ts` para seguir al Player
     - `this.cameras.main.startFollow(player)` con bounds del mapa
     - Configurar `this.cameras.main.setBounds(0, 0, 3200, 3200)`
     - La cámara se detiene en los bordes del mapa (comportamiento nativo de Phaser con setBounds)
@@ -373,8 +373,8 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
 - [ ] 9. Checkpoint - Verificar entidades base
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 10. SpawnManager y gestión de límite de enemigos
-  - [ ] 10.1 Crear `src/systems/SpawnManager.ts`
+- [x] 10. SpawnManager y gestión de límite de enemigos
+  - [x] 10.1 Crear `src/systems/SpawnManager.ts`
     - Acumular delta time en `spawnTimer`; cuando `spawnTimer >= spawnInterval`, intentar spawn
     - `findValidSpawnPosition(camera)`: generar posición que cumple 3 condiciones simultáneas:
       1. Fuera del viewport de la cámara
@@ -385,19 +385,19 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Nota: spawn en celdas walkable del mapa generado (consultar grid lógica si necesario)
     - _Requirements: 3.1, 3.2_
 
-  - [ ] 10.2 Implementar cap de enemigos y despawn por distancia en SpawnManager
+  - [x] 10.2 Implementar cap de enemigos y despawn por distancia en SpawnManager
     - Si `getActiveEnemyCount() >= maxEnemies` (default 100, configurable por oleada): NO generar nuevos
     - `despawnDistantEnemies(playerPos)`: eliminar enemigos a >1500px sin XP ni orbe
     - Ejecutar despawn check cada frame en `update(delta)`
     - _Requirements: 3.5, 3.6_
 
-  - [ ] 10.3 Implementar selección de tipo de enemigo según pesos de la oleada
+  - [x] 10.3 Implementar selección de tipo de enemigo según pesos de la oleada
     - Usar `EnemyTypeWeight[]` de WaveConfig para selección ponderada aleatoria
     - Crear enemigo via `EnemyRegistry.create(type, scene, x, y, spawnConfig)`
     - Pasar hpMultiplier y speedMultiplier de la oleada actual
     - _Requirements: 6.2, 9.4_
 
-  - [ ]* 10.4 Escribir property tests para SpawnManager (`src/systems/__tests__/spawn-manager.property.test.ts`)
+  - [x]* 10.4 Escribir property tests para SpawnManager (`src/systems/__tests__/spawn-manager.property.test.ts`)
     - **Property 4: Spawn Position Triple Constraint** — posición siempre fuera viewport, dentro mapa, 50-300px del borde visible; null si no existe
     - **Property 7: Max Enemies Cap per Wave** — nunca excede maxEnemies configurado
     - **Property 8: Enemy Despawn by Distance** — enemigos a >1500px eliminados sin XP/orbe

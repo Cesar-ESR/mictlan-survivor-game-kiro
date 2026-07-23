@@ -1,25 +1,17 @@
 /**
- * Core interfaces for the Mictlán Survivor game.
+ * Tipos e interfaces base del juego Mictlán Survivor.
+ * Este archivo NO importa Phaser — todos los tipos son puros.
  */
+
+// --- Level Up ---
 
 /** Result returned by the Player.addXP() method */
 export interface LevelUpResult {
   leveledUp: boolean;
   newLevel: number;
   excessXp: number;
-  reachedMaxLevel: boolean;  // true if newLevel >= 20
+  reachedMaxLevel: boolean;
 }
-
-/** Configuration for game modes */
-export interface GameModeConfig {
-  mode: 'campaign' | 'infinite';
-  finalWave: number | null;
-}
-
-/** Wave configuration */
- * Tipos e interfaces base del juego Mictlán Survivor.
- * Este archivo NO importa Phaser — todos los tipos son puros.
- */
 
 // --- Modos de Juego ---
 
@@ -51,7 +43,6 @@ export interface DifficultyParams {
   speedMultiplier: number;
 }
 
-/** Enemy configuration */
 // --- Enemigos ---
 
 export interface EnemyConfig {
@@ -89,7 +80,6 @@ export interface IEnemy {
   onDefeat(): void;
 }
 
-/** Player state representation */
 // --- Jugador ---
 
 export interface PlayerState {
@@ -113,7 +103,6 @@ export interface WeaponConfig {
   maxDistance: number;
 }
 
-/** Upgrade definition */
 // --- Mejoras ---
 
 export interface Upgrade {
@@ -130,13 +119,4 @@ export type UpgradePool = Upgrade[];
 export interface MapConfig {
   width: number;
   height: number;
-}
-
-// --- Level Up ---
-
-export interface LevelUpResult {
-  leveledUp: boolean;
-  newLevel: number;
-  excessXp: number;
-  reachedMaxLevel: boolean;
 }

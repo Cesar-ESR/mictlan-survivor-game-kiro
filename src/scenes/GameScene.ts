@@ -7,6 +7,8 @@ import { LogicalMapGenerator } from '../map/LogicalMapGenerator';
 import type { LogicalMapGenerationResult } from '../map/LogicalMapGenerator';
 import { PhaserMapLayerBuilder } from '../map/PhaserMapLayerBuilder';
 import type { MapLayers } from '../map/PhaserMapLayerBuilder';
+import { Player } from '../entities/Player';
+import { PlayerManager } from '../systems/PlayerManager';
 
 const { MAP_WIDTH, MAP_HEIGHT } = GAME_CONSTANTS;
 
@@ -38,6 +40,8 @@ export class GameScene extends Phaser.Scene {
   private debugOverlayText: Phaser.GameObjects.Text | null = null;
   private debugCursorKeys: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
   private debugWASD: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key } | null = null;
+  private player!: Player;
+  private playerManager!: PlayerManager;
 
   /** Access generated map layers (null if generation failed). */
   get mapLayers(): MapLayers | null {
@@ -109,8 +113,18 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.scrollY = SAFE_ZONE_CENTER_Y - this.cameras.main.height / 2;
     }
 
-    // TODO: Instanciar Player en centro del mapa (Task 5)
-    // TODO: Configurar cámara para seguir al Player (Task 6)
+    // Instanciar Player en el centro del mapa (safe zone center)
+    this.player = new Player(this, SAFE_ZONE_CENTER_X, SAFE_ZONE_CENTER_Y, 'hero');
+    this.player.setCollideWorldBounds(true);
+
+    // Inicializar PlayerManager para input y movimiento
+    this.playerManager = new PlayerManager(this.player, this);
+
+    // Camera follows player, stops at map edges (native Phaser behavior with setBounds)
+    if (!this.isDebugMode) {
+      this.cameras.main.startFollow(this.player);
+    }
+
     // TODO: Configurar player/enemies colliders con walls/obstacles layers (Task 5+)
     // TODO: Instanciar sistemas (SpawnManager, WaveManager, etc.) (Task 23)
   }
@@ -197,8 +211,13 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    // Update player movement when not in debug mode
+    if (!this.isDebugMode) {
+      this.playerManager.update(_delta);
+    }
+
     // TODO: Delegar actualización a sistemas en orden (Task 23):
-    // PlayerManager → WaveManager → SpawnManager → Enemies → WeaponSystem → DamageSystem → OrbCollector
+    // WaveManager → SpawnManager → Enemies → WeaponSystem → DamageSystem → OrbCollector
   }
 
   /**

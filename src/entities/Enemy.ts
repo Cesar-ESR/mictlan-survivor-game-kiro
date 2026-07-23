@@ -1,16 +1,5 @@
 import Phaser from 'phaser';
 
-export interface IEnemy {
-  hp: number;
-  maxHp: number;
-  speed: number;
-  damage: number;
-  xpReward: number;
-  update(delta: number, playerPos: { x: number; y: number }): void;
-  takeDamage(amount: number): void;
-  onDefeat(): void;
-}
-
 import type { IEnemy } from '../types/interfaces';
 
 /**
