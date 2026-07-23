@@ -273,15 +273,15 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     9. Mapa renderiza correctamente en browser
     10. Tile indices usados están registrados en TileCatalog
 
-- [ ] 5. Guerrero Jaguar y movimiento normalizado
-  - [ ] 5.1 Crear `src/entities/Player.ts` con la clase Player extendiendo Phaser.Physics.Arcade.Sprite
+- [x] 5. Guerrero Jaguar y movimiento normalizado
+  - [x] 5.1 Crear `src/entities/Player.ts` con la clase Player extendiendo Phaser.Physics.Arcade.Sprite
     - Propiedades: hp, maxHp, level, levelXp, totalXp, xpThreshold, speed
     - Métodos: `takeDamage(amount)`, `heal(amount)`, `addXP(value): LevelUpResult`
     - `addXP` implementa lógica dual: incrementa levelXp y totalXp, detecta level-up con carry-over de exceso
     - En nivel 20: solo incrementa totalXp, levelXp queda clamped al threshold
     - _Requirements: 1.5, 5.1, 5.2, 5.6, 5.7, 5.10, 5.11_
 
-  - [ ] 5.2 Crear `src/systems/PlayerManager.ts` con lógica de input y movimiento
+  - [x] 5.2 Crear `src/systems/PlayerManager.ts` con lógica de input y movimiento
     - Capturar input WASD y flechas
     - `calculateDirection()`: cancelación independiente por eje (W+S→0 en Y, pero D→1 en X)
     - Normalizar vector resultante para mantener magnitud = speed en diagonales
@@ -290,28 +290,28 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Clamp posición a [0, 3200]×[0, 3200]
     - _Requirements: 2.1, 2.2, 2.3, 2.5, 2.6_
 
-  - [ ]* 5.3 Escribir property tests para movimiento (`src/systems/__tests__/movement.property.test.ts`)
+  - [x]* 5.3 Escribir property tests para movimiento (`src/systems/__tests__/movement.property.test.ts`)
     - **Property 1: Movement Speed Normalization** — magnitud del vector siempre = 200 para cualquier input válido
     - **Property 2: Axis-Independent Opposing Key Cancellation** — W+S+D→(200,0), A+D→(0,0)
     - **Property 3: Player Boundary Clamping** — posición siempre dentro de [0,3200]×[0,3200]
     - **Validates: Requirements 2.1, 2.2, 2.5, 2.6**
 
-  - [ ]* 5.4 Escribir unit tests para PlayerManager (`src/systems/__tests__/movement.unit.test.ts`)
+  - [x]* 5.4 Escribir unit tests para PlayerManager (`src/systems/__tests__/movement.unit.test.ts`)
     - Test: parada inmediata al soltar teclas (1 frame)
     - Test: 8 direcciones cardinales y diagonales producen velocidad correcta
     - Test: input diagonal produce magnitud normalizada igual a velocidad base
     - **Validates: Requirements 2.1, 2.2, 2.3**
 
-- [ ] 6. Cámara y límites del mapa
-  - [ ] 6.1 Configurar cámara en `GameScene.ts` para seguir al Player
+- [x] 6. Cámara y límites del mapa
+  - [x] 6.1 Configurar cámara en `GameScene.ts` para seguir al Player
     - `this.cameras.main.startFollow(player)` con bounds del mapa
     - Configurar `this.cameras.main.setBounds(0, 0, 3200, 3200)`
     - La cámara se detiene en los bordes del mapa (comportamiento nativo de Phaser con setBounds)
     - Nota: depende de que el mapa ya esté generado (Tarea 3) para que bounds tengan sentido visual
     - _Requirements: 2.4, 2.5_
 
-- [ ] 7. Enemy base y EnemyRegistry
-  - [ ] 7.1 Crear `src/entities/Enemy.ts` con la clase abstracta Enemy
+- [x] 7. Enemy base y EnemyRegistry
+  - [x] 7.1 Crear `src/entities/Enemy.ts` con la clase abstracta Enemy
     - Extender `Phaser.Physics.Arcade.Sprite`, implementar `IEnemy`
     - Propiedades abstractas: hp, maxHp, speed, damage, xpReward
     - `takeDamage(amount)`: reduce HP, si HP ≤ 0 llama `onDefeat()`
@@ -319,51 +319,51 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Método abstracto `update(delta, playerPos)` para comportamiento específico
     - _Requirements: 9.2, 9.3_
 
-  - [ ] 7.2 Crear `src/systems/EnemyRegistry.ts` con el patrón factory/registry
+  - [x] 7.2 Crear `src/systems/EnemyRegistry.ts` con el patrón factory/registry
     - Map de `string → EnemyFactory`
     - Métodos: `register(type, factory)`, `create(type, scene, x, y, config)`, `has(type)`, `getRegisteredTypes()`
     - Permite agregar nuevos tipos sin modificar código existente (Open/Closed Principle)
     - _Requirements: 9.5_
 
-- [ ] 8. Arquetipos de enemigos
-  - [ ] 8.1 Crear `src/entities/enemies/Esqueleto.ts`
+- [x] 8. Arquetipos de enemigos
+  - [x] 8.1 Crear `src/entities/enemies/Esqueleto.ts`
     - HP=30, speed=80, damage=5, xpReward=5
     - `update(delta, playerPos)`: calcular dirección directa hacia playerPos, mover con delta time
     - Aplicar speedMultiplier de la oleada
     - _Requirements: 9.1 (Esqueleto)_
 
-  - [ ] 8.2 Crear `src/entities/enemies/Murcielago.ts`
+  - [x] 8.2 Crear `src/entities/enemies/Murcielago.ts`
     - HP=15, speed=150, damage=3, xpReward=3
     - `update(delta, playerPos)`: persecución con zigzag perpendicular a dirección de avance
     - Implementar oscilación sinusoidal con `zigzagPhase` incrementada por delta time
     - Amplitud y frecuencia configurables
     - _Requirements: 9.1 (Murciélago)_
 
-  - [ ] 8.3 Crear `src/entities/enemies/CalaveraLlameante.ts`
+  - [x] 8.3 Crear `src/entities/enemies/CalaveraLlameante.ts`
     - HP=50, speed=60, damage=10, xpReward=10
     - `update(delta, playerPos)`: persecución directa (como Esqueleto)
     - `onDefeat()`: override que verifica distancia al jugador, si ≤ 100px aplica 15 de daño
     - Emitir evento `explosion-damage` con posición y radio
     - _Requirements: 9.1 (Calavera Llameante)_
 
-  - [ ] 8.4 Crear `src/entities/enemies/SerpienteEmplumada.ts`
+  - [x] 8.4 Crear `src/entities/enemies/SerpienteEmplumada.ts`
     - HP=80, speed=100 (inicial), damage=8, xpReward=15
     - `update(delta, playerPos)`: persecución con aceleración progresiva
     - `currentSpeed` incrementa por `acceleration * delta` hasta `maxSpeed` (configurable)
     - Dirección hacia playerPos, velocidad = min(currentSpeed, maxSpeed)
     - _Requirements: 9.1 (Serpiente Emplumada)_
 
-  - [ ] 8.5 Registrar los 4 arquetipos en EnemyRegistry dentro de `GameScene.create()`
+  - [x] 8.5 Registrar los 4 arquetipos en EnemyRegistry dentro de `GameScene.create()`
     - Crear factories para cada tipo que instancian con hpMultiplier y speedMultiplier
     - Registrar: `esqueleto`, `murcielago`, `calavera_llameante`, `serpiente_emplumada`
     - _Requirements: 9.5, 9.4_
 
-  - [ ]* 8.6 Escribir property tests para comportamiento de enemigos (`src/systems/__tests__/enemy-behavior.property.test.ts`)
+  - [x]* 8.6 Escribir property tests para comportamiento de enemigos (`src/systems/__tests__/enemy-behavior.property.test.ts`)
     - **Property 5: Enemy Pursuit Direction** — vector velocidad apunta de E hacia P con magnitud = speed × speedMultiplier
     - **Property 6: Enemy Defeat Produces Correctly Valued XP Orb** — derrota genera exactamente 1 orbe con xpReward correcto
     - **Validates: Requirements 3.3, 3.4, 8.1**
 
-  - [ ]* 8.7 Escribir unit tests para arquetipos (`src/entities/__tests__/enemies.unit.test.ts`)
+  - [x]* 8.7 Escribir unit tests para arquetipos (`src/entities/__tests__/enemies.unit.test.ts`)
     - Test: Murciélago genera oscilación perpendicular a dirección de avance
     - Test: CalaveraLlameante aplica 15 daño si jugador dentro de 100px al morir
     - Test: CalaveraLlameante NO aplica daño si jugador fuera de 100px
@@ -373,8 +373,8 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
 - [ ] 9. Checkpoint - Verificar entidades base
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 10. SpawnManager y gestión de límite de enemigos
-  - [ ] 10.1 Crear `src/systems/SpawnManager.ts`
+- [x] 10. SpawnManager y gestión de límite de enemigos
+  - [x] 10.1 Crear `src/systems/SpawnManager.ts`
     - Acumular delta time en `spawnTimer`; cuando `spawnTimer >= spawnInterval`, intentar spawn
     - `findValidSpawnPosition(camera)`: generar posición que cumple 3 condiciones simultáneas:
       1. Fuera del viewport de la cámara
@@ -385,19 +385,19 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Nota: spawn en celdas walkable del mapa generado (consultar grid lógica si necesario)
     - _Requirements: 3.1, 3.2_
 
-  - [ ] 10.2 Implementar cap de enemigos y despawn por distancia en SpawnManager
+  - [x] 10.2 Implementar cap de enemigos y despawn por distancia en SpawnManager
     - Si `getActiveEnemyCount() >= maxEnemies` (default 100, configurable por oleada): NO generar nuevos
     - `despawnDistantEnemies(playerPos)`: eliminar enemigos a >1500px sin XP ni orbe
     - Ejecutar despawn check cada frame en `update(delta)`
     - _Requirements: 3.5, 3.6_
 
-  - [ ] 10.3 Implementar selección de tipo de enemigo según pesos de la oleada
+  - [x] 10.3 Implementar selección de tipo de enemigo según pesos de la oleada
     - Usar `EnemyTypeWeight[]` de WaveConfig para selección ponderada aleatoria
     - Crear enemigo via `EnemyRegistry.create(type, scene, x, y, spawnConfig)`
     - Pasar hpMultiplier y speedMultiplier de la oleada actual
     - _Requirements: 6.2, 9.4_
 
-  - [ ]* 10.4 Escribir property tests para SpawnManager (`src/systems/__tests__/spawn-manager.property.test.ts`)
+  - [x]* 10.4 Escribir property tests para SpawnManager (`src/systems/__tests__/spawn-manager.property.test.ts`)
     - **Property 4: Spawn Position Triple Constraint** — posición siempre fuera viewport, dentro mapa, 50-300px del borde visible; null si no existe
     - **Property 7: Max Enemies Cap per Wave** — nunca excede maxEnemies configurado
     - **Property 8: Enemy Despawn by Distance** — enemigos a >1500px eliminados sin XP/orbe

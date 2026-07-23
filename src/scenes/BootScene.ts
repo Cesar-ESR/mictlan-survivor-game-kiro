@@ -27,6 +27,12 @@ export class BootScene extends Phaser.Scene {
       });
     }
 
+    // Cargar spritesheet del jugador (Guerrero Jaguar) — 8 frames de 32×32
+    this.load.spritesheet('hero', 'src/assets/PersonajePrincipalSpritsheets/MC_Walk.png', {
+      frameWidth: 250,
+      frameHeight: 250,
+    });
+
     // Timeout de 3 segundos para detectar cargas estancadas
     this.time.delayedCall(3000, () => {
       if (!this.scene.isActive('GameScene')) {
