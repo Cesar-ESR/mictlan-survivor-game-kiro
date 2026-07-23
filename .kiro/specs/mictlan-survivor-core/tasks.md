@@ -310,8 +310,8 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Nota: depende de que el mapa ya esté generado (Tarea 3) para que bounds tengan sentido visual
     - _Requirements: 2.4, 2.5_
 
-- [ ] 7. Enemy base y EnemyRegistry
-  - [ ] 7.1 Crear `src/entities/Enemy.ts` con la clase abstracta Enemy
+- [x] 7. Enemy base y EnemyRegistry
+  - [x] 7.1 Crear `src/entities/Enemy.ts` con la clase abstracta Enemy
     - Extender `Phaser.Physics.Arcade.Sprite`, implementar `IEnemy`
     - Propiedades abstractas: hp, maxHp, speed, damage, xpReward
     - `takeDamage(amount)`: reduce HP, si HP ≤ 0 llama `onDefeat()`
@@ -319,51 +319,51 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Método abstracto `update(delta, playerPos)` para comportamiento específico
     - _Requirements: 9.2, 9.3_
 
-  - [ ] 7.2 Crear `src/systems/EnemyRegistry.ts` con el patrón factory/registry
+  - [x] 7.2 Crear `src/systems/EnemyRegistry.ts` con el patrón factory/registry
     - Map de `string → EnemyFactory`
     - Métodos: `register(type, factory)`, `create(type, scene, x, y, config)`, `has(type)`, `getRegisteredTypes()`
     - Permite agregar nuevos tipos sin modificar código existente (Open/Closed Principle)
     - _Requirements: 9.5_
 
-- [ ] 8. Arquetipos de enemigos
-  - [ ] 8.1 Crear `src/entities/enemies/Esqueleto.ts`
+- [x] 8. Arquetipos de enemigos
+  - [x] 8.1 Crear `src/entities/enemies/Esqueleto.ts`
     - HP=30, speed=80, damage=5, xpReward=5
     - `update(delta, playerPos)`: calcular dirección directa hacia playerPos, mover con delta time
     - Aplicar speedMultiplier de la oleada
     - _Requirements: 9.1 (Esqueleto)_
 
-  - [ ] 8.2 Crear `src/entities/enemies/Murcielago.ts`
+  - [x] 8.2 Crear `src/entities/enemies/Murcielago.ts`
     - HP=15, speed=150, damage=3, xpReward=3
     - `update(delta, playerPos)`: persecución con zigzag perpendicular a dirección de avance
     - Implementar oscilación sinusoidal con `zigzagPhase` incrementada por delta time
     - Amplitud y frecuencia configurables
     - _Requirements: 9.1 (Murciélago)_
 
-  - [ ] 8.3 Crear `src/entities/enemies/CalaveraLlameante.ts`
+  - [x] 8.3 Crear `src/entities/enemies/CalaveraLlameante.ts`
     - HP=50, speed=60, damage=10, xpReward=10
     - `update(delta, playerPos)`: persecución directa (como Esqueleto)
     - `onDefeat()`: override que verifica distancia al jugador, si ≤ 100px aplica 15 de daño
     - Emitir evento `explosion-damage` con posición y radio
     - _Requirements: 9.1 (Calavera Llameante)_
 
-  - [ ] 8.4 Crear `src/entities/enemies/SerpienteEmplumada.ts`
+  - [x] 8.4 Crear `src/entities/enemies/SerpienteEmplumada.ts`
     - HP=80, speed=100 (inicial), damage=8, xpReward=15
     - `update(delta, playerPos)`: persecución con aceleración progresiva
     - `currentSpeed` incrementa por `acceleration * delta` hasta `maxSpeed` (configurable)
     - Dirección hacia playerPos, velocidad = min(currentSpeed, maxSpeed)
     - _Requirements: 9.1 (Serpiente Emplumada)_
 
-  - [ ] 8.5 Registrar los 4 arquetipos en EnemyRegistry dentro de `GameScene.create()`
+  - [x] 8.5 Registrar los 4 arquetipos en EnemyRegistry dentro de `GameScene.create()`
     - Crear factories para cada tipo que instancian con hpMultiplier y speedMultiplier
     - Registrar: `esqueleto`, `murcielago`, `calavera_llameante`, `serpiente_emplumada`
     - _Requirements: 9.5, 9.4_
 
-  - [ ]* 8.6 Escribir property tests para comportamiento de enemigos (`src/systems/__tests__/enemy-behavior.property.test.ts`)
+  - [x]* 8.6 Escribir property tests para comportamiento de enemigos (`src/systems/__tests__/enemy-behavior.property.test.ts`)
     - **Property 5: Enemy Pursuit Direction** — vector velocidad apunta de E hacia P con magnitud = speed × speedMultiplier
     - **Property 6: Enemy Defeat Produces Correctly Valued XP Orb** — derrota genera exactamente 1 orbe con xpReward correcto
     - **Validates: Requirements 3.3, 3.4, 8.1**
 
-  - [ ]* 8.7 Escribir unit tests para arquetipos (`src/entities/__tests__/enemies.unit.test.ts`)
+  - [x]* 8.7 Escribir unit tests para arquetipos (`src/entities/__tests__/enemies.unit.test.ts`)
     - Test: Murciélago genera oscilación perpendicular a dirección de avance
     - Test: CalaveraLlameante aplica 15 daño si jugador dentro de 100px al morir
     - Test: CalaveraLlameante NO aplica daño si jugador fuera de 100px
