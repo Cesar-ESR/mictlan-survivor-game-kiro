@@ -310,8 +310,8 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Nota: depende de que el mapa ya esté generado (Tarea 3) para que bounds tengan sentido visual
     - _Requirements: 2.4, 2.5_
 
-- [ ] 7. Enemy base y EnemyRegistry
-  - [ ] 7.1 Crear `src/entities/Enemy.ts` con la clase abstracta Enemy
+- [x] 7. Enemy base y EnemyRegistry
+  - [x] 7.1 Crear `src/entities/Enemy.ts` con la clase abstracta Enemy
     - Extender `Phaser.Physics.Arcade.Sprite`, implementar `IEnemy`
     - Propiedades abstractas: hp, maxHp, speed, damage, xpReward
     - `takeDamage(amount)`: reduce HP, si HP ≤ 0 llama `onDefeat()`
@@ -319,7 +319,7 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Método abstracto `update(delta, playerPos)` para comportamiento específico
     - _Requirements: 9.2, 9.3_
 
-  - [ ] 7.2 Crear `src/systems/EnemyRegistry.ts` con el patrón factory/registry
+  - [x] 7.2 Crear `src/systems/EnemyRegistry.ts` con el patrón factory/registry
     - Map de `string → EnemyFactory`
     - Métodos: `register(type, factory)`, `create(type, scene, x, y, config)`, `has(type)`, `getRegisteredTypes()`
     - Permite agregar nuevos tipos sin modificar código existente (Open/Closed Principle)
