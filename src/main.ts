@@ -1,60 +1,58 @@
-import './style.css'
-import typescriptLogo from './assets/typescript.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import { setupCounter } from './counter.ts'
+import Phaser from 'phaser';
+import { BootScene } from './scenes/BootScene';
+import { GameScene } from './scenes/GameScene';
+import { HUDScene } from './scenes/HUDScene';
+import { DefeatScene } from './scenes/DefeatScene';
+import { VictoryScene } from './scenes/VictoryScene';
+import { TileDebugScene } from './scenes/TileDebugScene';
+import { MappingsDebugScene } from './scenes/MappingsDebugScene';
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-<section id="center">
-  <div class="hero">
-    <img src="${heroImg}" class="base" width="170" height="179">
-    <img src="${typescriptLogo}" class="framework" alt="TypeScript logo"/>
-    <img src="${viteLogo}" class="vite" alt="Vite logo" />
-  </div>
-  <div>
-    <h1>Get started</h1>
-    <p>Edit <code>src/main.ts</code> and save to test <code>HMR</code></p>
-  </div>
-  <button id="counter" type="button" class="counter"></button>
-</section>
+/**
+ * Determina el modo de debug desde la URL.
+ * - ?debug=tiles → escena de inspección individual de tiles
+ * - ?debug=mappings → escena de calibración de mapeos
+ * - ?debug=map → juego normal con overlay de info de generación de mapa
+ *
+ * Requirements: 1.1, 1.2
+ */
+const urlParams = new URLSearchParams(window.location.search);
+const debugMode = urlParams.get('debug');
 
-<div class="ticks"></div>
+/**
+ * Selecciona escenas según modo debug.
+ */
+function getScenes(): Phaser.Types.Scenes.SceneType[] {
+  if (debugMode === 'tiles') {
+    return [TileDebugScene];
+  }
+  if (debugMode === 'mappings') {
+    return [MappingsDebugScene];
+  }
+  // Normal game (including debug=map which uses GameScene with debug overlay)
+  return [BootScene, GameScene, HUDScene, DefeatScene, VictoryScene];
+}
 
-<section id="next-steps">
-  <div id="docs">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#documentation-icon"></use></svg>
-    <h2>Documentation</h2>
-    <p>Your questions, answered</p>
-    <ul>
-      <li>
-        <a href="https://vite.dev/" target="_blank">
-          <img class="logo" src="${viteLogo}" alt="" />
-          Explore Vite
-        </a>
-      </li>
-      <li>
-        <a href="https://www.typescriptlang.org" target="_blank">
-          <img class="button-icon" src="${typescriptLogo}" alt="">
-          Learn more
-        </a>
-      </li>
-    </ul>
-  </div>
-  <div id="social">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#social-icon"></use></svg>
-    <h2>Connect with us</h2>
-    <p>Join the Vite community</p>
-    <ul>
-      <li><a href="https://github.com/vitejs/vite" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#github-icon"></use></svg>GitHub</a></li>
-      <li><a href="https://chat.vite.dev/" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#discord-icon"></use></svg>Discord</a></li>
-      <li><a href="https://x.com/vite_js" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#x-icon"></use></svg>X.com</a></li>
-      <li><a href="https://bsky.app/profile/vite.dev" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#bluesky-icon"></use></svg>Bluesky</a></li>
-    </ul>
-  </div>
-</section>
+/**
+ * Configuración principal de Phaser para Mictlán Survivor.
+ * Requirements: 1.1, 1.2
+ */
+const config: Phaser.Types.Core.GameConfig = {
+  type: Phaser.AUTO,
+  width: 1024,
+  height: 768,
+  parent: 'app',
+  pixelArt: true,
+  physics: {
+    default: 'arcade',
+    arcade: {
+      gravity: { x: 0, y: 0 },
+      debug: debugMode === 'map',
+    },
+  },
+  scene: getScenes(),
+};
 
-<div class="ticks"></div>
-<section id="spacer"></section>
-`
+const game = new Phaser.Game(config);
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+// Store debug mode globally for scenes to check
+game.registry.set('debugMode', debugMode);

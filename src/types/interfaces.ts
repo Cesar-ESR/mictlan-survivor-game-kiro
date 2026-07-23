@@ -17,6 +17,18 @@ export interface GameModeConfig {
 }
 
 /** Wave configuration */
+ * Tipos e interfaces base del juego Mictlán Survivor.
+ * Este archivo NO importa Phaser — todos los tipos son puros.
+ */
+
+// --- Modos de Juego ---
+
+export type GameModeConfig =
+  | { mode: 'campaign'; finalWave: number }
+  | { mode: 'infinite'; finalWave: null };
+
+// --- Oleadas ---
+
 export interface WaveConfig {
   waveNumber: number;
   duration: number;
@@ -27,7 +39,6 @@ export interface WaveConfig {
   speedMultiplier: number;
 }
 
-/** Enemy type weight for spawn selection */
 export interface EnemyTypeWeight {
   type: string;
   weight: number;
@@ -41,6 +52,8 @@ export interface DifficultyParams {
 }
 
 /** Enemy configuration */
+// --- Enemigos ---
+
 export interface EnemyConfig {
   key: string;
   hp: number;
@@ -77,6 +90,8 @@ export interface IEnemy {
 }
 
 /** Player state representation */
+// --- Jugador ---
+
 export interface PlayerState {
   hp: number;
   maxHp: number;
@@ -99,6 +114,8 @@ export interface WeaponConfig {
 }
 
 /** Upgrade definition */
+// --- Mejoras ---
+
 export interface Upgrade {
   id: string;
   name: string;
@@ -113,4 +130,13 @@ export type UpgradePool = Upgrade[];
 export interface MapConfig {
   width: number;
   height: number;
+}
+
+// --- Level Up ---
+
+export interface LevelUpResult {
+  leveledUp: boolean;
+  newLevel: number;
+  excessXp: number;
+  reachedMaxLevel: boolean;
 }
