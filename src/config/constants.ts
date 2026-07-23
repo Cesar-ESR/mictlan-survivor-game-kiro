@@ -13,13 +13,13 @@ export const GAME_CONSTANTS = {
   MAP_HEIGHT: 3200,
 
   // Waves
-  WAVE_DURATION: 30,
-  WAVE_TRANSITION_TIME: 2,
-  BASE_SPAWN_INTERVAL: 2,
+  WAVE_DURATION: 30,                // seconds
+  WAVE_TRANSITION_TIME: 2,          // seconds
+  BASE_SPAWN_INTERVAL: 2,           // seconds
 
   // Enemies
   DEFAULT_MAX_ENEMIES: 100,
-  ENEMY_DESPAWN_DISTANCE: 1500,
+  ENEMY_DESPAWN_DISTANCE: 1500,     // px
 
   // Spawn positioning
   SPAWN_MIN_DISTANCE_FROM_EDGE: 50,
