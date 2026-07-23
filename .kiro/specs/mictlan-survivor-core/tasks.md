@@ -435,14 +435,14 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Test: modo infinito nunca retorna victoria
     - **Validates: Requirements 6.1, 6.4, 6.5, 3.7**
 
-- [ ] 12. DamageSystem y colisiones
-  - [ ] 12.1 Crear `src/systems/DamageSystem.ts`
+- [x] 12. DamageSystem y colisiones
+  - [x] 12.1 Crear `src/systems/DamageSystem.ts`
     - `checkProjectileEnemyCollisions()`: overlap proyectil↔enemigo → `enemy.takeDamage(weaponDamage)`, destruir proyectil
     - Si `enemy.hp <= 0` → `handleEnemyDefeat(enemy, playerPos)`
     - `handleEnemyDefeat`: emitir `enemy-defeated`, manejar explosión de CalaveraLlameante
     - _Requirements: 4.2, 4.3_
 
-  - [ ] 12.2 Implementar colisión enemigo↔jugador con cooldown de contacto
+  - [x] 12.2 Implementar colisión enemigo↔jugador con cooldown de contacto
     - `checkEnemyPlayerCollisions(delta)`: overlap enemigo↔jugador
     - Map `contactCooldowns: Map<string, number>` — almacena timestamp del último daño por enemigo
     - Aplicar daño solo si han pasado ≥1000ms desde último contacto de ESE enemigo
@@ -451,12 +451,12 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Si HP jugador ≤ 0 → emitir evento `player-defeated` → transicionar a DefeatScene
     - _Requirements: 4.4, 4.5_
 
-  - [ ]* 12.3 Escribir property tests para DamageSystem (`src/systems/__tests__/damage-system.property.test.ts`)
+  - [x]* 12.3 Escribir property tests para DamageSystem (`src/systems/__tests__/damage-system.property.test.ts`)
     - **Property 10: Damage Application and Defeat Trigger** — HP se reduce por daño del arma, proyectil destruido, defeat si HP≤0
     - **Property 11: Contact Damage Cooldown** — máximo 1 daño por 1000ms por enemigo individual
     - **Validates: Requirements 4.2, 4.3, 4.4**
 
-  - [ ]* 12.4 Escribir unit tests para DamageSystem (`src/systems/__tests__/damage-system.unit.test.ts`)
+  - [x]* 12.4 Escribir unit tests para DamageSystem (`src/systems/__tests__/damage-system.unit.test.ts`)
     - Test: CalaveraLlameante explota y daña al jugador si ≤100px
     - Test: jugador con HP=0 transiciona a DefeatScene
     - Test: cooldown se respeta independientemente del frame rate
