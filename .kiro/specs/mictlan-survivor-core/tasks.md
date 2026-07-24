@@ -481,8 +481,9 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - **Property 12: Projectile Max Travel Distance** — proyectil destruido al recorrer ≥1000px
     - **Validates: Requirements 4.1, 4.6**
 
-- [ ] 14. Checkpoint - Verificar combate completo
+- [x] 14. Checkpoint - Verificar combate completo
   - Ensure all tests pass, ask the user if questions arise.
+  - **Nota**: La integración visual completa (overlap proyectiles↔enemigos en GameScene) queda pendiente de Task 23.
 
 - [ ] 15. Orbes de XP
   - [ ] 15.1 Crear `src/entities/XPOrb.ts` como sprite con valor de XP
