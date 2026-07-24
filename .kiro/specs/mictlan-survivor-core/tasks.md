@@ -462,21 +462,21 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Test: cooldown se respeta independientemente del frame rate
     - **Validates: Requirements 4.4, 4.5, 9.1**
 
-- [ ] 13. Arma automática y proyectiles
-  - [ ] 13.1 Crear `src/systems/WeaponSystem.ts`
+- [x] 13. Arma automática y proyectiles
+  - [x] 13.1 Crear `src/systems/WeaponSystem.ts`
     - `fireTimer` acumula delta time; al alcanzar `fireRate` (1000ms base) → disparar
     - `findClosestEnemy(playerPos, enemies)`: enemigo con menor distancia euclidiana, dentro de 800px
     - Si no hay enemigo en rango → no dispara
     - `fireProjectile(from, target)`: obtener proyectil del pool, setear velocidad hacia target
     - _Requirements: 4.1_
 
-  - [ ] 13.2 Implementar pool de proyectiles y destrucción por distancia
+  - [x] 13.2 Implementar pool de proyectiles y destrucción por distancia
     - Usar `Phaser.GameObjects.Group` como pool (create con maxSize)
     - `updateProjectiles(delta)`: mover proyectiles, acumular distancia recorrida
     - Si distancia recorrida ≥ 1000px sin colisión → destruir/reciclar proyectil
     - _Requirements: 4.6_
 
-  - [ ]* 13.3 Escribir property tests para WeaponSystem (`src/systems/__tests__/weapon-system.property.test.ts`)
+  - [x]* 13.3 Escribir property tests para WeaponSystem (`src/systems/__tests__/weapon-system.property.test.ts`)
     - **Property 9: Closest Enemy Targeting** — siempre selecciona el más cercano dentro de 800px; null si ninguno en rango
     - **Property 12: Projectile Max Travel Distance** — proyectil destruido al recorrer ≥1000px
     - **Validates: Requirements 4.1, 4.6**
