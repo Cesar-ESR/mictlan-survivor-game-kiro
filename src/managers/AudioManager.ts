@@ -1,17 +1,18 @@
 import Phaser from 'phaser';
-import { MUSIC_TRACKS, type MusicTrackKey } from '../config/audio-assets';
+import { MUSIC_TRACKS, SFX_TRACKS, type MusicTrackKey, type SFXTrackKey } from '../config/audio-assets';
 
 /**
- * AudioManager: Singleton encargado de toda la reproducción musical del juego.
+ * AudioManager: Singleton encargado de toda la reproducción de audio del juego.
  *
  * Responsabilidades:
  * - Reproducir / detener / cambiar pistas de música.
- * - Garantizar una única instancia reproduciéndose a la vez.
+ * - Reproducir efectos de sonido (SFX) independientes de la música.
+ * - Garantizar una única instancia de música reproduciéndose a la vez.
  * - Controlar volumen y realizar fade in / fade out.
  * - Evitar reinicios innecesarios si la pista solicitada ya está sonando.
  *
- * Las escenas NUNCA deben usar this.sound directamente para música.
- * Toda reproducción musical pasa por AudioManager.
+ * Las escenas NUNCA deben usar this.sound directamente para audio.
+ * Toda reproducción pasa por AudioManager.
  */
 export class AudioManager {
   private static instance: AudioManager | null = null;
@@ -61,6 +62,17 @@ export class AudioManager {
     });
     this.currentMusic.play();
     this.currentTrackKey = trackConfig.key;
+  }
+
+  // --- SFX ---
+
+  /**
+   * Reproduce un efecto de sonido por su clave del catálogo.
+   * Los SFX son independientes de la música y permiten múltiples reproducciones simultáneas.
+   */
+  playSFX(sfxName: SFXTrackKey): void {
+    const sfxConfig = SFX_TRACKS[sfxName];
+    this.scene.sound.play(sfxConfig.key, { volume: sfxConfig.volume });
   }
 
   /**

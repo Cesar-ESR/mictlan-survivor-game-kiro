@@ -61,6 +61,7 @@ export class MainMenuScene extends Phaser.Scene {
       callback: () => {
         if (this.hasSelected) return;
         this.hasSelected = true;
+        AudioManager.getInstance(this).playSFX('CONFIRM');
         this.startGame(createCampaignModeConfig());
       },
     });
@@ -80,6 +81,7 @@ export class MainMenuScene extends Phaser.Scene {
       callback: () => {
         if (this.hasSelected) return;
         this.hasSelected = true;
+        AudioManager.getInstance(this).playSFX('CONFIRM');
         this.startGame(createInfiniteModeConfig());
       },
     });

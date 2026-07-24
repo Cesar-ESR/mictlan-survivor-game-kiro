@@ -7,7 +7,7 @@ import { registerPlayerAnimations } from '../config/player-animations';
 import { loadXPOrbAssets } from '../config/xp-orb-assets';
 import { loadMenuAssets } from '../config/menu-assets';
 import { loadButtonAssets } from '../config/button-assets';
-import { loadMusicAssets } from '../config/audio-assets';
+import { loadMusicAssets, loadSFXAssets } from '../config/audio-assets';
 import { GAME_FONT_FAMILY } from '../config/font-config';
 
 /**
@@ -59,6 +59,9 @@ export class BootScene extends Phaser.Scene {
 
     // Cargar pistas de música (delegado a módulo centralizado)
     loadMusicAssets(this.load);
+
+    // Cargar efectos de sonido (delegado a módulo centralizado)
+    loadSFXAssets(this.load);
 
     // Timeout de 3 segundos para detectar cargas estancadas
     this.time.delayedCall(3000, () => {
