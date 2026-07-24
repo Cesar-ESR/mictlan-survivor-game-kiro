@@ -22,7 +22,8 @@ import { LevelUpCoordinator } from '../systems/LevelUpCoordinator';
 import { PauseSystem } from '../systems/PauseSystem';
 import { registerEnemyTypes } from '../entities/enemies';
 import { Projectile } from '../entities/Projectile';
-import { INITIAL_UPGRADE_POOL } from '../config/upgrades';
+import { createInitialMemories } from '../config/memory-upgrades';
+import type { MemoryUpgrade } from '../config/memory-upgrades';
 import type { GameStats } from '../types/game-stats';
 import type { GameModeConfig, WaveChangedPayload } from '../types/interfaces';
 import { resolveGameMode } from './game-mode-utils';
@@ -87,6 +88,7 @@ export class GameScene extends Phaser.Scene {
   // Level-up and pause
   private levelUpCoordinator!: LevelUpCoordinator;
   private pauseSystem!: PauseSystem;
+  private memories!: MemoryUpgrade[];
 
   // Collider references for cleanup (BUG-001)
   private colliders: Phaser.Physics.Arcade.Collider[] = [];
@@ -215,7 +217,10 @@ export class GameScene extends Phaser.Scene {
     });
 
     // --- 7. XPSystem ---
-    this.xpSystem = new XPSystem([...INITIAL_UPGRADE_POOL]);
+    this.xpSystem = new XPSystem();
+
+    // --- 7b. Memory Upgrades (CHANGE-001) ---
+    this.memories = createInitialMemories();
 
     // --- 8. WeaponSystem ---
     const weaponConfig: WeaponConfig = {
@@ -242,10 +247,11 @@ export class GameScene extends Phaser.Scene {
 
     // --- 11. LevelUpCoordinator ---
     this.levelUpCoordinator = new LevelUpCoordinator(
-      this.xpSystem,
+      this.memories,
       this.pauseSystem,
       this.events,
       this.player,
+      this.weaponSystem,
     );
 
     // --- 12. Reset gameStats ---

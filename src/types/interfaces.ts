@@ -105,11 +105,32 @@ export interface WeaponConfig {
 
 // --- Mejoras ---
 
+/** Context passed to upgrade apply functions — provides access to player stats and weapon system */
+export interface UpgradeContext {
+  player: {
+    hp: number;
+    maxHp: number;
+    speed: number;
+  };
+  weaponSystem: {
+    getDamage(): number;
+    increaseDamage(amount: number): void;
+    getFireRateMs(): number;
+    reduceFireRate(amountMs: number, minimumMs: number): void;
+    getRange(): number;
+    increaseRange(amount: number): void;
+    getProjectileSpeed(): number;
+    increaseProjectileSpeed(amount: number): void;
+    getMaxDistance(): number;
+    increaseMaxDistance(amount: number): void;
+  };
+}
+
 export interface Upgrade {
   id: string;
   name: string;
   description: string;
-  apply(player: unknown): void;
+  apply(context: UpgradeContext): void;
 }
 
 /** Upgrade pool type alias */

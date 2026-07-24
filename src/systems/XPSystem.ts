@@ -1,4 +1,4 @@
-import type { Upgrade, LevelUpResult } from '../types/interfaces';
+import type { Upgrade, UpgradeContext, LevelUpResult } from '../types/interfaces';
 import { GAME_CONSTANTS } from '../config/constants';
 
 /**
@@ -14,18 +14,19 @@ export interface XPAddResult {
 }
 
 /**
- * XPSystem — Coordinator for XP gain, level-up, and upgrade selection.
+ * XPSystem — Coordinator for XP gain and level-up detection.
  *
- * Wraps player.addXP() and adds upgrade pool management plus
- * panel display decisions. Pure logic, no Phaser dependency.
+ * Wraps player.addXP() and adds panel display decisions.
+ * Pure logic, no Phaser dependency.
  *
- * Requirements: 5.1, 5.2, 5.3, 5.6, 5.7, 5.8, 5.9, 5.10, 5.11
+ * Requirements: 5.1, 5.2, 5.3, 5.6, 5.7, 5.8, 5.9, 5.10, 5.11, 11.6, 11.7
  */
 export class XPSystem {
+  /** @deprecated Legacy upgrade pool — kept for backward compatibility with old tests */
   private upgradePool: Upgrade[];
 
-  constructor(initialPool: Upgrade[]) {
-    this.upgradePool = [...initialPool];
+  constructor(initialPool?: Upgrade[]) {
+    this.upgradePool = initialPool ? [...initialPool] : [];
   }
 
   /** Formula: level * 10 + 5 */
@@ -35,10 +36,8 @@ export class XPSystem {
 
   /**
    * Adds XP to the player and determines if the upgrade panel should show.
-   * Delegates XP math to player.addXP(value) but adds panel logic:
-   * - If leveledUp && level < 20 && upgradePool.length > 0: showPanel = true
-   * - If leveledUp && (level >= 20 || upgradePool.length === 0): showPanel = false
-   * - If !leveledUp: showPanel = false
+   * Now always shows panel if leveled up and not at max level.
+   * Memory availability is checked by LevelUpCoordinator.
    */
   addXP(
     player: { addXP(value: number): LevelUpResult },
@@ -48,8 +47,7 @@ export class XPSystem {
 
     const showPanel =
       result.leveledUp &&
-      result.newLevel < GAME_CONSTANTS.MAX_LEVEL &&
-      this.upgradePool.length > 0;
+      result.newLevel < GAME_CONSTANTS.MAX_LEVEL;
 
     return {
       leveledUp: result.leveledUp,
@@ -61,8 +59,8 @@ export class XPSystem {
   }
 
   /**
+   * @deprecated Legacy method — kept for backward compatibility with existing tests.
    * Returns min(count, pool.length) random unique upgrades from the pool.
-   * Default count = 3. If pool is empty, returns [].
    */
   getRandomUpgrades(count: number = 3): Upgrade[] {
     if (this.upgradePool.length === 0) return [];
@@ -79,12 +77,12 @@ export class XPSystem {
     return shuffled.slice(0, actualCount);
   }
 
-  /** Applies an upgrade to the player by calling upgrade.apply(player). */
-  applyUpgrade(player: unknown, upgrade: Upgrade): void {
-    upgrade.apply(player);
+  /** @deprecated Legacy method — kept for backward compatibility with existing tests. */
+  applyUpgrade(context: UpgradeContext, upgrade: Upgrade): void {
+    upgrade.apply(context);
   }
 
-  /** Removes an upgrade from the pool by ID. */
+  /** @deprecated Legacy method — kept for backward compatibility with existing tests. */
   removeUpgradeFromPool(upgradeId: string): void {
     this.upgradePool = this.upgradePool.filter((u) => u.id !== upgradeId);
   }

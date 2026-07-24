@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { calculateDirection, applyMovement } from '../movement.pure';
-import type { WaveChangedPayload, LevelUpPayload, UpgradeSelectedPayload } from '../../types/interfaces';
+import type { WaveChangedPayload, UpgradeSelectedPayload } from '../../types/interfaces';
 import type { WaveSpawnController, WaveEventEmitter } from '../WaveManager';
 import { WaveManager } from '../WaveManager';
-import { LevelUpCoordinator, type LevelUpXPProvider, type PauseController, type LevelUpEventEmitter } from '../LevelUpCoordinator';
-import type { Upgrade } from '../../types/interfaces';
+import { LevelUpCoordinator, type PauseController, type LevelUpEventEmitter, type WeaponSystemUpgradeAPI, type MemoryLevelUpPayload } from '../LevelUpCoordinator';
+import { createInitialMemories } from '../../config/memory-upgrades';
 
 /**
  * Preflight contract tests: verify that system boundaries share typed payloads
@@ -54,16 +54,11 @@ describe('Preflight Contracts', () => {
     });
   });
 
-  describe('LevelUpCoordinator and HUDScene share LevelUpPayload', () => {
-    it('LevelUpCoordinator emits level-up with {level, upgrades} payload', () => {
-      const emittedPayloads: LevelUpPayload[] = [];
-      const fakeUpgrade: Upgrade = { id: 'test', name: 'Test', description: 'Test', apply: () => {} };
+  describe('LevelUpCoordinator and HUDScene share MemoryLevelUpPayload', () => {
+    it('LevelUpCoordinator emits level-up with {level, memories} payload', () => {
+      const emittedPayloads: MemoryLevelUpPayload[] = [];
+      const memories = createInitialMemories();
 
-      const xpProvider: LevelUpXPProvider = {
-        getRandomUpgrades: () => [fakeUpgrade],
-        applyUpgrade: () => {},
-        removeUpgradeFromPool: () => {},
-      };
       const pauseController: PauseController = {
         isPaused: false,
         pause: () => {},
@@ -72,7 +67,7 @@ describe('Preflight Contracts', () => {
       const eventEmitter: LevelUpEventEmitter = {
         emit(event: string, ...args: unknown[]): boolean {
           if (event === 'level-up') {
-            emittedPayloads.push(args[0] as LevelUpPayload);
+            emittedPayloads.push(args[0] as MemoryLevelUpPayload);
           }
           return true;
         },
@@ -80,29 +75,32 @@ describe('Preflight Contracts', () => {
         off: () => {},
       };
 
-      const coordinator = new LevelUpCoordinator(xpProvider, pauseController, eventEmitter, {});
+      const fakeWeapon: WeaponSystemUpgradeAPI = {
+        getDamage: () => 10, increaseDamage: () => {},
+        getFireRateMs: () => 1000, reduceFireRate: () => {},
+        getRange: () => 384, increaseRange: () => {},
+        getProjectileSpeed: () => 600, increaseProjectileSpeed: () => {},
+        getMaxDistance: () => 450, increaseMaxDistance: () => {},
+      };
+
+      const coordinator = new LevelUpCoordinator(memories, pauseController, eventEmitter, { hp: 100, maxHp: 100, speed: 200 }, fakeWeapon);
       coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
 
       expect(emittedPayloads).toHaveLength(1);
       const payload = emittedPayloads[0];
       expect(payload).toHaveProperty('level');
-      expect(payload).toHaveProperty('upgrades');
+      expect(payload).toHaveProperty('memories');
       expect(payload.level).toBe(2);
-      expect(payload.upgrades).toHaveLength(1);
-      expect(payload.upgrades[0].id).toBe('test');
+      expect(payload.memories).toHaveLength(3);
+      expect(payload.memories[0].id).toBe('memory-war');
     });
   });
 
   describe('upgrade-selected uses UpgradeSelectedPayload', () => {
-    it('LevelUpCoordinator listens for {upgradeId} payload', () => {
-      const fakeUpgrade: Upgrade = { id: 'up1', name: 'U', description: 'D', apply: () => {} };
-      let appliedId = '';
+    it('LevelUpCoordinator listens for {upgradeId} payload and applies memory effect', () => {
+      const memories = createInitialMemories();
+      let weaponDamage = 10;
 
-      const xpProvider: LevelUpXPProvider = {
-        getRandomUpgrades: () => [fakeUpgrade],
-        applyUpgrade: (_p, u) => { appliedId = u.id; },
-        removeUpgradeFromPool: () => {},
-      };
       const pauseController: PauseController = {
         isPaused: false,
         pause: () => {},
@@ -118,14 +116,24 @@ describe('Preflight Contracts', () => {
         off: () => {},
       };
 
-      const coordinator = new LevelUpCoordinator(xpProvider, pauseController, eventEmitter, {});
+      const fakeWeapon2: WeaponSystemUpgradeAPI = {
+        getDamage: () => weaponDamage,
+        increaseDamage: (amt: number) => { weaponDamage += amt; },
+        getFireRateMs: () => 1000, reduceFireRate: () => {},
+        getRange: () => 384, increaseRange: () => {},
+        getProjectileSpeed: () => 600, increaseProjectileSpeed: () => {},
+        getMaxDistance: () => 450, increaseMaxDistance: () => {},
+      };
+
+      const coordinator = new LevelUpCoordinator(memories, pauseController, eventEmitter, { hp: 100, maxHp: 100, speed: 200 }, fakeWeapon2);
       coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
 
       // Simulate HUDScene emitting upgrade-selected with typed payload
-      const selectedPayload: UpgradeSelectedPayload = { upgradeId: 'up1' };
+      const selectedPayload: UpgradeSelectedPayload = { upgradeId: 'memory-war' };
       upgradeHandler!(selectedPayload);
 
-      expect(appliedId).toBe('up1');
+      expect(weaponDamage).toBe(18); // 10 + 8
+      expect(memories[0].level).toBe(1);
     });
   });
 

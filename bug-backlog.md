@@ -501,3 +501,97 @@ En `Enemy.onDefeat()`, el sprite se ocultaba inmediatamente:
 - No se añadieron nuevos assets — los spritesheets de muerte ya existían.
 - El enemigo permanece `active=true` y `visible=true` durante la animación de muerte, pero con `body.enable=false` y `hp=0`, por lo que es inerte para todos los sistemas de combate.
 - La animación de muerte usa frameRate=8 (ligeramente más lenta que walk/attack=10) para mayor dramatismo visual.
+
+
+---
+
+## BUG-008: Selecting an upgrade causes TypeError: Cannot read properties of undefined (reading 'damage')
+
+**Estado:** ✅ Corregido  
+**Fecha:** 2025-01-XX  
+**Severidad:** Crítica (gameplay-breaking crash)
+
+### Descripción
+
+Al seleccionar cualquier mejora durante el level-up, el juego lanzaba `TypeError: Cannot read properties of undefined (reading 'damage')`. El panel de mejoras se mostraba correctamente, pero al hacer clic en una opción el juego crasheaba y quedaba congelado (pausa sin resume).
+
+### Causa Raíz
+
+Los upgrades en `src/config/upgrades.ts` definían funciones `apply(state: PlayerState)` que accedían a `state.weapon.damage`, `state.weapon.fireRate`, etc. Pero:
+
+1. `XPSystem.applyUpgrade(player, upgrade)` pasaba la instancia raw de `Player`
+2. La clase `Player` NO tiene propiedad `weapon` — las stats del arma están en `WeaponSystem`
+3. Por lo tanto `state.weapon` era `undefined`, y `undefined.damage` lanzaba TypeError
+
+La interfaz `PlayerState` (en `types/interfaces.ts`) tenía un sub-objeto `weapon`, pero NO corresponde a la arquitectura real del juego donde el Player y el WeaponSystem son entidades separadas.
+
+### Corrección
+
+Se introdujo un `UpgradeContext` que provee acceso tanto al Player como al WeaponSystem, reemplazando el patrón anterior de pasar un objeto inexistente.
+
+1. **`src/types/interfaces.ts`** — Se añadió interfaz `UpgradeContext` con `player` (hp, maxHp, speed) y `weaponSystem` (getters/setters para damage, fireRate, range, projectileSpeed, maxDistance). Se cambió `Upgrade.apply` para recibir `UpgradeContext` en vez de `unknown`.
+
+2. **`src/systems/WeaponSystem.ts`** — Se añadieron 10 métodos públicos de acceso/mutación para el sistema de upgrades: `getDamage()`, `increaseDamage()`, `getFireRateMs()`, `reduceFireRate()`, `getRange()`, `increaseRange()`, `getProjectileSpeed()`, `increaseProjectileSpeed()`, `getMaxDistance()`, `increaseMaxDistance()`.
+
+3. **`src/entities/Player.ts`** — Se añadió método `increaseMaxHp(amount, heal)` para incrementar vida máxima y curar opcionalmente.
+
+4. **`src/config/upgrades.ts`** — Todas las funciones `apply` refactorizadas de `(state: PlayerState) => PlayerState` (funcional puro con spread) a `(ctx: UpgradeContext) => void` (mutación directa sobre el contexto real).
+
+5. **`src/systems/XPSystem.ts`** — `applyUpgrade` cambiado de `(player: unknown, upgrade)` a `(context: UpgradeContext, upgrade)`.
+
+6. **`src/systems/LevelUpCoordinator.ts`** — Se añadió interfaz `WeaponSystemUpgradeAPI`. Constructor ahora recibe `player` (tipado) y `weaponSystem`. `handleUpgradeSelected` construye el `UpgradeContext` y lo pasa a `applyUpgrade`. Se envolvió en try/finally para garantizar que resume SIEMPRE se ejecute incluso si el upgrade lanza error.
+
+7. **`src/scenes/GameScene.ts`** — Se pasa `this.weaponSystem` como quinto argumento al construir `LevelUpCoordinator`.
+
+### Protección contra congelamiento
+
+El `handleUpgradeSelected` ahora usa `try/finally` para garantizar que:
+- El estado se resetea a `idle`
+- `pauseController.resume()` se llama **siempre**, incluso si `upgrade.apply()` lanza excepción
+
+Esto cumple la restricción de que PauseSystem siempre resuma even on error.
+
+### Archivos Modificados
+
+- `src/types/interfaces.ts`
+- `src/systems/WeaponSystem.ts`
+- `src/entities/Player.ts`
+- `src/config/upgrades.ts`
+- `src/systems/XPSystem.ts`
+- `src/systems/LevelUpCoordinator.ts`
+- `src/scenes/GameScene.ts`
+- `src/systems/__tests__/level-up-flow.unit.test.ts`
+- `src/systems/__tests__/xp-system.unit.test.ts`
+- `src/systems/__tests__/pause-system.unit.test.ts`
+- `src/systems/__tests__/preflight-contracts.test.ts`
+
+### Tests de Regresión
+
+- `src/systems/__tests__/bug-008-upgrade-crash.test.ts`
+  - Todos los 12 upgrades aplican sin lanzar TypeError
+  - XPSystem.applyUpgrade no crashea para ningún upgrade
+  - speed_boost_1 incrementa velocidad en 20
+  - speed_boost_2 incrementa velocidad en 30
+  - max_hp_1 incrementa maxHp en 20 y cura 20
+  - max_hp_2 incrementa maxHp en 30 y cura 30
+  - max_hp_1 no sana por encima de maxHp
+  - weapon_damage_1 incrementa daño en 5
+  - weapon_damage_2 incrementa daño en 8
+  - fire_rate_1 reduce fire rate en 100ms (min 200)
+  - fire_rate_2 reduce fire rate en 150ms (min 200)
+  - fire rate no baja de 200ms mínimo
+  - weapon_range_1 incrementa rango en 100
+  - weapon_range_2 incrementa rango en 150
+  - projectile_speed_1 incrementa velocidad de proyectil en 100
+  - max_distance_1 incrementa distancia máxima en 200
+  - PauseSystem resume se llama incluso si upgrade.apply lanza error
+  - Los 12 upgrades están presentes en INITIAL_UPGRADE_POOL
+  - Corazón de Obsidiana, Garras de Ocelotl y Cadencia del Colibrí están presentes
+  - Todos los upgrades tienen IDs únicos
+
+### Notas
+
+- No se modificaron nombres, descripciones ni cantidades numéricas de las mejoras.
+- No se modificó el mapa, enemigos, armas, oleadas ni animaciones.
+- Los upgrades ahora mutan directamente el estado (en vez del patrón funcional spread anterior) porque Player y WeaponSystem son clases mutables de Phaser.
+- El `PlayerState` interface sigue existiendo por compatibilidad pero ya no se usa en upgrades.

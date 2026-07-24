@@ -1695,3 +1695,95 @@ src/
 | NFR-Perf | Object Pooling, Game Loop | — |
 | NFR-DeltaTime | Todos los sistemas | Prop 26 |
 | NFR-Maintain | Estructura modular de sistemas | — |
+
+
+---
+
+# Memory Upgrade System
+
+## Data Model
+
+```typescript
+export type MemoryId =
+  | 'memory-war'
+  | 'memory-family'
+  | 'memory-home';
+
+export type MemoryEffect =
+  | { type: 'weapon-damage'; amount: number }
+  | { type: 'max-hp'; amount: number; healAmount: number }
+  | { type: 'fire-rate'; reductionMs: number; minimumMs: number };
+
+export interface MemoryUpgrade {
+  id: MemoryId;
+  name: string;
+  narrative: string;
+  effectText: string;
+  level: number;
+  maxLevel: number;
+  effect: MemoryEffect;
+}
+```
+
+## Architecture
+
+- **UpgradeContext** continúa conteniendo `Player` y `WeaponSystem`.
+- Los efectos se aplican mediante una función exhaustiva: `applyMemoryUpgrade(memory, context)`.
+- No se utilizan closures que accedan a propiedades inexistentes.
+- El estado de los Recuerdos pertenece a una partida.
+- La configuración base debe clonarse al crear GameScene.
+- Las constantes globales no deben mutarse.
+- **LevelUpCoordinator** valida la selección.
+- **HUDScene** solo presenta opciones y emite `upgradeId`.
+- **XPSystem** administra disponibilidad y niveles.
+- **WeaponSystem** sigue siendo la fuente de `damage` y `fireRateMs`.
+- **Player** sigue siendo la fuente de `hp` y `maxHp`.
+
+## Flow
+
+```
+XPSystem.addXP
+  → LevelUpCoordinator consulta Recuerdos disponibles
+  → PauseSystem.pause
+  → LevelUpPayload
+  → LevelUpPanel
+  → UpgradeSelectedPayload
+  → validación
+  → applyMemoryUpgrade
+  → incremento de nivel
+  → actualización de eventos
+  → PauseSystem.resume
+```
+
+## Error Priority
+
+En caso de error:
+
+1. No incrementar nivel.
+2. No modificar disponibilidad.
+3. Limpiar selección.
+4. Reanudar mediante `finally`.
+5. Registrar el error.
+
+## Memory Configuration
+
+| Memory | id | effect.type | amount / params | maxLevel |
+|--------|-----|-------------|-----------------|----------|
+| Recuerdo de la Guerra | `memory-war` | `weapon-damage` | `amount: 8` | 5 |
+| Recuerdo de la Familia | `memory-family` | `max-hp` | `amount: 20, healAmount: 20` | 5 |
+| Recuerdo del Hogar | `memory-home` | `fire-rate` | `reductionMs: 100, minimumMs: 250` | 5 |
+
+## Traceability (Requirement 11)
+
+| Req | Component | Property |
+|-----|-----------|----------|
+| 11.1 | MemoryUpgrade config, LevelUpPanel | Prop 37 |
+| 11.2 | applyMemoryUpgrade (weapon-damage) | Prop 38 |
+| 11.3 | applyMemoryUpgrade (max-hp) | Prop 38 |
+| 11.4 | applyMemoryUpgrade (fire-rate) | Prop 38 |
+| 11.5 | XPSystem (memory level tracking) | Prop 37 |
+| 11.6 | LevelUpCoordinator (getAvailableMemories) | Prop 40 |
+| 11.7 | LevelUpCoordinator (skip if none available) | Prop 40 |
+| 11.8 | LevelUpCoordinator (validation, try/finally) | Prop 38 |
+| 11.9 | createInitialMemories factory, GameScene | Prop 39 |
+| 11.10 | HUDScene (LevelUpPanel card rendering) | — |

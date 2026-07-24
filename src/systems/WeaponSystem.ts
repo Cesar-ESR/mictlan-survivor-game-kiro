@@ -165,6 +165,25 @@ export class WeaponSystem {
     }
   }
 
+  // --- Public accessors for upgrade system (BUG-008) ---
+
+  getDamage(): number { return this.damage; }
+  increaseDamage(amount: number): void { this.damage += amount; }
+
+  getFireRateMs(): number { return this.fireRateMs; }
+  reduceFireRate(amountMs: number, minimumMs: number): void {
+    this.fireRateMs = Math.max(this.fireRateMs - amountMs, minimumMs);
+  }
+
+  getRange(): number { return this.range; }
+  increaseRange(amount: number): void { this.range += amount; }
+
+  getProjectileSpeed(): number { return this.projectileSpeed; }
+  increaseProjectileSpeed(amount: number): void { this.projectileSpeed += amount; }
+
+  getMaxDistance(): number { return this.maxDistance; }
+  increaseMaxDistance(amount: number): void { this.maxDistance += amount; }
+
   /**
    * Sets a line-of-sight checker function (BUG-005).
    * When set, targeting will skip enemies that are behind walls/obstacles/liquids.

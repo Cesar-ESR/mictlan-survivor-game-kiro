@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { calculateHealthFill, calculateXPFill, formatTimerMMSS } from '../systems/hud-utils';
-import type { Upgrade, WaveChangedPayload, LevelUpPayload } from '../types/interfaces';
+import type { WaveChangedPayload } from '../types/interfaces';
+import type { MemoryUpgrade } from '../config/memory-upgrades';
+import type { MemoryLevelUpPayload } from '../systems/LevelUpCoordinator';
 import { GAME_FONT_FAMILY } from '../config/font-config';
 
 /**
@@ -202,7 +204,7 @@ export class HUDScene extends Phaser.Scene {
     this.levelUpContainer.add(this.levelUpOverlay);
   }
 
-  private showLevelUpPanel(upgrades: Upgrade[]): void {
+  private showLevelUpPanel(memories: MemoryUpgrade[]): void {
     // Clear previous cards (keep overlay)
     this.levelUpContainer.removeAll(true);
 
@@ -227,7 +229,7 @@ export class HUDScene extends Phaser.Scene {
     title.setOrigin(0.5);
     this.levelUpContainer.add(title);
 
-    const subtitle = this.add.text(width / 2, height * 0.22, 'Elige una mejora:', {
+    const subtitle = this.add.text(width / 2, height * 0.22, 'Elige un Recuerdo:', {
       fontFamily: GAME_FONT_FAMILY,
       fontSize: '18px',
       color: '#ffffff',
@@ -235,33 +237,43 @@ export class HUDScene extends Phaser.Scene {
     subtitle.setOrigin(0.5);
     this.levelUpContainer.add(subtitle);
 
-    // Create upgrade cards
-    const cardWidth = 220;
-    const cardHeight = 140;
+    // Create memory cards
+    const cardWidth = 240;
+    const cardHeight = 200;
     const cardSpacing = 20;
-    const totalWidth = upgrades.length * cardWidth + (upgrades.length - 1) * cardSpacing;
+    const totalWidth = memories.length * cardWidth + (memories.length - 1) * cardSpacing;
     const startX = (width - totalWidth) / 2 + cardWidth / 2;
     const cardY = height * 0.5;
 
-    upgrades.forEach((upgrade, index) => {
+    memories.forEach((memory, index) => {
       const cardX = startX + index * (cardWidth + cardSpacing);
-      this.createUpgradeCard(cardX, cardY, cardWidth, cardHeight, upgrade);
+      this.createMemoryCard(cardX, cardY, cardWidth, cardHeight, memory);
     });
 
     this.levelUpContainer.setVisible(true);
   }
 
-  private createUpgradeCard(x: number, y: number, w: number, h: number, upgrade: Upgrade): void {
+  private createMemoryCard(x: number, y: number, w: number, h: number, memory: MemoryUpgrade): void {
     // Card background
     const cardBg = this.add.rectangle(x, y, w, h, 0x222244);
     cardBg.setStrokeStyle(2, 0x6666ff);
     cardBg.setInteractive({ useHandCursor: true });
     this.levelUpContainer.add(cardBg);
 
-    // Upgrade name
-    const nameText = this.add.text(x, y - 30, upgrade.name, {
+    // Level indicator
+    const levelText = this.add.text(x, y - 70, `Nivel ${memory.level} → ${memory.level + 1}`, {
       fontFamily: GAME_FONT_FAMILY,
-      fontSize: '16px',
+      fontSize: '12px',
+      color: '#aaaaff',
+      align: 'center',
+    });
+    levelText.setOrigin(0.5);
+    this.levelUpContainer.add(levelText);
+
+    // Memory name
+    const nameText = this.add.text(x, y - 48, memory.name, {
+      fontFamily: GAME_FONT_FAMILY,
+      fontSize: '15px',
       color: '#ffffff',
       fontStyle: 'bold',
       wordWrap: { width: w - 20 },
@@ -270,16 +282,27 @@ export class HUDScene extends Phaser.Scene {
     nameText.setOrigin(0.5);
     this.levelUpContainer.add(nameText);
 
-    // Upgrade description
-    const descText = this.add.text(x, y + 15, upgrade.description, {
+    // Narrative text
+    const narrativeText = this.add.text(x, y - 10, memory.narrative, {
       fontFamily: GAME_FONT_FAMILY,
-      fontSize: '12px',
+      fontSize: '11px',
       color: '#cccccc',
       wordWrap: { width: w - 20 },
       align: 'center',
     });
-    descText.setOrigin(0.5);
-    this.levelUpContainer.add(descText);
+    narrativeText.setOrigin(0.5);
+    this.levelUpContainer.add(narrativeText);
+
+    // Effect text
+    const effectText = this.add.text(x, y + 35, memory.effectText, {
+      fontFamily: GAME_FONT_FAMILY,
+      fontSize: '12px',
+      color: '#88ff88',
+      wordWrap: { width: w - 20 },
+      align: 'center',
+    });
+    effectText.setOrigin(0.5);
+    this.levelUpContainer.add(effectText);
 
     // Hover effect
     cardBg.on('pointerover', () => {
@@ -295,7 +318,7 @@ export class HUDScene extends Phaser.Scene {
     // Click → emit upgrade-selected on GameScene events, then hide panel
     cardBg.on('pointerdown', () => {
       const gameScene = this.scene.get('GameScene');
-      gameScene.events.emit('upgrade-selected', { upgradeId: upgrade.id });
+      gameScene.events.emit('upgrade-selected', { upgradeId: memory.id });
       this.hideLevelUpPanel();
     });
   }
@@ -310,9 +333,9 @@ export class HUDScene extends Phaser.Scene {
   private _xpHandler = (levelXp: number, threshold: number, level: number, isMaxLevel?: boolean) =>
     this.updateXPBar(levelXp, threshold, level, isMaxLevel ?? false);
   private _waveHandler = (payload: WaveChangedPayload) => this.updateWaveDisplay(payload.wave);
-  private _levelUpHandler = (payload: LevelUpPayload) => {
-    if (payload && payload.upgrades.length > 0) {
-      this.showLevelUpPanel(payload.upgrades as Upgrade[]);
+  private _levelUpHandler = (payload: MemoryLevelUpPayload) => {
+    if (payload && payload.memories.length > 0) {
+      this.showLevelUpPanel(payload.memories as MemoryUpgrade[]);
     }
   };
   private _timeHandler = (elapsedSeconds: number) => { this.elapsedSeconds = elapsedSeconds; };

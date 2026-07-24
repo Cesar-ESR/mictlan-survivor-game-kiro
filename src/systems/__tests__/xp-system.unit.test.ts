@@ -73,8 +73,8 @@ describe('XPSystem Unit Tests', () => {
     });
   });
 
-  describe('Pool vacío → omite panel', () => {
-    it('player levels up but pool is empty, showPanel is false', () => {
+  describe('Pool vacío → panel delegado al coordinador', () => {
+    it('player levels up but pool is empty, showPanel is true (coordinator handles availability)', () => {
       // Level 1, threshold = 15. Add 20 XP → level up
       const player = createMockPlayer(1, 0, 0);
       const xpSystem = new XPSystem([]);
@@ -82,7 +82,7 @@ describe('XPSystem Unit Tests', () => {
       const result = xpSystem.addXP(player, 20);
 
       expect(result.leveledUp).toBe(true);
-      expect(result.showPanel).toBe(false);
+      expect(result.showPanel).toBe(true); // Coordinator handles memory availability check
       expect(result.newLevel).toBe(2);
     });
   });
@@ -144,17 +144,32 @@ describe('XPSystem Unit Tests', () => {
   });
 
   describe('applyUpgrade and removeUpgradeFromPool', () => {
-    it('applyUpgrade calls upgrade.apply with the player', () => {
+    it('applyUpgrade calls upgrade.apply with the context', () => {
       let called = false;
       const upgrade: Upgrade = {
         id: 'test',
         name: 'Test',
         description: 'Test upgrade',
-        apply: (_p) => { called = true; },
+        apply: (_ctx) => { called = true; },
       };
       const xpSystem = new XPSystem([upgrade]);
 
-      xpSystem.applyUpgrade({}, upgrade);
+      const fakeContext = {
+        player: { hp: 100, maxHp: 100, speed: 200 },
+        weaponSystem: {
+          getDamage: () => 10,
+          increaseDamage: () => {},
+          getFireRateMs: () => 1000,
+          reduceFireRate: () => {},
+          getRange: () => 384,
+          increaseRange: () => {},
+          getProjectileSpeed: () => 600,
+          increaseProjectileSpeed: () => {},
+          getMaxDistance: () => 450,
+          increaseMaxDistance: () => {},
+        },
+      };
+      xpSystem.applyUpgrade(fakeContext, upgrade);
       expect(called).toBe(true);
     });
 

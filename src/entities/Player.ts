@@ -115,6 +115,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   /**
+   * Increases max HP and optionally heals by the same amount (BUG-008).
+   */
+  increaseMaxHp(amount: number, heal: boolean = true): void {
+    this.maxHp += amount;
+    if (heal) {
+      this.hp = Math.min(this.hp + amount, this.maxHp);
+    }
+  }
+
+  /**
    * Adds XP to the player implementing dual counter logic.
    *
    * - Increments both levelXp and totalXp.

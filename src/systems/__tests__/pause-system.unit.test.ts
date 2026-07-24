@@ -2,10 +2,10 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { PauseSystem, type Pausable, type PhysicsPauseController } from '../PauseSystem';
 import {
   LevelUpCoordinator,
-  type LevelUpXPProvider,
   type LevelUpEventEmitter,
+  type WeaponSystemUpgradeAPI,
 } from '../LevelUpCoordinator';
-import type { Upgrade } from '../../types/interfaces';
+import { createInitialMemories } from '../../config/memory-upgrades';
 
 // --- Fake implementations ---
 
@@ -45,17 +45,18 @@ function simulateUpdate(delta: number, pauseSystem: PauseSystem, timer: { value:
 
 // --- LevelUpCoordinator integration helpers ---
 
-function createFakeUpgrade(id: string): Upgrade {
-  return { id, name: `Upgrade ${id}`, description: `Desc ${id}`, apply: () => {} };
-}
-
-function createFakeXPProvider(upgrades: Upgrade[]): LevelUpXPProvider {
+function createFakeWeaponSystem(): WeaponSystemUpgradeAPI {
   return {
-    getRandomUpgrades(count?: number): Upgrade[] {
-      return upgrades.slice(0, count ?? 3);
-    },
-    applyUpgrade(): void {},
-    removeUpgradeFromPool(): void {},
+    getDamage: () => 10,
+    increaseDamage: () => {},
+    getFireRateMs: () => 1000,
+    reduceFireRate: () => {},
+    getRange: () => 384,
+    increaseRange: () => {},
+    getProjectileSpeed: () => 600,
+    increaseProjectileSpeed: () => {},
+    getMaxDistance: () => 450,
+    increaseMaxDistance: () => {},
   };
 }
 
@@ -372,12 +373,11 @@ describe('PauseSystem', () => {
 
   // 31. LevelUpCoordinator accepts PauseSystem as PauseController
   it('LevelUpCoordinator accepts PauseSystem as PauseController', () => {
-    const upgrades = [createFakeUpgrade('u1'), createFakeUpgrade('u2'), createFakeUpgrade('u3')];
-    const xpProvider = createFakeXPProvider(upgrades);
+    const memories = createInitialMemories();
     const emitter = createFakeEventEmitter();
-    const player = {};
+    const player = { hp: 100, maxHp: 100, speed: 200 };
 
-    const coordinator = new LevelUpCoordinator(xpProvider, pauseSystem, emitter, player);
+    const coordinator = new LevelUpCoordinator(memories, pauseSystem, emitter, player, createFakeWeaponSystem());
     coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
 
     expect(pauseSystem.isPaused).toBe(true);
@@ -389,31 +389,31 @@ describe('PauseSystem', () => {
     const physics = createFakePhysics();
     pauseSystem.setPhysicsController(physics);
 
-    const upgrades = [createFakeUpgrade('u1'), createFakeUpgrade('u2'), createFakeUpgrade('u3')];
-    const xpProvider = createFakeXPProvider(upgrades);
+    const memories = createInitialMemories();
     const emitter = createFakeEventEmitter();
-    const player = {};
+    const player = { hp: 100, maxHp: 100, speed: 200 };
 
-    const coordinator = new LevelUpCoordinator(xpProvider, pauseSystem, emitter, player);
+    const coordinator = new LevelUpCoordinator(memories, pauseSystem, emitter, player, createFakeWeaponSystem());
     coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
 
     expect(physics.pauseCount).toBe(1);
     expect(pauseSystem.isPaused).toBe(true);
 
-    emitter.trigger('upgrade-selected', { upgradeId: 'u1' });
+    emitter.trigger('upgrade-selected', { upgradeId: 'memory-war' });
 
     expect(physics.resumeCount).toBe(1);
     expect(pauseSystem.isPaused).toBe(false);
     coordinator.destroy();
   });
 
-  // 33. Empty pool doesn't pause
-  it('empty upgrade pool does not pause', () => {
-    const xpProvider = createFakeXPProvider([]);
+  // 33. All memories maxed doesn't pause
+  it('all memories maxed does not pause', () => {
+    const memories = createInitialMemories();
+    memories.forEach((m) => { m.level = m.maxLevel; });
     const emitter = createFakeEventEmitter();
-    const player = {};
+    const player = { hp: 100, maxHp: 100, speed: 200 };
 
-    const coordinator = new LevelUpCoordinator(xpProvider, pauseSystem, emitter, player);
+    const coordinator = new LevelUpCoordinator(memories, pauseSystem, emitter, player, createFakeWeaponSystem());
     coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
 
     expect(pauseSystem.isPaused).toBe(false);
@@ -422,12 +422,11 @@ describe('PauseSystem', () => {
 
   // 34. Level 20 doesn't pause (showPanel=false)
   it('level 20 does not pause when showPanel is false', () => {
-    const upgrades = [createFakeUpgrade('u1'), createFakeUpgrade('u2'), createFakeUpgrade('u3')];
-    const xpProvider = createFakeXPProvider(upgrades);
+    const memories = createInitialMemories();
     const emitter = createFakeEventEmitter();
-    const player = {};
+    const player = { hp: 100, maxHp: 100, speed: 200 };
 
-    const coordinator = new LevelUpCoordinator(xpProvider, pauseSystem, emitter, player);
+    const coordinator = new LevelUpCoordinator(memories, pauseSystem, emitter, player, createFakeWeaponSystem());
     coordinator.processLevelUp({ leveledUp: true, showPanel: false, newLevel: 20 });
 
     expect(pauseSystem.isPaused).toBe(false);

@@ -751,3 +751,61 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
   ]
 }
 ```
+
+
+- [ ] 26. Convertir mejoras en Recuerdos de la vida pasada
+  - [x] 26.1 Definir el modelo de Recuerdos
+    - Crear `MemoryId`, `MemoryEffect` y `MemoryUpgrade`.
+    - Definir configuración centralizada para Guerra, Familia y Hogar.
+    - Clonar el estado para cada partida.
+    - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.9_
+
+  - [x] 26.2 Implementar aplicación de efectos
+    - Guerra aumenta damage en 8.
+    - Familia aumenta maxHp y recupera hp.
+    - Hogar reduce fireRateMs respetando el mínimo.
+    - Usar UpgradeContext y aplicación exhaustiva.
+    - _Requirements: 11.2, 11.3, 11.4, 11.8_
+
+  - [x] 26.3 Implementar progresión por niveles
+    - Nivel inicial 0.
+    - Nivel máximo 5.
+    - Incrementar después de una aplicación exitosa.
+    - Excluir Recuerdos maximizados.
+    - No abrir panel cuando todos estén al máximo.
+    - _Requirements: 11.5, 11.6, 11.7_
+
+  - [x] 26.4 Actualizar LevelUpPanel
+    - Mostrar todos los Recuerdos disponibles.
+    - Mantener orden Guerra, Familia y Hogar.
+    - Mostrar narrativa, efecto y nivel.
+    - Eliminar nombres antiguos de la UI.
+    - _Requirements: 11.1, 11.6, 11.10_
+
+  - [x] 26.5 Implementar reinicio por partida
+    - Restaurar niveles y estadísticas iniciales.
+    - Evitar estado mutable compartido.
+    - Retry conserva GameModeConfig, no mejoras.
+    - _Requirements: 11.9_
+
+  - [x]* 26.6 Escribir property tests de Recuerdos
+    - Property 37: Memory Level Bounds.
+    - Property 38: Memory Effect Isolation.
+    - Property 39: Memory State Independence.
+    - Property 40: Available Memories Match Non-Maximized Branches.
+    - _Requirements: 11.2–11.9_
+
+  - [x]* 26.7 Escribir tests unitarios y de regresión
+    - Validar los tres efectos.
+    - Validar doble clic.
+    - Validar errores y resume.
+    - Validar niveles máximos.
+    - Validar reinicio.
+    - Validar textos y orden.
+    - _Requirements: 11.1–11.10_
+
+  - [ ] 26.8 Checkpoint de Recuerdos
+    - Ejecutar TypeScript.
+    - Ejecutar suite completa.
+    - Ejecutar build.
+    - Validar manualmente los tres Recuerdos.

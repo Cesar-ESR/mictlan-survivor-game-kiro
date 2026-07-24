@@ -230,3 +230,62 @@ dentro del límite máximo de carga de 3 segundos definido para la escena.
 
 1. Cada sistema SHALL tener una única responsabilidad (Single Responsibility Principle).
 2. THE game logic SHALL ser independiente del renderizado siempre que sea posible, separando lógica de presentación.
+
+
+---
+
+### Requirement 11: Recuerdos de la vida pasada
+
+**User Story:** Como jugador, quiero recuperar recuerdos de la vida pasada del guerrero al subir de nivel, para fortalecer distintas áreas de su capacidad durante una partida.
+
+#### Acceptance Criteria
+
+##### 11.1 Recuerdos disponibles
+
+El sistema debe contener exactamente tres Recuerdos:
+
+1. Recuerdo de la Guerra.
+2. Recuerdo de la Familia.
+3. Recuerdo del Hogar.
+
+No deben mostrarse al jugador las mejoras anteriores:
+
+- Corazón de Obsidiana.
+- Garras de Ocelotl.
+- Cadencia del Colibrí.
+
+##### 11.2 Recuerdo de la Guerra
+
+WHEN el jugador seleccione Recuerdo de la Guerra, THE WeaponSystem SHALL aumentar el daño del arma en 8; WeaponSystem SHALL conservar la fuente de verdad del daño; la mejora SHALL aplicarse exactamente una vez por selección.
+
+##### 11.3 Recuerdo de la Familia
+
+WHEN el jugador seleccione Recuerdo de la Familia, THE Player SHALL aumentar maxHp en 20; hp SHALL recuperarse en 20; hp SHALL NOT superar el nuevo maxHp; THE Game_Loop SHALL emitir hp-changed con los valores actualizados.
+
+##### 11.4 Recuerdo del Hogar
+
+WHEN el jugador seleccione Recuerdo del Hogar, THE WeaponSystem SHALL reducir el intervalo de disparo en 100 ms; el intervalo SHALL NEVER ser menor que 250 ms; WeaponSystem SHALL utilizar inmediatamente el valor actualizado.
+
+##### 11.5 Progresión
+
+EACH Recuerdo SHALL comenzar en nivel 0; SHALL tener un máximo de 5 niveles; SHALL incrementar un nivel después de aplicar correctamente su efecto; puede seleccionarse nuevamente mientras su nivel sea menor que 5; SHALL NOT superar el nivel máximo.
+
+##### 11.6 Opciones disponibles
+
+WHEN ocurra un level-up, THE LevelUpCoordinator SHALL mostrar todos los Recuerdos que aún no estén al máximo; SHALL mostrar en el orden: 1. Guerra, 2. Familia, 3. Hogar; SHALL NOT utilizar selección aleatoria para estas tres ramas; un Recuerdo al máximo SHALL dejar de aparecer.
+
+##### 11.7 Sin opciones disponibles
+
+WHEN los tres Recuerdos estén al máximo, THE LevelUpCoordinator SHALL NOT pausar el juego; LevelUpPanel SHALL NOT abrirse; SHALL NOT mostrarse un panel vacío; la partida SHALL continuar normalmente.
+
+##### 11.8 Selección segura
+
+THE LevelUpCoordinator SHALL garantizar que: solo pueda elegirse una opción mostrada; un doble clic no aplique dos niveles; un id inválido no aplique efectos; un error no incremente el nivel; PauseSystem siempre se reanude después de procesar la selección.
+
+##### 11.9 Reinicio por partida
+
+WHEN se inicie una partida nueva o se reintente, THE XPSystem SHALL restaurar los tres Recuerdos a nivel 0; damage SHALL volver a su valor inicial; maxHp y hp SHALL volver a sus valores iniciales; fireRateMs SHALL volver a su valor inicial; dos partidas SHALL NOT compartir estado mutable.
+
+##### 11.10 Presentación
+
+EACH tarjeta de Recuerdo SHALL mostrar: nombre, texto narrativo, efecto, nivel actual, siguiente nivel. Los textos SHALL NOT desbordar las tarjetas.
