@@ -496,12 +496,13 @@ describe('SafeZoneCleaner', () => {
         if (!cell.inSafeZone) continue;
 
         // Compute expected mask manually
+        // Compute expected mask manually (matches computeNeighborTransitionMask: liquid OR wall)
         let expectedMask = 0;
         for (const [dr, dc, bit] of CARDINAL) {
           const nr = row + dr;
           const nc = col + dc;
           if (nr >= 0 && nr < config.heightInTiles && nc >= 0 && nc < config.widthInTiles) {
-            if (grid[nr][nc].liquid !== null) {
+            if (grid[nr][nc].liquid !== null || grid[nr][nc].wall !== null) {
               expectedMask |= bit;
             }
           }

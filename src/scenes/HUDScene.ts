@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { calculateHealthFill, calculateXPFill, formatTimerMMSS } from '../systems/hud-utils';
-import type { Upgrade } from '../types/interfaces';
+import type { Upgrade, WaveChangedPayload, LevelUpPayload } from '../types/interfaces';
 
 /**
  * HUDScene: Escena overlay lanzada en paralelo sobre GameScene.
@@ -285,7 +285,7 @@ export class HUDScene extends Phaser.Scene {
     // Click → emit upgrade-selected on GameScene events, then hide panel
     cardBg.on('pointerdown', () => {
       const gameScene = this.scene.get('GameScene');
-      gameScene.events.emit('upgrade-selected', upgrade);
+      gameScene.events.emit('upgrade-selected', { upgradeId: upgrade.id });
       this.hideLevelUpPanel();
     });
   }
@@ -296,31 +296,49 @@ export class HUDScene extends Phaser.Scene {
 
   // --- Event Listeners ---
 
+  private _hpHandler = (hp: number, maxHp: number) => this.updateHealthBar(hp, maxHp);
+  private _xpHandler = (levelXp: number, threshold: number, level: number, isMaxLevel?: boolean) =>
+    this.updateXPBar(levelXp, threshold, level, isMaxLevel ?? false);
+  private _waveHandler = (payload: WaveChangedPayload) => this.updateWaveDisplay(payload.wave);
+  private _levelUpHandler = (payload: LevelUpPayload) => {
+    if (payload && payload.upgrades.length > 0) {
+      this.showLevelUpPanel(payload.upgrades as Upgrade[]);
+    }
+  };
+  private _timeHandler = (elapsedSeconds: number) => { this.elapsedSeconds = elapsedSeconds; };
+  private _waveAnnouncementTimer: Phaser.Time.TimerEvent | null = null;
+
   private registerEventListeners(): void {
     const gameScene = this.scene.get('GameScene');
 
-    gameScene.events.on('hp-changed', (hp: number, maxHp: number) => {
-      this.updateHealthBar(hp, maxHp);
-    });
+    gameScene.events.on('hp-changed', this._hpHandler);
+    gameScene.events.on('xp-changed', this._xpHandler);
+    gameScene.events.on('wave-changed', this._waveHandler);
+    gameScene.events.on('level-up', this._levelUpHandler);
+    gameScene.events.on('time-updated', this._timeHandler);
+  }
 
-    gameScene.events.on('xp-changed', (levelXp: number, threshold: number, level: number, isMaxLevel?: boolean) => {
-      this.updateXPBar(levelXp, threshold, level, isMaxLevel ?? false);
-    });
+  /** Cleanup: remove own listeners and cancel timers. Called on scene shutdown. */
+  shutdown(): void {
+    const gameScene = this.scene.get('GameScene');
+    if (gameScene) {
+      gameScene.events.off('hp-changed', this._hpHandler);
+      gameScene.events.off('xp-changed', this._xpHandler);
+      gameScene.events.off('wave-changed', this._waveHandler);
+      gameScene.events.off('level-up', this._levelUpHandler);
+      gameScene.events.off('time-updated', this._timeHandler);
+    }
 
-    gameScene.events.on('wave-changed', (wave: number) => {
-      this.updateWaveDisplay(wave);
-    });
+    // Cancel wave announcement timer
+    if (this._waveAnnouncementTimer) {
+      this._waveAnnouncementTimer.destroy();
+      this._waveAnnouncementTimer = null;
+    }
 
-    gameScene.events.on('level-up', (upgrades: Upgrade[]) => {
-      if (upgrades && upgrades.length > 0) {
-        this.showLevelUpPanel(upgrades);
-      }
-    });
-
-    // Note: Timer is handled by the scene's own update() method accumulating delta
-    // The 'time-updated' event is kept for backwards compatibility if emitted externally
-    gameScene.events.on('time-updated', (elapsedSeconds: number) => {
-      this.elapsedSeconds = elapsedSeconds;
-    });
+    // Clean up level-up panel
+    if (this.levelUpContainer) {
+      this.levelUpContainer.removeAll(true);
+      this.levelUpContainer.setVisible(false);
+    }
   }
 }

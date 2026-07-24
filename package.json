@@ -16,6 +16,10 @@
     "vitest": "^4.1.10"
   },
   "dependencies": {
-    "phaser": "^4.2.1"
+    "@rolldown/binding-win32-x64-msvc": "^1.2.0",
+    "@rolldown/pluginutils": "^1.0.1",
+    "fdir": "^6.5.0",
+    "phaser": "^4.2.1",
+    "picomatch": "^4.0.5"
   }
 }

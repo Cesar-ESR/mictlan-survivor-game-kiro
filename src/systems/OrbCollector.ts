@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { XPOrb } from '../entities/XPOrb';
 import { GAME_CONSTANTS } from '../config/constants';
-import { calculateOrbAttraction, shouldCollectOrb, isOrbExpired, getOrbsToRemoveForCap } from './orb-utils';
+import { calculateOrbAttraction, shouldCollectOrb } from './orb-utils';
 
 /**
  * Manages XP orb spawning, attraction, collection, expiration, and pool cap.
@@ -50,9 +50,17 @@ export class OrbCollector {
   }
 
   /**
-   * Main update loop: removes expired orbs, attracts and collects orbs near the player.
+   * Main update loop: ages orbs, removes expired, attracts and collects orbs near the player.
    */
   update(delta: number, playerPos: { x: number; y: number }): void {
+    // Age all active orbs by delta (ms)
+    const allActive = this.orbPool.getChildren().filter(
+      (child) => child.active
+    ) as XPOrb[];
+    for (const orb of allActive) {
+      orb.age += delta;
+    }
+
     this.removeExpiredOrbs();
 
     const activeOrbs = this.orbPool.getChildren().filter(
@@ -94,15 +102,16 @@ export class OrbCollector {
   }
 
   /**
-   * Collects an orb: emits 'xp-changed' event and optionally calls player.addXP.
+   * Collects an orb: emits 'orb-collected' event with value.
+   * GameScene is responsible for routing XP through XPSystem and LevelUpCoordinator.
    */
   private collectOrb(orb: XPOrb): void {
     const value = orb.value;
 
-    // Emit event for any listeners (XPSystem will use this later)
-    this.scene.events.emit('xp-changed', { value });
+    // Emit event for GameScene to handle XP flow via XPSystem
+    this.scene.events.emit('orb-collected', { value });
 
-    // Directly add XP to player if reference provided
+    // Directly add XP to player if reference provided (standalone mode)
     if (this.player) {
       this.player.addXP(value);
     }
@@ -111,35 +120,38 @@ export class OrbCollector {
   }
 
   /**
-   * Removes orbs that have exceeded their lifetime (30s).
+   * Removes orbs that have exceeded their lifetime (30s) based on accumulated delta.
    */
   private removeExpiredOrbs(): void {
-    const now = Date.now();
     const activeOrbs = this.orbPool.getChildren().filter(
       (child) => child.active
     ) as XPOrb[];
 
     for (const orb of activeOrbs) {
-      if (isOrbExpired(orb.creationTime, now, this.orbLifetime)) {
+      if (orb.age >= this.orbLifetime) {
         this.deactivateOrb(orb);
       }
     }
   }
 
   /**
-   * Enforces the maximum orb cap by removing the oldest orbs first.
+   * Enforces the maximum orb cap by removing the oldest orbs first (by creationSequence).
    */
   private enforceOrbCap(): void {
     const children = this.orbPool.getChildren() as XPOrb[];
-    const orbStates = children.map((orb) => ({
-      creationTime: orb.creationTime,
-      active: orb.active,
-    }));
+    const activeChildren = children
+      .map((orb, index) => ({ orb, index }))
+      .filter(({ orb }) => orb.active);
 
-    const indicesToRemove = getOrbsToRemoveForCap(orbStates, this.maxOrbs);
+    if (activeChildren.length <= this.maxOrbs) return;
 
-    for (const index of indicesToRemove) {
-      this.deactivateOrb(children[index]);
+    // Sort by creationSequence ascending (oldest first)
+    activeChildren.sort((a, b) => a.orb.creationSequence - b.orb.creationSequence);
+
+    // Remove oldest until within cap
+    const toRemove = activeChildren.length - this.maxOrbs;
+    for (let i = 0; i < toRemove; i++) {
+      this.deactivateOrb(activeChildren[i].orb);
     }
   }
 
@@ -152,5 +164,13 @@ export class OrbCollector {
     if (orb.body) {
       orb.body.enable = false;
     }
+  }
+
+  /**
+   * Cleanup: removes event listener and destroys the orb pool.
+   */
+  destroy(): void {
+    this.scene.events.off('enemy-defeated');
+    this.orbPool.destroy(true);
   }
 }

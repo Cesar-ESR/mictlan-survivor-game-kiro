@@ -125,6 +125,12 @@ export function generateLiquidRegions(
 
     // Select a liquid family using weighted pick
     const family = pickLiquidFamily(rng);
+
+    // Skip template-region families in seed-and-grow generation
+    if (family.centerFrame === null) {
+      continue;
+    }
+
     const regionLiquidConfig: LiquidConfig = {
       type: family.family,
       behavior,

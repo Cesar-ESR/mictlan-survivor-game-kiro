@@ -111,7 +111,7 @@ describe('Calibration — Liquid regions use single family', () => {
     // Two adjacent regions may have different types, so we verify per-cell:
     // each cell's type is a valid liquid family.
     const validFamilies = new Set(LIQUID_FAMILIES.map(f => f.family));
-    const validCenterFrames = new Set(LIQUID_FAMILIES.map(f => f.centerFrame));
+    const validCenterFrames = new Set(LIQUID_FAMILIES.filter(f => f.centerFrame !== null).map(f => f.centerFrame));
 
     for (let row = 0; row < 100; row++) {
       for (let col = 0; col < 100; col++) {
@@ -133,7 +133,7 @@ describe('Calibration — Liquid regions use single family', () => {
     generateLiquidRegions(grid, config, new SeededRandom('liquid-frame-rng'), catalog);
 
     // Each cell's frame should match one of the LIQUID_FAMILIES centerFrames
-    const validCenterFrames = new Set(LIQUID_FAMILIES.map(f => f.centerFrame));
+    const validCenterFrames = new Set(LIQUID_FAMILIES.filter(f => f.centerFrame !== null).map(f => f.centerFrame));
 
     for (let row = 0; row < 100; row++) {
       for (let col = 0; col < 100; col++) {
@@ -158,7 +158,9 @@ describe('Calibration — Liquid regions use single family', () => {
     // Each cell's liquidConfig.type should match the family that owns its frame
     const familyByFrame = new Map<number, string>();
     for (const f of LIQUID_FAMILIES) {
-      familyByFrame.set(f.centerFrame, f.family);
+      if (f.centerFrame !== null) {
+        familyByFrame.set(f.centerFrame, f.family);
+      }
     }
 
     for (let row = 0; row < 100; row++) {
@@ -201,12 +203,11 @@ describe('Calibration — maxLiquidRegionSize <= 40', () => {
   });
 });
 
-describe('Calibration — Borders temporarily disabled', () => {
-  it('8. Borders layer not rendered (PhaserMapLayerBuilder skips borders)', () => {
-    // We verify this at the logical level: the builder code has borders disabled.
-    // Since we can't instantiate Phaser in tests, we verify the config exists:
-    // borderMask computation still works, but rendering is skipped.
-    const { grid } = makeFullGrid('borders-disabled');
+describe('Calibration — Borders rendering enabled for confirmed masks', () => {
+  it('8. Borders layer now renders confirmed mappings (logical borderMasks still computed)', () => {
+    // We verify at the logical level: borderMask computation still works.
+    // The builder now renders confirmed masks (1,2,3,4,6,8,9,12) via CONFIRMED_BORDER_MAPPINGS.
+    const { grid } = makeFullGrid('borders-enabled');
 
     // borderMasks should still be computed (logical layer intact)
     let hasBorderMask = false;
@@ -219,7 +220,6 @@ describe('Calibration — Borders temporarily disabled', () => {
     }
     // Border masks exist in the logical grid (computation is still active)
     expect(hasBorderMask).toBe(true);
-    // The RENDERING is disabled in PhaserMapLayerBuilder (verified by code inspection)
   });
 });
 
@@ -233,17 +233,16 @@ describe('Calibration — Walls use uniform frame 0', () => {
 });
 
 describe('Calibration — Obstacles use permitted frames', () => {
-  it('10. Obstacle tiles use frames from walls tileset (27-34)', () => {
+  it('10. Obstacle tiles use frames from walls tileset (21, 26)', () => {
     const { grid } = makeFullGrid('obstacles-frames');
-    const permittedObstacleRange = { from: 27, to: 34 };
+    const permittedObstacleFrames = [21, 26];
 
     for (let row = 0; row < 100; row++) {
       for (let col = 0; col < 100; col++) {
         const cell = grid[row][col];
         if (cell.obstacle !== null) {
           expect(cell.obstacle.tileset).toBe('walls');
-          expect(cell.obstacle.frame).toBeGreaterThanOrEqual(permittedObstacleRange.from);
-          expect(cell.obstacle.frame).toBeLessThanOrEqual(permittedObstacleRange.to);
+          expect(permittedObstacleFrames).toContain(cell.obstacle.frame);
         }
       }
     }

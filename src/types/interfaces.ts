@@ -120,3 +120,22 @@ export interface MapConfig {
   width: number;
   height: number;
 }
+
+// --- Event Payloads (shared contracts between producers and consumers) ---
+
+/** Payload emitted by WaveManager on wave transitions. Consumed by GameScene, HUDScene. */
+export interface WaveChangedPayload {
+  wave: number;
+  config: WaveConfig;
+}
+
+/** Payload emitted by LevelUpCoordinator when level-up panel should appear. Consumed by HUDScene. */
+export interface LevelUpPayload {
+  level: number;
+  upgrades: readonly Upgrade[];
+}
+
+/** Payload emitted by HUDScene when user selects an upgrade. Consumed by LevelUpCoordinator. */
+export interface UpgradeSelectedPayload {
+  upgradeId: string;
+}
