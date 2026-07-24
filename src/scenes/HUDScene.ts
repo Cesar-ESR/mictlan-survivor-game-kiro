@@ -9,15 +9,19 @@ import type { Upgrade, WaveChangedPayload, LevelUpPayload } from '../types/inter
  * Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 5.3, 5.5, 5.8
  */
 export class HUDScene extends Phaser.Scene {
-  // Health bar elements
-  private healthBarBg!: Phaser.GameObjects.Rectangle;
-  private healthBarFill!: Phaser.GameObjects.Rectangle;
+  // Health bar elements (sprite-based)
+  private healthFrame!: Phaser.GameObjects.Image;
+  private healthFill!: Phaser.GameObjects.Image;
+  private healthDamage!: Phaser.GameObjects.Image;
+  private healthGlow!: Phaser.GameObjects.Image;
   private hpText!: Phaser.GameObjects.Text;
+  private healthFillFullWidth = 0;
 
-  // XP bar elements
-  private xpBarBg!: Phaser.GameObjects.Rectangle;
-  private xpBarFill!: Phaser.GameObjects.Rectangle;
+  // XP bar elements (sprite-based)
+  private xpFill!: Phaser.GameObjects.Image;
+  private xpFrame!: Phaser.GameObjects.Image;
   private xpText!: Phaser.GameObjects.Text;
+  private xpFillFullWidth = 0;
 
   // Wave display
   private waveText!: Phaser.GameObjects.Text;
@@ -30,10 +34,6 @@ export class HUDScene extends Phaser.Scene {
   // Level-up panel
   private levelUpContainer!: Phaser.GameObjects.Container;
   private levelUpOverlay!: Phaser.GameObjects.Rectangle;
-
-  // Bar dimensions
-  private static readonly BAR_WIDTH = 200;
-  private static readonly BAR_HEIGHT = 18;
 
   constructor() {
     super({ key: 'HUDScene' });
@@ -57,27 +57,26 @@ export class HUDScene extends Phaser.Scene {
   // --- Health Bar (Subtask 19.1) ---
 
   private createHealthBar(): void {
-    const x = 16;
+    const x = 10;
     const y = 16;
-    const { BAR_WIDTH, BAR_HEIGHT } = HUDScene;
 
-    // Background (dark)
-    this.healthBarBg = this.add.rectangle(
-      x + BAR_WIDTH / 2, y + BAR_HEIGHT / 2,
-      BAR_WIDTH, BAR_HEIGHT,
-      0x333333,
-    );
-    this.healthBarBg.setStrokeStyle(1, 0x666666);
+    // Fill layer (below frame) — uses setCrop for reduction
+    this.healthFill = this.add.image(x, y, 'health_fill').setOrigin(-0.12, -0.5);
+    this.healthFillFullWidth = this.healthFill.width;
 
-    // Fill (red/health color)
-    this.healthBarFill = this.add.rectangle(
-      x + BAR_WIDTH / 2, y + BAR_HEIGHT / 2,
-      BAR_WIDTH, BAR_HEIGHT,
-      0xff4444,
-    );
+    // Damage layer (positioned same as fill, hidden for now)
+    this.healthDamage = this.add.image(x, y, 'health_damage').setOrigin(-0.12, -0.5);
+    this.healthDamage.setVisible(false);
 
-    // Text label
-    this.hpText = this.add.text(x + BAR_WIDTH + 8, y, 'HP: 100/100', {
+    // Glow layer (positioned same as frame, hidden for now)
+    this.healthGlow = this.add.image(x, y, 'health_glow').setOrigin(-0.12, -0.5);
+    this.healthGlow.setVisible(false);
+
+    // Frame layer (always on top, never deformed)
+    this.healthFrame = this.add.image(x, y, 'health_frame').setOrigin(0, 0);
+
+    // Text label to the right of the frame
+    this.hpText = this.add.text(x + this.healthFrame.width + 8, y + 10, 'HP: 100/100', {
       fontSize: '14px',
       color: '#ffffff',
     });
@@ -85,40 +84,30 @@ export class HUDScene extends Phaser.Scene {
 
   private updateHealthBar(hp: number, maxHp: number): void {
     const fillRatio = calculateHealthFill(hp, maxHp);
-    const { BAR_WIDTH, BAR_HEIGHT } = HUDScene;
-    const x = 16;
-    const y = 16;
-    const fillWidth = BAR_WIDTH * fillRatio;
 
-    this.healthBarFill.setSize(fillWidth, BAR_HEIGHT);
-    this.healthBarFill.setPosition(x + fillWidth / 2, y + BAR_HEIGHT / 2);
+    // Use setCrop to show only the portion corresponding to fillRatio.
+    // Crops from left (0) to fillRatio * fullWidth, keeping left edge fixed.
+    const cropWidth = Math.round(this.healthFillFullWidth * fillRatio);
+    this.healthFill.setCrop(0, 0, cropWidth, this.healthFill.height);
+
     this.hpText.setText(`HP: ${Math.floor(hp)}/${Math.floor(maxHp)}`);
   }
 
   // --- XP Bar (Subtask 19.2) ---
 
   private createXPBar(): void {
-    const x = 16;
-    const y = 42;
-    const { BAR_WIDTH, BAR_HEIGHT } = HUDScene;
+    const x = 10;
+    const y = 16 + this.healthFrame.height + 4;
 
-    // Background (dark)
-    this.xpBarBg = this.add.rectangle(
-      x + BAR_WIDTH / 2, y + BAR_HEIGHT / 2,
-      BAR_WIDTH, BAR_HEIGHT,
-      0x333333,
-    );
-    this.xpBarBg.setStrokeStyle(1, 0x666666);
+    // Fill layer (below frame) — uses health_damage.png as XP fill color
+    this.xpFill = this.add.image(x, y, 'health_damage').setOrigin(-0.12, -0.5);
+    this.xpFillFullWidth = this.xpFill.width;
 
-    // Fill (blue/xp color)
-    this.xpBarFill = this.add.rectangle(
-      x + BAR_WIDTH / 2, y + BAR_HEIGHT / 2,
-      BAR_WIDTH, BAR_HEIGHT,
-      0x44aaff,
-    );
+    // Frame layer (always on top, never deformed)
+    this.xpFrame = this.add.image(x, y, 'health_frame').setOrigin(0, 0);
 
-    // Text label
-    this.xpText = this.add.text(x + BAR_WIDTH + 8, y, 'XP: 0/15 (Nivel 1)', {
+    // Text label to the right of the frame
+    this.xpText = this.add.text(x + this.xpFrame.width + 8, y + 10, 'XP: 0/15 (Nivel 1)', {
       fontSize: '14px',
       color: '#ffffff',
     });
@@ -126,13 +115,10 @@ export class HUDScene extends Phaser.Scene {
 
   private updateXPBar(levelXp: number, threshold: number, level: number, isMaxLevel: boolean): void {
     const fillRatio = calculateXPFill(levelXp, threshold, isMaxLevel);
-    const { BAR_WIDTH, BAR_HEIGHT } = HUDScene;
-    const x = 16;
-    const y = 42;
-    const fillWidth = BAR_WIDTH * fillRatio;
 
-    this.xpBarFill.setSize(fillWidth, BAR_HEIGHT);
-    this.xpBarFill.setPosition(x + fillWidth / 2, y + BAR_HEIGHT / 2);
+    // Use setCrop to show only the portion corresponding to fillRatio.
+    const cropWidth = Math.round(this.xpFillFullWidth * fillRatio);
+    this.xpFill.setCrop(0, 0, cropWidth, this.xpFill.height);
 
     if (isMaxLevel) {
       this.xpText.setText(`XP: MAX (Nivel ${level})`);
@@ -144,7 +130,7 @@ export class HUDScene extends Phaser.Scene {
   // --- Wave Display (Subtask 19.3) ---
 
   private createWaveDisplay(): void {
-    this.waveText = this.add.text(16, 68, 'Oleada: 1', {
+    this.waveText = this.add.text(16, 90, 'Oleada: 1', {
       fontSize: '16px',
       color: '#ffff44',
     });

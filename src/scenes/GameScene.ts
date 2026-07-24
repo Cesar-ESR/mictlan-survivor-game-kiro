@@ -29,6 +29,7 @@ import { resolveGameMode } from './game-mode-utils';
 interface GameSceneData {
   gameMode?: GameModeConfig;
 }
+import type { GameStats } from '../types/game-stats';
 
 const { MAP_WIDTH, MAP_HEIGHT } = GAME_CONSTANTS;
 
@@ -67,6 +68,7 @@ export class GameScene extends Phaser.Scene {
   // Core entities
   private player!: Player;
   private playerManager!: PlayerManager;
+  private gameStats: GameStats = { survivalTime: 0, enemiesDefeated: 0, maxWave: 1 };
 
   // Enemy systems
   private enemyRegistry!: EnemyRegistry;
@@ -346,6 +348,42 @@ export class GameScene extends Phaser.Scene {
     if (this.scene.isActive('HUDScene')) {
       this.scene.stop('HUDScene');
     }
+    // --- Stats tracking event listeners ---
+
+    // Reset stats on (re)generation
+    this.gameStats = { survivalTime: 0, enemiesDefeated: 0, maxWave: 1 };
+
+    // Defeat flow: transition to DefeatScene with stats (Requirement 4.5)
+    this.events.on('player-defeated', () => {
+      this.scene.start('DefeatScene', {
+        survivalTime: this.gameStats.survivalTime,
+        totalXp: this.player.totalXp,
+      });
+    });
+
+    // Victory flow: transition to VictoryScene with full stats (Requirement 6.4)
+    this.events.on('victory', () => {
+      this.scene.start('VictoryScene', {
+        totalTime: this.gameStats.survivalTime,
+        maxWave: this.gameStats.maxWave,
+        enemiesDefeated: this.gameStats.enemiesDefeated,
+        totalXp: this.player.totalXp,
+        levelReached: this.player.level,
+      });
+    });
+
+    // Increment enemies defeated counter
+    this.events.on('enemy-defeated', () => {
+      this.gameStats.enemiesDefeated++;
+    });
+
+    // Update max wave reached
+    this.events.on('wave-changed', (wave: number) => {
+      this.gameStats.maxWave = Math.max(this.gameStats.maxWave, wave);
+    });
+
+    // TODO: Configurar player/enemies colliders con walls/obstacles layers (Task 5+)
+    // TODO: Instanciar sistemas (SpawnManager, WaveManager, etc.) (Task 23)
   }
 
   private setupDebugControls(result: Extract<LogicalMapGenerationResult, { success: true }>): void {
@@ -421,6 +459,12 @@ export class GameScene extends Phaser.Scene {
     if (this.pauseSystem.isPaused) return;
 
     // --- Debug camera movement (no gameplay updates in debug mode) ---
+    // Accumulate survival time (when not paused and not in debug mode)
+    if (!this.isDebugMode) {
+      this.gameStats.survivalTime += _delta / 1000;
+    }
+
+    // Debug camera movement
     if (this.isDebugMode && this.debugCursorKeys && this.debugWASD) {
       const speed = 8;
       if (this.debugCursorKeys.left.isDown || this.debugWASD.A.isDown) {
