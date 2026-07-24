@@ -115,6 +115,7 @@ export class GameScene extends Phaser.Scene {
 
     // Instanciar Player en el centro del mapa (safe zone center)
     this.player = new Player(this, SAFE_ZONE_CENTER_X, SAFE_ZONE_CENTER_Y, 'hero');
+    this.player.setDepth(100);
     this.player.setCollideWorldBounds(true);
 
     // Inicializar PlayerManager para input y movimiento
@@ -151,7 +152,6 @@ export class GameScene extends Phaser.Scene {
       backgroundColor: '#000000aa',
       padding: { x: 6, y: 4 },
     }).setScrollFactor(0).setDepth(1000);
-
     // Input keys
     if (this.input.keyboard) {
       this.debugCursorKeys = this.input.keyboard.createCursorKeys();
@@ -205,6 +205,8 @@ export class GameScene extends Phaser.Scene {
       const speed = 8;
       if (this.debugCursorKeys.left.isDown || this.debugWASD.A.isDown) {
         this.cameras.main.scrollX -= speed;
+//console.log(this.player.depth);
+
       }
       if (this.debugCursorKeys.right.isDown || this.debugWASD.D.isDown) {
         this.cameras.main.scrollX += speed;

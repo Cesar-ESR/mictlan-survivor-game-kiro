@@ -485,13 +485,13 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
   - Ensure all tests pass, ask the user if questions arise.
   - **Nota**: La integración visual completa (overlap proyectiles↔enemigos en GameScene) queda pendiente de Task 23.
 
-- [ ] 15. Orbes de XP
-  - [ ] 15.1 Crear `src/entities/XPOrb.ts` como sprite con valor de XP
+- [x] 15. Orbes de XP
+  - [x] 15.1 Crear `src/entities/XPOrb.ts` como sprite con valor de XP
     - Propiedades: value, creationTime, isAttracted
     - Sprite simple (círculo verde/dorado)
     - _Requirements: 8.1_
 
-  - [ ] 15.2 Crear `src/systems/OrbCollector.ts`
+  - [x] 15.2 Crear `src/systems/OrbCollector.ts`
     - `spawnOrb(position, value)`: crear orbe en posición del enemigo derrotado (pool)
     - `update(delta, playerPos)`:
       - Para cada orbe: calcular distancia al jugador
@@ -501,20 +501,20 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - `enforceOrbCap()`: si orbes > 200, eliminar los más antiguos (FIFO)
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-  - [ ] 15.3 Integrar OrbCollector con sistema de derrota de enemigos
+  - [x] 15.3 Integrar OrbCollector con sistema de derrota de enemigos
     - Escuchar evento `enemy-defeated` → llamar `spawnOrb(pos, xpReward)`
     - Al recoger orbe → llamar `XPSystem.addXP(player, value)`
     - En nivel 20: solo incrementar totalXp al recoger orbe
     - _Requirements: 3.4, 8.3, 8.6_
 
-  - [ ]* 15.4 Escribir property tests para OrbCollector (`src/systems/__tests__/orb-collector.property.test.ts`)
+  - [x]* 15.4 Escribir property tests para OrbCollector (`src/systems/__tests__/orb-collector.property.test.ts`)
     - **Property 23: Orb Attraction Behavior** — orbe se mueve a 400px/s si distancia ≤100px, estático si >100px
     - **Property 24: Orb Lifetime Expiration** — orbes eliminados después de 30s
     - **Property 25: Orb Pool Cap with FIFO Removal** — nunca más de 200 orbes, elimina más antiguos primero
     - **Validates: Requirements 8.2, 8.4, 8.5**
 
-- [ ] 16. Modelo XP dual y sistema de nivelación
-  - [ ] 16.1 Crear `src/systems/XPSystem.ts`
+- [x] 16. Modelo XP dual y sistema de nivelación
+  - [x] 16.1 Crear `src/systems/XPSystem.ts`
     - `calculateThreshold(level)`: `level * 10 + 5`
     - `addXP(player, value)`: incrementar levelXp y totalXp
       - Si level = 20: solo totalXp, levelXp = threshold (clamped)
@@ -527,14 +527,14 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - `applyUpgrade(player, upgrade)` y `removeUpgradeFromPool(upgradeId)`
     - _Requirements: 5.1, 5.2, 5.3, 5.6, 5.7, 5.8, 5.9, 5.10, 5.11_
 
-  - [ ]* 16.2 Escribir property tests para XPSystem (`src/systems/__tests__/xp-system.property.test.ts`)
+  - [x]* 16.2 Escribir property tests para XPSystem (`src/systems/__tests__/xp-system.property.test.ts`)
     - **Property 13: XP Dual Counter Increment** — levelXp y totalXp incrementan por V; en nivel 20 solo totalXp
     - **Property 14: Level-Up Excess Carry-Over** — exceso = levelXp - threshold, se conserva como progreso
     - **Property 15: Upgrade Selection Uniqueness and Count** — 3 si N≥3, N si 0<N<3, vacío si N=0
     - **Property 16: XP Threshold Formula** — threshold = level × 10 + 5, inicial = 15
     - **Validates: Requirements 5.1, 5.2, 5.3, 5.6, 5.7, 5.8, 5.9, 8.3, 8.6**
 
-  - [ ]* 16.3 Escribir unit tests para XPSystem (`src/systems/__tests__/xp-system.unit.test.ts`)
+  - [x]* 16.3 Escribir unit tests para XPSystem (`src/systems/__tests__/xp-system.unit.test.ts`)
     - Test: nivel 20 no incrementa level, no muestra panel
     - Test: pool vacío → omite panel, reanuda inmediatamente
     - Test: pool con 1-2 opciones → muestra todas
@@ -577,33 +577,33 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Test: pausa congela spawns, orbes, proyectiles simultáneamente
     - **Validates: Requirements 5.4, 5.5**
 
-- [ ] 19. HUD completo
-  - [ ] 19.1 Implementar `HealthBar` en HUDScene
+- [x] 19. HUD completo
+  - [x] 19.1 Implementar `HealthBar` en HUDScene
     - Barra en esquina superior izquierda
     - `fillRatio = hp / maxHp`, clamped [0, 1]
     - Actualizar en el mismo frame vía evento `hp-changed`
     - _Requirements: 7.1, 7.4_
 
-  - [ ] 19.2 Implementar `XPBar` en HUDScene
+  - [x] 19.2 Implementar `XPBar` en HUDScene
     - Barra de experiencia con `fillRatio = levelXp / threshold`, clamped [0, 1]
     - Tras level-up: mostrar `excessXp / newThreshold` (NO reiniciar a 0%)
     - En nivel 20: permanece a 100%
     - Actualizar en el mismo frame vía evento `xp-changed`
     - _Requirements: 7.2, 7.5, 7.6_
 
-  - [ ] 19.3 Implementar `WaveDisplay` y `TimerDisplay` en HUDScene
+  - [x] 19.3 Implementar `WaveDisplay` y `TimerDisplay` en HUDScene
     - WaveDisplay: número de oleada actual, anuncio breve al cambiar
     - TimerDisplay: formato MM:SS (floor(s/60) pad 2 : floor(s%60) pad 2)
     - Timer usa delta time para acumulación (independiente de frame rate)
     - _Requirements: 7.3_
 
-  - [ ] 19.4 Implementar `LevelUpPanel` en HUDScene
+  - [x] 19.4 Implementar `LevelUpPanel` en HUDScene
     - Panel overlay que muestra 1-3 opciones de mejora (cards clickeables)
     - Al click → emitir evento `upgrade-selected` con la mejora elegida
     - Desaparecer tras selección
     - _Requirements: 5.3, 5.5, 5.8_
 
-  - [ ]* 19.5 Escribir property tests para HUD (`src/systems/__tests__/hud.property.test.ts`)
+  - [x]* 19.5 Escribir property tests para HUD (`src/systems/__tests__/hud.property.test.ts`)
     - **Property 20: Health Bar Proportional Fill** — fillRatio = hp/maxHp clamped [0,1]
     - **Property 21: XP Bar Proportional Fill with Level-Up Excess** — levelXp/threshold; excess/newThreshold tras level-up; 100% en nivel 20
     - **Property 22: Timer Format MM:SS** — formato correcto para cualquier S≥0
