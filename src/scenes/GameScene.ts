@@ -9,6 +9,10 @@ import { PhaserMapLayerBuilder } from '../map/PhaserMapLayerBuilder';
 import type { MapLayers } from '../map/PhaserMapLayerBuilder';
 import { Player } from '../entities/Player';
 import { PlayerManager } from '../systems/PlayerManager';
+import { EnemyRegistry } from '../systems/EnemyRegistry';
+import { SpawnManager } from '../systems/SpawnManager';
+import { WaveManager } from '../systems/WaveManager';
+import { registerEnemyTypes } from '../entities/enemies';
 
 const { MAP_WIDTH, MAP_HEIGHT } = GAME_CONSTANTS;
 
@@ -36,12 +40,19 @@ export class GameScene extends Phaser.Scene {
   private isPaused = false;
   private _mapLayers: MapLayers | null = null;
   private isDebugMode = false;
+  private isEnemyDebugMode = false;
   private currentSeed: string = '';
   private debugOverlayText: Phaser.GameObjects.Text | null = null;
+  private enemyDebugText: Phaser.GameObjects.Text | null = null;
   private debugCursorKeys: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
   private debugWASD: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key } | null = null;
   private player!: Player;
   private playerManager!: PlayerManager;
+
+  // --- Enemy systems (minimal integration for visual verification) ---
+  private enemyRegistry!: EnemyRegistry;
+  private spawnManager!: SpawnManager;
+  private waveManager!: WaveManager;
 
   /** Access generated map layers (null if generation failed). */
   get mapLayers(): MapLayers | null {
@@ -57,6 +68,7 @@ export class GameScene extends Phaser.Scene {
     const urlParams = new URLSearchParams(window.location.search);
     this.currentSeed = urlParams.get('seed') || `mictlan-${Date.now()}`;
     this.isDebugMode = this.registry.get('debugMode') === 'map';
+    this.isEnemyDebugMode = this.registry.get('debugMode') === 'enemies';
 
     this.generateMap(this.currentSeed);
   }
@@ -121,13 +133,32 @@ export class GameScene extends Phaser.Scene {
     // Inicializar PlayerManager para input y movimiento
     this.playerManager = new PlayerManager(this.player, this);
 
+    // --- Enemy systems: minimal integration (audit/debug only) ---
+    this.enemyRegistry = new EnemyRegistry();
+    registerEnemyTypes(this.enemyRegistry);
+
+    this.spawnManager = new SpawnManager(this, this.enemyRegistry);
+
+    // WaveManager handles wave progression, transitions, and SpawnManager config.
+    // Using 'infinite' mode for now; campaign mode wiring deferred to Task 23.
+    this.waveManager = new WaveManager(
+      { mode: 'infinite', finalWave: null },
+      this.spawnManager,
+      this.events,
+    );
+
     // Camera follows player, stops at map edges (native Phaser behavior with setBounds)
     if (!this.isDebugMode) {
       this.cameras.main.startFollow(this.player);
     }
 
+    // Setup enemy debug overlay if ?debug=enemies
+    if (this.isEnemyDebugMode) {
+      this.setupEnemyDebugOverlay();
+    }
+
     // TODO: Configurar player/enemies colliders con walls/obstacles layers (Task 5+)
-    // TODO: Instanciar sistemas (SpawnManager, WaveManager, etc.) (Task 23)
+    // TODO: Full wiring (DamageSystem, WeaponSystem, OrbCollector, XPSystem, LevelUpCoordinator) → Task 23
   }
 
   private setupDebugControls(result: Extract<LogicalMapGenerationResult, { success: true }>): void {
@@ -205,8 +236,6 @@ export class GameScene extends Phaser.Scene {
       const speed = 8;
       if (this.debugCursorKeys.left.isDown || this.debugWASD.A.isDown) {
         this.cameras.main.scrollX -= speed;
-//console.log(this.player.depth);
-
       }
       if (this.debugCursorKeys.right.isDown || this.debugWASD.D.isDown) {
         this.cameras.main.scrollX += speed;
@@ -224,8 +253,68 @@ export class GameScene extends Phaser.Scene {
       this.playerManager.update(_delta);
     }
 
-    // TODO: Delegar actualización a sistemas en orden (Task 23):
-    // WaveManager → SpawnManager → Enemies → WeaponSystem → DamageSystem → OrbCollector
+    // --- Enemy systems update (minimal integration) ---
+    // WaveManager: handles wave timer, transitions, and SpawnManager config updates
+    this.waveManager.update(_delta);
+
+    // SpawnManager update: handles spawn timer + despawn
+    const playerPos = { x: this.player.x, y: this.player.y };
+    this.spawnManager.update(_delta, playerPos, this.cameras.main);
+
+    // Update all active enemies (move toward player)
+    const enemies = this.spawnManager.getEnemyPool().getChildren();
+    for (const child of enemies) {
+      if (child.active) {
+        const enemy = child as unknown as { update(delta: number, playerPos: { x: number; y: number }): void };
+        enemy.update(_delta, playerPos);
+      }
+    }
+
+    // Update enemy debug overlay
+    if (this.isEnemyDebugMode && this.enemyDebugText) {
+      this.updateEnemyDebugOverlay();
+    }
+
+    // TODO: Full system delegation order (Task 23):
+    // WeaponSystem → DamageSystem → OrbCollector → XPSystem → LevelUpCoordinator
+  }
+
+  /**
+   * Enemy debug overlay: shows spawn state when ?debug=enemies
+   */
+  private setupEnemyDebugOverlay(): void {
+    this.enemyDebugText = this.add.text(8, 8, '', {
+      fontSize: '12px',
+      color: '#ffcc00',
+      backgroundColor: '#000000cc',
+      padding: { x: 6, y: 4 },
+    }).setScrollFactor(0).setDepth(2000);
+
+    // Key F: force spawn one enemy immediately for diagnostics
+    if (this.input.keyboard) {
+      this.input.keyboard.on('keydown-F', () => {
+        // Force a spawn by temporarily setting interval to 0 and calling update
+        const playerPos = { x: this.player.x, y: this.player.y };
+        this.spawnManager.update(99999, playerPos, this.cameras.main);
+      });
+    }
+  }
+
+  private updateEnemyDebugOverlay(): void {
+    if (!this.enemyDebugText) return;
+    const activeCount = this.spawnManager.getActiveEnemyCount();
+    const wave = this.waveManager.getCurrentWave();
+    const state = this.waveManager.getState();
+    const info = [
+      `[Enemy Debug] ?debug=enemies`,
+      `Wave: ${wave} (${state})`,
+      `Active Enemies: ${activeCount}`,
+      `Registry Types: ${this.enemyRegistry.getRegisteredTypes().join(', ')}`,
+      `Player: (${Math.round(this.player.x)}, ${Math.round(this.player.y)})`,
+      ``,
+      `Press F to force-spawn`,
+    ].join('\n');
+    this.enemyDebugText.setText(info);
   }
 
   /**

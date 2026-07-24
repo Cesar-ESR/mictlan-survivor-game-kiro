@@ -33,7 +33,7 @@ function getScenes(): Phaser.Types.Scenes.SceneType[] {
   if (debugMode === 'borders') {
     return [BorderCalibrationScene];
   }
-  // Normal game (including debug=map which uses GameScene with debug overlay)
+  // Normal game (including debug=map and debug=enemies which use GameScene with debug overlays)
   return [BootScene, GameScene, HUDScene, DefeatScene, VictoryScene];
 }
 

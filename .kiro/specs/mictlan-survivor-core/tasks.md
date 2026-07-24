@@ -542,8 +542,9 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Test: barra XP no se reinicia a 0% tras level-up (muestra excess/newThreshold)
     - **Validates: Requirements 5.8, 5.9, 5.10, 5.11, 7.6**
 
-- [ ] 17. Pool de mejoras y selección
-  - [ ] 17.1 Integrar flujo completo de level-up en GameScene
+- [x] 17. Pool de mejoras y selección
+  - [x] 17.1 Integrar flujo completo de level-up en GameScene
+    - **NOTA**: LevelUpCoordinator, PauseSystem y LevelUpPanel implementados. Contratos unificados. Wiring runtime en GameScene pendiente de Task 23.
     - Cuando `addXP` retorna `showPanel: true`:
       1. Llamar `PauseSystem.pause()`
       2. Obtener `getRandomUpgrades(3)` del XPSystem
@@ -556,8 +557,8 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Si pool vacío o nivel 20: NO pausar, NO mostrar panel
     - _Requirements: 5.3, 5.4, 5.5, 5.8, 5.9, 5.10, 5.11_
 
-- [ ] 18. PauseSystem
-  - [ ] 18.1 Crear `src/systems/PauseSystem.ts`
+- [x] 18. PauseSystem
+  - [x] 18.1 Crear `src/systems/PauseSystem.ts`
     - Propiedad `isPaused: boolean` (getter público)
     - `pause()`: setear flag, congelar TODOS los sistemas:
       - Movimiento del jugador y enemigos
@@ -571,7 +572,7 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - `resume()`: restaurar flag, reanudar desde el estado anterior (timers conservan tiempo restante)
     - _Requirements: 5.4, 5.5_
 
-  - [ ]* 18.2 Escribir unit tests para PauseSystem (`src/systems/__tests__/pause-system.unit.test.ts`)
+  - [x]* 18.2 Escribir unit tests para PauseSystem (`src/systems/__tests__/pause-system.unit.test.ts`)
     - Test: durante pausa ningún sistema actualiza posiciones ni timers
     - Test: al reanudar, timers conservan su progreso (no reinician)
     - Test: pausa congela spawns, orbes, proyectiles simultáneamente
@@ -609,8 +610,9 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - **Property 22: Timer Format MM:SS** — formato correcto para cualquier S≥0
     - **Validates: Requirements 7.1, 7.2, 7.3, 7.6, 5.10**
 
-- [ ] 20. Checkpoint - Verificar progresión y HUD
+- [x] 20. Checkpoint - Verificar progresión y HUD
   - Ensure all tests pass, ask the user if questions arise.
+  - **Nota**: Contratos unificados (upgrade-selected usa `{upgradeId}`). Cleanup agregado a HUDScene. Wiring runtime completo pendiente de Task 23.
 
 - [ ] 21. Victoria, derrota y estadísticas
   - [ ] 21.1 Implementar flujo completo de derrota
