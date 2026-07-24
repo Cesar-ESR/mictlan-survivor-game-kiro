@@ -30,6 +30,7 @@ export class SerpienteEmplumada extends Enemy {
     this.currentSpeed = 100;
     this.acceleration = 30;
     this.maxSpeed = 250;
+    this.xpOrbVariant = 'special';
 
     const walkAnimKey = getWalkAnimationKey('serpiente_emplumada_sprite');
     if (walkAnimKey && this.scene.anims.exists(walkAnimKey)) {

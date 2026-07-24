@@ -24,6 +24,7 @@ export class Esqueleto extends Enemy {
     this.damage = 5;
     this.xpReward = 5;
     this.speedMultiplier = config.speedMultiplier;
+    this.xpOrbVariant = 'common';
 
     const walkAnimKey = getWalkAnimationKey('esqueleto_sprite');
     if (walkAnimKey && this.scene.anims.exists(walkAnimKey)) {

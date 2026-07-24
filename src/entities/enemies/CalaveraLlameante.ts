@@ -27,6 +27,7 @@ export class CalaveraLlameante extends Enemy {
     this.xpReward = 10;
     this.speedMultiplier = config.speedMultiplier;
     this.playerPos = { x: 0, y: 0 };
+    this.xpOrbVariant = 'rare';
 
     const walkAnimKey = getWalkAnimationKey('calavera_llameante_sprite');
     if (walkAnimKey && this.scene.anims.exists(walkAnimKey)) {

@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 
 import type { IEnemy } from '../types/interfaces';
+import { DEFAULT_XP_ORB_VARIANT } from '../config/xp-orb-assets';
+import type { XPOrbVariant } from '../config/xp-orb-assets';
 
 /**
  * Abstract base class for all enemy entities in Mictlán Survivor.
@@ -17,6 +19,8 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite implements IEne
   declare speed: number;
   declare damage: number;
   declare xpReward: number;
+  /** Variante de orbe de XP que genera este enemigo al ser derrotado. */
+  xpOrbVariant: XPOrbVariant = DEFAULT_XP_ORB_VARIANT;
 
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
     super(scene, x, y, texture);
@@ -63,6 +67,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite implements IEne
       x: this.x,
       y: this.y,
       xpReward: this.xpReward,
+      xpOrbVariant: this.xpOrbVariant,
     });
     this.setActive(false);
     this.setVisible(false);

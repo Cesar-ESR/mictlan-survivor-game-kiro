@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { XPOrb } from '../entities/XPOrb';
 import { GAME_CONSTANTS } from '../config/constants';
 import { calculateOrbAttraction, shouldCollectOrb } from './orb-utils';
+import { DEFAULT_XP_ORB_VARIANT } from '../config/xp-orb-assets';
+import type { XPOrbVariant } from '../config/xp-orb-assets';
 
 /**
  * Manages XP orb spawning, attraction, collection, expiration, and pool cap.
@@ -33,16 +35,16 @@ export class OrbCollector {
     });
 
     // Listen for enemy defeats to spawn orbs (Subtask 15.3)
-    this.scene.events.on('enemy-defeated', (data: { x: number; y: number; xpReward: number }) => {
-      this.spawnOrb({ x: data.x, y: data.y }, data.xpReward);
+    this.scene.events.on('enemy-defeated', (data: { x: number; y: number; xpReward: number; xpOrbVariant?: XPOrbVariant }) => {
+      this.spawnOrb({ x: data.x, y: data.y }, data.xpReward, data.xpOrbVariant);
     });
   }
 
   /**
-   * Spawns an XP orb at the given position with the specified value.
+   * Spawns an XP orb at the given position with the specified value and visual variant.
    */
-  spawnOrb(position: { x: number; y: number }, value: number): void {
-    const orb = new XPOrb(this.scene, position.x, position.y, value);
+  spawnOrb(position: { x: number; y: number }, value: number, variant: XPOrbVariant = DEFAULT_XP_ORB_VARIANT): void {
+    const orb = new XPOrb(this.scene, position.x, position.y, value, variant);
     orb.setActive(true);
     orb.setVisible(true);
     this.orbPool.add(orb);
