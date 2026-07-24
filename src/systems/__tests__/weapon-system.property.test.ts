@@ -9,8 +9,8 @@ import { GAME_CONSTANTS } from '../../config/constants';
  * **Validates: Requirements 4.1, 4.6**
  */
 describe('WeaponSystem Property Tests', () => {
-  const RANGE = GAME_CONSTANTS.WEAPON_RANGE; // 800
-  const MAX_DISTANCE = GAME_CONSTANTS.PROJECTILE_MAX_DISTANCE; // 1000
+  const RANGE = GAME_CONSTANTS.WEAPON_RANGE; // 384 (BUG-004)
+  const MAX_DISTANCE = GAME_CONSTANTS.PROJECTILE_MAX_DISTANCE; // 450 (BUG-004)
 
   // Arbitrary for player position
   const posArb = fc.record({
@@ -77,7 +77,7 @@ describe('WeaponSystem Property Tests', () => {
       );
     });
 
-    it('ignores enemies outside range (>800px)', () => {
+    it('ignores enemies outside range (>384px)', () => {
       fc.assert(
         fc.property(
           posArb,
@@ -97,7 +97,7 @@ describe('WeaponSystem Property Tests', () => {
       );
     });
 
-    it('accepts enemies exactly at 800px', () => {
+    it('accepts enemies exactly at 384px', () => {
       fc.assert(
         fc.property(
           posArb,
@@ -263,7 +263,7 @@ describe('WeaponSystem Property Tests', () => {
    * **Validates: Requirements 4.6**
    */
   describe('Property 12: Projectile Max Travel Distance', () => {
-    it('projectile stays active when distance < 1000', () => {
+    it('projectile stays active when distance < MAX_DISTANCE', () => {
       fc.assert(
         fc.property(
           fc.double({ min: 0, max: MAX_DISTANCE - 0.001, noNaN: true, noDefaultInfinity: true }),
@@ -277,7 +277,7 @@ describe('WeaponSystem Property Tests', () => {
       );
     });
 
-    it('recycles when distance >= 1000', () => {
+    it('recycles when distance >= MAX_DISTANCE', () => {
       fc.assert(
         fc.property(
           fc.double({ min: MAX_DISTANCE, max: 5000, noNaN: true, noDefaultInfinity: true }),

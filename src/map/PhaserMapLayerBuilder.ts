@@ -13,7 +13,7 @@
  * Colisiones:
  * - Walls: colisión habilitada (bloquea jugador y enemigos)
  * - Obstacles: colisión habilitada
- * - Liquids: colisión solo si behavior === 'blocking'
+ * - Liquids: colisión en TODOS los tiles (no existe mecánica de natación)
  * - Ground, Borders, Decorations: SIN colisión
  *
  * Requirements: 10.2, 10.6, 10.7, Property 30, Property 31
@@ -155,8 +155,8 @@ export class PhaserMapLayerBuilder {
     wallsLayer.setCollisionByExclusion([-1]);
     // Obstacles: all placed tiles have collision
     obstaclesLayer.setCollisionByExclusion([-1]);
-    // Liquids: set collision on individual blocking tiles
-    this.setLiquidCollisions(grid, liquidsLayer);
+    // Liquids: ALL liquid tiles have collision (no swimming mechanic)
+    liquidsLayer.setCollisionByExclusion([-1]);
     // Ground, Borders, Decorations: NO collision (default)
 
     return {
@@ -322,26 +322,5 @@ export class PhaserMapLayerBuilder {
     return detectedFamily;
   }
 
-  /**
-   * Set collision on liquid tiles that have blocking behavior.
-   */
-  private setLiquidCollisions(
-    grid: LogicalMapGrid,
-    liquidsLayer: Phaser.Tilemaps.TilemapLayer,
-  ): void {
-    const height = grid.length;
-    const width = height > 0 ? grid[0].length : 0;
 
-    for (let row = 0; row < height; row++) {
-      for (let col = 0; col < width; col++) {
-        const cell = grid[row][col];
-        if (cell.liquid && cell.liquidConfig?.behavior === 'blocking') {
-          const tile = liquidsLayer.getTileAt(col, row);
-          if (tile) {
-            tile.setCollision(true, true, true, true);
-          }
-        }
-      }
-    }
-  }
 }

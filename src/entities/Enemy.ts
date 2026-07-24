@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { GAME_CONSTANTS } from '../config/constants';
 import type { IEnemy } from '../types/interfaces';
 import { DEFAULT_XP_ORB_VARIANT } from '../config/xp-orb-assets';
 import type { XPOrbVariant } from '../config/xp-orb-assets';
@@ -27,6 +28,8 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite implements IEne
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
+    this.setScale(0.45);
+    this.setDepth(GAME_CONSTANTS.ENTITY_DEPTH_ENEMIES);
     this.setScale(0.25);
   }
 
