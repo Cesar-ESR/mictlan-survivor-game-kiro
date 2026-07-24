@@ -166,6 +166,9 @@ export class DamageSystem {
         const enemyId = this.getEnemyId(enemy);
 
         if (canApplyContactDamage(enemyId, this.cooldownState)) {
+          // Trigger attack animation (BUG-006)
+          enemy.playAttackAnimation(this.player.x);
+
           const { newHp } = applyContactDamage(
             this.player.hp,
             enemy.damage,

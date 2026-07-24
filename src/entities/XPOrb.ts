@@ -2,8 +2,6 @@ import Phaser from 'phaser';
 import { getXPOrbAsset, DEFAULT_XP_ORB_VARIANT, XP_ORB_FLOAT_CONFIG } from '../config/xp-orb-assets';
 import type { XPOrbVariant } from '../config/xp-orb-assets';
 
-import { GAME_CONSTANTS } from '../config/constants';
-
 /** Global monotonic counter for FIFO ordering without wall-clock dependency */
 let orbSequenceCounter = 0;
 
