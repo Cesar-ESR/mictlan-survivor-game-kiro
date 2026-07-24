@@ -9,6 +9,7 @@ import { GAME_CONSTANTS } from './constants.js';
  * Oleadas 9-10: los 4 tipos
  */
 export const WAVE_ENEMY_PROGRESSION: Record<number, string[]> = {
+  //1: ['esqueleto', 'murcielago', 'calavera_llameante', 'serpiente_emplumada'],
   1: ['esqueleto'],
   2: ['esqueleto'],
   3: ['esqueleto'],

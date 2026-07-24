@@ -30,6 +30,7 @@ export class SerpienteEmplumada extends Enemy {
     this.currentSpeed = 100;
     this.acceleration = 30;
     this.maxSpeed = 250;
+    this.xpOrbVariant = 'special';
 
     // Register animation keys (BUG-006)
     this.walkAnimKey = getWalkAnimationKey('serpiente_emplumada_sprite') ?? '';

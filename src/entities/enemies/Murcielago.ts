@@ -33,6 +33,7 @@ export class Murcielago extends Enemy {
     this.zigzagPhase = 0;
     this.amplitude = 40;
     this.frequency = 3;
+    this.xpOrbVariant = 'common';
 
     // Register animation keys (BUG-006)
     this.walkAnimKey = getWalkAnimationKey('murcielago_sprite') ?? '';

@@ -4,6 +4,7 @@ import { loadEnemyAssets } from '../config/enemy-assets';
 import { registerEnemyAnimations } from '../config/enemy-animations';
 import { loadPlayerAssets } from '../config/player-assets';
 import { registerPlayerAnimations } from '../config/player-animations';
+import { loadXPOrbAssets } from '../config/xp-orb-assets';
 
 /**
  * BootScene: Carga de assets iniciales y transición a GameScene.
@@ -42,6 +43,9 @@ export class BootScene extends Phaser.Scene {
 
     // Cargar spritesheets de enemigos (delegado a módulo centralizado)
     loadEnemyAssets(this.load);
+
+    // Cargar asset del orbe de experiencia (delegado a módulo centralizado)
+    loadXPOrbAssets(this.load);
 
     // Timeout de 3 segundos para detectar cargas estancadas
     this.time.delayedCall(3000, () => {

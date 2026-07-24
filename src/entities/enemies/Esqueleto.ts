@@ -24,6 +24,7 @@ export class Esqueleto extends Enemy {
     this.damage = 5;
     this.xpReward = 5;
     this.speedMultiplier = config.speedMultiplier;
+    this.xpOrbVariant = 'common';
 
     // Register animation keys (BUG-006)
     this.walkAnimKey = getWalkAnimationKey('esqueleto_sprite') ?? '';
