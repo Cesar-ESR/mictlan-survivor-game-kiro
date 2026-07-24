@@ -29,7 +29,7 @@ import { resolveGameMode } from './game-mode-utils';
 interface GameSceneData {
   gameMode?: GameModeConfig;
 }
-import type { GameStats } from '../types/game-stats';
+
 
 const { MAP_WIDTH, MAP_HEIGHT } = GAME_CONSTANTS;
 

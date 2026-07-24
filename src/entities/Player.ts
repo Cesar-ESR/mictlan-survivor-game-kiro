@@ -20,7 +20,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
     super(scene, x, y, texture);
     //this.setScale(0.5);
-    this.setDisplaySize(128, 128);
+    this.setDisplaySize(96, 96);
     this.hp = GAME_CONSTANTS.PLAYER_BASE_HP;
     this.maxHp = GAME_CONSTANTS.PLAYER_BASE_HP;
     this.level = 1;
