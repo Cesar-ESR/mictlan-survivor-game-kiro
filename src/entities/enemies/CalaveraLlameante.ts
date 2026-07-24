@@ -43,6 +43,7 @@ export class CalaveraLlameante extends Enemy {
       this.speedMultiplier,
     );
     this.setVelocity(velocity.x, velocity.y);
+    this.updateFacing(playerPos);
   }
 
   onDefeat(): void {

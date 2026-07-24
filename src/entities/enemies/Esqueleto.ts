@@ -39,5 +39,6 @@ export class Esqueleto extends Enemy {
       this.speedMultiplier,
     );
     this.setVelocity(velocity.x, velocity.y);
+    this.updateFacing(playerPos);
   }
 }

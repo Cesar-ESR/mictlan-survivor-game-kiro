@@ -94,7 +94,7 @@ export const ENEMY_SPRITESHEETS: EnemySpriteSet[] = [
       path: 'src/assets/SkeletonMageSpritesheets/Skeleton_Mage_Attack.png',
       frameWidth: 256,
       frameHeight: 256,
-      frameCount: 6,
+      frameCount: 5,
     },
     death: {
       key: 'calavera_llameante_death',

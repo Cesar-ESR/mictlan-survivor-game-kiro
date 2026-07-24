@@ -55,5 +55,6 @@ export class SerpienteEmplumada extends Enemy {
 
     const effectiveSpeed = this.currentSpeed * this.speedMultiplier;
     this.setVelocity(direction.x * effectiveSpeed, direction.y * effectiveSpeed);
+    this.updateFacing(playerPos);
   }
 }

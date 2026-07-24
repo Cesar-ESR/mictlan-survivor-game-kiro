@@ -23,7 +23,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite implements IEne
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.setScale(0.45);
+    this.setScale(0.25);
   }
 
   abstract update(delta: number, playerPos: { x: number; y: number }): void;
@@ -33,6 +33,15 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite implements IEne
    * Implementations should move the enemy toward or relative to the player.
    */
   abstract update(delta: number, playerPos: Phaser.Math.Vector2): void;
+
+  /**
+   * Updates the horizontal facing direction toward the player.
+   * Flips the sprite when the player is to the left.
+   * Call this from subclass update() after movement is applied.
+   */
+  protected updateFacing(playerPos: { x: number; y: number }): void {
+    this.setFlipX(playerPos.x > this.x);
+  }
 
   /**
    * Reduces HP by the given amount. If HP drops to 0 or below, triggers onDefeat().

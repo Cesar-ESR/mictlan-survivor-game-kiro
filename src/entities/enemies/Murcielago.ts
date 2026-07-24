@@ -56,5 +56,6 @@ export class Murcielago extends Enemy {
     const offset = calculateZigzagOffset(direction, this.zigzagPhase, this.amplitude, this.frequency);
 
     this.setVelocity(baseVelX + offset.x, baseVelY + offset.y);
+    this.updateFacing(playerPos);
   }
 }
