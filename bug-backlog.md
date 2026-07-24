@@ -413,3 +413,91 @@ Los enemigos aplicaban daño de contacto al jugador pero permanecían en su anim
 - Los enemigos siguen moviéndose durante la animación de ataque (no se detienen) — es daño de contacto, ya están tocando al jugador.
 - La animación de ataque se dispara una sola vez por cooldown de daño (no se repite hasta que el cooldown se cumple y vuelve a aplicar daño).
 - Si la animación de ataque no existe en el AnimationManager, el estado vuelve a 'moving' inmediatamente (graceful degradation).
+
+
+---
+
+## BUG-007: Enemigos no reproducen animación de muerte antes de desactivarse
+
+**Estado:** ✅ Corregido  
+**Fecha:** 2025-01-XX  
+**Severidad:** Media (visual/feedback)
+
+### Descripción
+
+Los enemigos desaparecían instantáneamente al ser derrotados sin reproducir su animación de muerte. Los spritesheets de muerte existían y las animaciones estaban registradas, pero `onDefeat()` llamaba `setActive(false)` y `setVisible(false)` inmediatamente sin dar tiempo a que la animación se reprodujera.
+
+### Causa Raíz
+
+En `Enemy.onDefeat()`, el sprite se ocultaba inmediatamente:
+1. `setActive(false)` — desactivaba el sprite del pool
+2. `setVisible(false)` — ocultaba el sprite visualmente
+3. Ambas llamadas estaban DUPLICADAS (dos veces cada una)
+4. No existía `deathAnimKey` almacenado en la clase base
+5. No existía método `playDeathAnimation()` ni `finishDeath()`
+6. No existía delay entre derrota lógica y remoción visual
+
+### Corrección
+
+1. **`src/config/enemy-assets.ts`** — Se añadió función `getDeathAnimationKey(spriteKey)` análoga a `getWalkAnimationKey` y `getAttackAnimationKey`.
+
+2. **`src/entities/Enemy.ts`** — Refactorización mayor de `onDefeat()`:
+   - Se añadió campo `deathAnimKey: string` en la clase base
+   - Se añadió campo `defeatEmitted: boolean` para prevenir doble-emisión de eventos
+   - Guard `if (animState === 'dying') return` previene double-kill
+   - `setVelocity(0, 0)` detiene al enemigo inmediatamente
+   - `body.enable = false` deshabilita colisiones inmediatamente
+   - Evento 'enemy-defeated' se emite una sola vez (orbe de XP spawna)
+   - Si existe `deathAnimKey` y la animación está registrada: reproduce animación y espera `animationcomplete` para llamar `finishDeath()`
+   - Si no existe animación de muerte: llama `finishDeath()` inmediatamente
+   - Nuevo método privado `finishDeath()`: ejecuta `setActive(false)` + `setVisible(false)`
+   - Se eliminó la duplicación de `setActive/setVisible`
+
+3. **Archetypes (4 archivos)** — Cada constructor ahora registra `deathAnimKey`:
+   - `src/entities/enemies/Esqueleto.ts`
+   - `src/entities/enemies/Murcielago.ts`
+   - `src/entities/enemies/CalaveraLlameante.ts`
+   - `src/entities/enemies/SerpienteEmplumada.ts`
+
+4. **Archetypes `update()` guard** — Cada arquetipo ahora retorna inmediatamente si `animState === 'dying'`, evitando movimiento durante la animación de muerte.
+
+5. **`CalaveraLlameante.onDefeat()`** — Restructurado para hacer el chequeo de explosión ANTES de llamar a `super.onDefeat()`, garantizando que la explosión ocurre una sola vez antes de que el guard de `animState === 'dying'` bloquee re-entradas.
+
+### Protección contra re-targeting durante muerte
+
+- **WeaponSystem**: `findClosestVisibleEnemy()` filtra por `enemy.hp <= 0` — como el enemigo ya tiene HP=0, no será targeteable durante la animación de muerte.
+- **DamageSystem projectiles**: `body.enable = false` se ejecuta inmediatamente en `onDefeat()`, por lo que los proyectiles no colisionarán con el enemigo moribundo.
+- **DamageSystem contacto**: El body deshabilitado impide nuevas colisiones de contacto.
+
+### Archivos Modificados
+
+- `src/config/enemy-assets.ts`
+- `src/entities/Enemy.ts`
+- `src/entities/enemies/Esqueleto.ts`
+- `src/entities/enemies/Murcielago.ts`
+- `src/entities/enemies/CalaveraLlameante.ts`
+- `src/entities/enemies/SerpienteEmplumada.ts`
+
+### Tests de Regresión
+
+- `src/entities/__tests__/bug-007-enemy-death-animation.test.ts`
+  - Todos los arquetipos tienen death spritesheet definido
+  - getDeathAnimationKey retorna valor para todos los sprite keys
+  - Death keys siguen patrón de nomenclatura {name}_death
+  - Claves específicas correctas (esqueleto_death, murcielago_death, etc.)
+  - Frame counts de muerte son válidos (4 frames para todos)
+  - Las 4 animaciones de muerte aparecen en configs generadas
+  - Animaciones de muerte tienen repeat=0 (one-shot)
+  - Animaciones de muerte usan frameRate=8
+  - Death keys son distintas de walk y attack keys
+  - getDeathAnimationKey retorna undefined para keys inexistentes
+  - Todos los enemigos tienen death definido en ENEMY_SPRITESHEETS
+  - Paths de sprites de muerte apuntan a carpetas de assets válidas
+
+### Notas
+
+- No se modificaron valores de daño, HP, XP, drops, cooldowns ni balance.
+- No se modificaron animaciones de ataque (trabajo de BUG-006 preservado).
+- No se añadieron nuevos assets — los spritesheets de muerte ya existían.
+- El enemigo permanece `active=true` y `visible=true` durante la animación de muerte, pero con `body.enable=false` y `hp=0`, por lo que es inerte para todos los sistemas de combate.
+- La animación de muerte usa frameRate=8 (ligeramente más lenta que walk/attack=10) para mayor dramatismo visual.

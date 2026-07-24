@@ -3,7 +3,7 @@ import { Enemy } from '../Enemy';
 import type { EnemySpawnConfig } from '../../types/interfaces';
 import { calculateDirectChaseVelocity, calculateDistance } from './enemy-movement.pure';
 import { GAME_CONSTANTS } from '../../config/constants';
-import { getWalkAnimationKey, getAttackAnimationKey } from '../../config/enemy-assets';
+import { getWalkAnimationKey, getAttackAnimationKey, getDeathAnimationKey } from '../../config/enemy-assets';
 
 /**
  * Calavera Llameante: persecución directa, explota al morir si el jugador está cerca.
@@ -32,6 +32,7 @@ export class CalaveraLlameante extends Enemy {
     // Register animation keys (BUG-006)
     this.walkAnimKey = getWalkAnimationKey('calavera_llameante_sprite') ?? '';
     this.attackAnimKey = getAttackAnimationKey('calavera_llameante_sprite') ?? '';
+    this.deathAnimKey = getDeathAnimationKey('calavera_llameante_sprite') ?? '';
 
     if (this.walkAnimKey && this.scene.anims.exists(this.walkAnimKey)) {
       this.play(this.walkAnimKey);
@@ -39,6 +40,8 @@ export class CalaveraLlameante extends Enemy {
   }
 
   update(_delta: number, playerPos: { x: number; y: number }): void {
+    if (this.animState === 'dying') return; // Don't move while dying (BUG-007)
+
     this.playerPos = playerPos;
     const velocity = calculateDirectChaseVelocity(
       { x: this.x, y: this.y },
@@ -51,6 +54,7 @@ export class CalaveraLlameante extends Enemy {
   }
 
   onDefeat(): void {
+    // Explosion check BEFORE calling super (which plays death anim) — BUG-007
     const distance = calculateDistance(
       { x: this.x, y: this.y },
       this.playerPos,
@@ -65,7 +69,7 @@ export class CalaveraLlameante extends Enemy {
       });
     }
 
-    // Call parent onDefeat for normal cleanup (emit enemy-defeated, deactivate)
+    // Call parent which handles dying state, events, and death animation
     super.onDefeat();
   }
 }

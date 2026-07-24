@@ -37,6 +37,10 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite implements IEne
   protected walkAnimKey: string = '';
   /** Attack animation key set by subclass. */
   protected attackAnimKey: string = '';
+  /** Death animation key set by subclass (BUG-007). */
+  protected deathAnimKey: string = '';
+  /** Guard to prevent double-emit of defeat event (BUG-007). */
+  private defeatEmitted: boolean = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
     super(scene, x, y, texture);
@@ -126,27 +130,53 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite implements IEne
   }
 
   /**
-   * Emits 'enemy-defeated' event with position and XP reward,
-   * then deactivates and hides the sprite and disables its physics body.
+   * Handles enemy defeat: sets dying state, emits event, disables physics,
+   * plays death animation, then deactivates sprite on animation complete.
+   * If no death animation is available, deactivates immediately.
+   *
+   * BUG-007: Play death animation before deactivating.
    */
   onDefeat(): void {
+    // Guard against double-kill (e.g. multiple projectiles in same frame)
+    if (this.animState === 'dying') return;
+
     this.animState = 'dying';
+    this.setVelocity(0, 0);
 
-    this.scene.events.emit('enemy-defeated', {
-      x: this.x,
-      y: this.y,
-      xpReward: this.xpReward,
-      xpOrbVariant: this.xpOrbVariant,
-    });
-    this.setActive(false);
-    this.setVisible(false);
-
-    this.setActive(false);
-    this.setVisible(false);
-
-    // Disable physics body
+    // Disable physics body immediately (no more collisions)
     if (this.body) {
       this.body.enable = false;
     }
+
+    // Emit defeat event once (XP orb spawns, stats increment)
+    if (!this.defeatEmitted) {
+      this.defeatEmitted = true;
+      this.scene.events.emit('enemy-defeated', {
+        x: this.x,
+        y: this.y,
+        xpReward: this.xpReward,
+        xpOrbVariant: this.xpOrbVariant,
+      });
+    }
+
+    // Play death animation if available
+    if (this.deathAnimKey && this.scene.anims.exists(this.deathAnimKey)) {
+      this.play(this.deathAnimKey);
+      this.once('animationcomplete', this.finishDeath, this);
+    } else {
+      // No death anim — hide immediately
+      this.finishDeath();
+    }
+  }
+
+  /**
+   * Called after death animation completes (or immediately if no anim).
+   * Performs the actual sprite deactivation/hiding.
+   *
+   * BUG-007: Separated from onDefeat to allow animation to play first.
+   */
+  private finishDeath(): void {
+    this.setActive(false);
+    this.setVisible(false);
   }
 }

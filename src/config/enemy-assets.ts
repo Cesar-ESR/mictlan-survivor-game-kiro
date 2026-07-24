@@ -186,3 +186,12 @@ export function getAttackAnimationKey(spriteKey: string): string | undefined {
   const spriteSet = getEnemySpriteSet(spriteKey);
   return spriteSet?.attack?.key;
 }
+
+/**
+ * Obtiene la clave de la animación de death para un enemigo dado su spriteKey.
+ * Retorna undefined si el enemigo no tiene animación de muerte definida.
+ */
+export function getDeathAnimationKey(spriteKey: string): string | undefined {
+  const spriteSet = getEnemySpriteSet(spriteKey);
+  return spriteSet?.death?.key;
+}
