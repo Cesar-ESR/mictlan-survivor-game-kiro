@@ -42,12 +42,24 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   /**
    * Updates animation based on current movement state.
+   * Also updates horizontal facing based on velocity direction.
    * Call every frame after movement is applied.
    *
    * Priority: death > attack > walk > idle
    * Does NOT restart an animation if already playing the correct one.
    */
   updateAnimation(isMoving: boolean): void {
+    // Update horizontal facing based on velocity (preserve last direction when idle)
+    if (this.body) {
+      const vx = (this.body as Phaser.Physics.Arcade.Body).velocity.x;
+      if (vx < 0) {
+        this.setFlipX(true);
+      } else if (vx > 0) {
+        this.setFlipX(false);
+      }
+      // If vx === 0, keep current flipX (last direction)
+    }
+
     // Death takes highest priority (once dead, stay in death anim)
     if (this.hp <= 0) {
       this.playAnimState('death');
