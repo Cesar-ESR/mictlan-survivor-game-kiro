@@ -1,4 +1,5 @@
 ﻿import Phaser from 'phaser';
+import { GAME_FONT_FAMILY } from '../config/font-config';
 
 interface VictoryData {
   totalTime: number;
@@ -24,6 +25,7 @@ export class VictoryScene extends Phaser.Scene {
     const centerY = this.cameras.main.centerY;
 
     this.add.text(centerX, centerY - 140, 'VICTORIA!', {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '48px',
       color: '#ffdd00',
       fontStyle: 'bold',
@@ -43,12 +45,14 @@ export class VictoryScene extends Phaser.Scene {
 
     stats.forEach((stat, index) => {
       this.add.text(centerX, centerY - 60 + index * 36, stat, {
+        fontFamily: GAME_FONT_FAMILY,
         fontSize: '22px',
         color: '#ffffff',
       }).setOrigin(0.5);
     });
 
     const returnBtn = this.add.text(centerX, centerY + 140, '[ Volver ]', {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '24px',
       color: '#ffffff',
       backgroundColor: '#444444',

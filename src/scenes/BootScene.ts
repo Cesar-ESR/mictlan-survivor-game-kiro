@@ -5,6 +5,10 @@ import { registerEnemyAnimations } from '../config/enemy-animations';
 import { loadPlayerAssets } from '../config/player-assets';
 import { registerPlayerAnimations } from '../config/player-animations';
 import { loadXPOrbAssets } from '../config/xp-orb-assets';
+import { loadMenuAssets } from '../config/menu-assets';
+import { loadButtonAssets } from '../config/button-assets';
+import { loadMusicAssets } from '../config/audio-assets';
+import { GAME_FONT_FAMILY } from '../config/font-config';
 
 /**
  * BootScene: Carga de assets iniciales y transición a GameScene.
@@ -47,6 +51,15 @@ export class BootScene extends Phaser.Scene {
     // Cargar asset del orbe de experiencia (delegado a módulo centralizado)
     loadXPOrbAssets(this.load);
 
+    // Cargar assets del menú principal (delegado a módulo centralizado)
+    loadMenuAssets(this.load);
+
+    // Cargar assets modulares del botón (delegado a módulo centralizado)
+    loadButtonAssets(this.load);
+
+    // Cargar pistas de música (delegado a módulo centralizado)
+    loadMusicAssets(this.load);
+
     // Timeout de 3 segundos para detectar cargas estancadas
     this.time.delayedCall(3000, () => {
       if (!this.scene.isActive('GameScene')) {
@@ -83,6 +96,7 @@ export class BootScene extends Phaser.Scene {
 
     // Mensaje de error
     this.add.text(centerX, centerY - 40, message, {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '18px',
       color: '#ff4444',
       align: 'center',
@@ -90,6 +104,7 @@ export class BootScene extends Phaser.Scene {
 
     // Botón de reintentar
     const retryBtn = this.add.text(centerX, centerY + 20, '[ Reintentar ]', {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '20px',
       color: '#ffffff',
       backgroundColor: '#333333',

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { GameModeConfig } from '../types/interfaces';
+import { GAME_FONT_FAMILY } from '../config/font-config';
 
 interface DefeatData {
   survivalTime: number;
@@ -29,6 +30,7 @@ export class DefeatScene extends Phaser.Scene {
 
     // Título
     this.add.text(centerX, centerY - 100, 'DERROTA', {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '48px',
       color: '#ff2222',
       fontStyle: 'bold',
@@ -40,18 +42,21 @@ export class DefeatScene extends Phaser.Scene {
     const timeFormatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
     this.add.text(centerX, centerY - 30, `Tiempo: ${timeFormatted}`, {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '24px',
       color: '#ffffff',
     }).setOrigin(0.5);
 
     // XP total
     this.add.text(centerX, centerY + 10, `XP Total: ${this.defeatData.totalXp}`, {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '24px',
       color: '#44ff44',
     }).setOrigin(0.5);
 
     // Botón de reintentar
     const retryBtn = this.add.text(centerX, centerY + 80, '[ Reintentar ]', {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '24px',
       color: '#ffffff',
       backgroundColor: '#444444',
@@ -64,6 +69,7 @@ export class DefeatScene extends Phaser.Scene {
 
     // Botón volver al menú
     const menuBtn = this.add.text(centerX, centerY + 140, '[ Volver al menú ]', {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '24px',
       color: '#ffffff',
       backgroundColor: '#444444',

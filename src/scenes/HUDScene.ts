@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { calculateHealthFill, calculateXPFill, formatTimerMMSS } from '../systems/hud-utils';
 import type { Upgrade, WaveChangedPayload, LevelUpPayload } from '../types/interfaces';
+import { GAME_FONT_FAMILY } from '../config/font-config';
 
 /**
  * HUDScene: Escena overlay lanzada en paralelo sobre GameScene.
@@ -77,6 +78,7 @@ export class HUDScene extends Phaser.Scene {
 
     // Text label to the right of the frame
     this.hpText = this.add.text(x + this.healthFrame.width + 8, y + 10, 'HP: 100/100', {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '14px',
       color: '#ffffff',
     });
@@ -108,6 +110,7 @@ export class HUDScene extends Phaser.Scene {
 
     // Text label to the right of the frame
     this.xpText = this.add.text(x + this.xpFrame.width + 8, y + 10, 'XP: 0/15 (Nivel 1)', {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '14px',
       color: '#ffffff',
     });
@@ -131,6 +134,7 @@ export class HUDScene extends Phaser.Scene {
 
   private createWaveDisplay(): void {
     this.waveText = this.add.text(16, 90, 'Oleada: 1', {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '16px',
       color: '#ffff44',
     });
@@ -139,6 +143,7 @@ export class HUDScene extends Phaser.Scene {
     const centerX = this.cameras.main.width / 2;
     const centerY = this.cameras.main.height / 3;
     this.waveAnnouncement = this.add.text(centerX, centerY, '', {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '48px',
       color: '#ffdd00',
       fontStyle: 'bold',
@@ -172,6 +177,7 @@ export class HUDScene extends Phaser.Scene {
   private createTimerDisplay(): void {
     const rightX = this.cameras.main.width - 80;
     this.timerText = this.add.text(rightX, 16, '00:00', {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '16px',
       color: '#ffffff',
     });
@@ -213,6 +219,7 @@ export class HUDScene extends Phaser.Scene {
 
     // Title
     const title = this.add.text(width / 2, height * 0.15, '¡Subiste de nivel!', {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '32px',
       color: '#ffdd00',
       fontStyle: 'bold',
@@ -221,6 +228,7 @@ export class HUDScene extends Phaser.Scene {
     this.levelUpContainer.add(title);
 
     const subtitle = this.add.text(width / 2, height * 0.22, 'Elige una mejora:', {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '18px',
       color: '#ffffff',
     });
@@ -252,6 +260,7 @@ export class HUDScene extends Phaser.Scene {
 
     // Upgrade name
     const nameText = this.add.text(x, y - 30, upgrade.name, {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '16px',
       color: '#ffffff',
       fontStyle: 'bold',
@@ -263,6 +272,7 @@ export class HUDScene extends Phaser.Scene {
 
     // Upgrade description
     const descText = this.add.text(x, y + 15, upgrade.description, {
+      fontFamily: GAME_FONT_FAMILY,
       fontSize: '12px',
       color: '#cccccc',
       wordWrap: { width: w - 20 },

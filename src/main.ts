@@ -48,6 +48,8 @@ const config: Phaser.Types.Core.GameConfig = {
   height: 768,
   parent: 'app',
   pixelArt: true,
+  antialias: false,
+  roundPixels: true,
   physics: {
     default: 'arcade',
     arcade: {
@@ -57,6 +59,8 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   scene: getScenes(),
 };
+
+await document.fonts.load('16px PixelOperator');
 
 const game = new Phaser.Game(config);
 
