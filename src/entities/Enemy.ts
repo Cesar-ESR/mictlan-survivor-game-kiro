@@ -4,6 +4,14 @@ import { GAME_CONSTANTS } from '../config/constants';
 import type { IEnemy } from '../types/interfaces';
 
 /**
+ * Animation state for the enemy state machine (BUG-006).
+ * - 'moving': default state, walk animation loops
+ * - 'attacking': attack animation playing (one-shot)
+ * - 'dying': death sequence, no interruption allowed
+ */
+export type EnemyAnimState = 'moving' | 'attacking' | 'dying';
+
+/**
  * Abstract base class for all enemy entities in Mictlán Survivor.
  * Extends Phaser Arcade Sprite and implements common enemy behavior.
  *
@@ -18,6 +26,13 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite implements IEne
   declare speed: number;
   declare damage: number;
   declare xpReward: number;
+
+  /** Current animation state (BUG-006). */
+  protected animState: EnemyAnimState = 'moving';
+  /** Walk animation key set by subclass. */
+  protected walkAnimKey: string = '';
+  /** Attack animation key set by subclass. */
+  protected attackAnimKey: string = '';
 
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
     super(scene, x, y, texture);
@@ -36,6 +51,55 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite implements IEne
    * Implementations should move the enemy toward or relative to the player.
    */
   abstract update(delta: number, playerPos: Phaser.Math.Vector2): void;
+
+  /**
+   * Returns the current animation state.
+   */
+  getAnimState(): EnemyAnimState {
+    return this.animState;
+  }
+
+  /**
+   * Plays the attack animation once when contact damage is applied.
+   * Called by DamageSystem when this enemy deals valid contact damage.
+   * Does nothing if enemy is already attacking or dying.
+   *
+   * BUG-006: Enemies attack without animation
+   */
+  playAttackAnimation(targetX?: number): void {
+    if (!this.active) return;
+    if (this.animState === 'dying') return;
+    if (this.animState === 'attacking') return;
+
+    // Flip toward player
+    if (targetX !== undefined) {
+      this.setFlipX(targetX > this.x);
+    }
+
+    this.animState = 'attacking';
+
+    // Play attack animation if registered and exists
+    if (this.attackAnimKey && this.scene.anims.exists(this.attackAnimKey)) {
+      this.play(this.attackAnimKey);
+      this.once('animationcomplete', this.onAttackAnimComplete, this);
+    } else {
+      // No attack anim available — return to moving immediately
+      this.animState = 'moving';
+    }
+  }
+
+  /**
+   * Handler for when attack animation completes. Resumes walk animation.
+   */
+  private onAttackAnimComplete(): void {
+    if (this.animState === 'attacking') {
+      this.animState = 'moving';
+      // Resume walk animation
+      if (this.walkAnimKey && this.scene.anims.exists(this.walkAnimKey)) {
+        this.play(this.walkAnimKey);
+      }
+    }
+  }
 
   /**
    * Updates the horizontal facing direction toward the player.
@@ -62,6 +126,8 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite implements IEne
    * then deactivates and hides the sprite and disables its physics body.
    */
   onDefeat(): void {
+    this.animState = 'dying';
+
     this.scene.events.emit('enemy-defeated', {
       x: this.x,
       y: this.y,

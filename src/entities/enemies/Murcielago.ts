@@ -5,7 +5,7 @@ import {
   calculateChaseDirection,
   calculateZigzagOffset,
 } from './enemy-movement.pure';
-import { getWalkAnimationKey } from '../../config/enemy-assets';
+import { getWalkAnimationKey, getAttackAnimationKey } from '../../config/enemy-assets';
 
 /**
  * Murciélago: rápido con movimiento en zigzag perpendicular a la dirección de avance.
@@ -34,9 +34,12 @@ export class Murcielago extends Enemy {
     this.amplitude = 40;
     this.frequency = 3;
 
-    const walkAnimKey = getWalkAnimationKey('murcielago_sprite');
-    if (walkAnimKey && this.scene.anims.exists(walkAnimKey)) {
-      this.play(walkAnimKey);
+    // Register animation keys (BUG-006)
+    this.walkAnimKey = getWalkAnimationKey('murcielago_sprite') ?? '';
+    this.attackAnimKey = getAttackAnimationKey('murcielago_sprite') ?? '';
+
+    if (this.walkAnimKey && this.scene.anims.exists(this.walkAnimKey)) {
+      this.play(this.walkAnimKey);
     }
   }
 

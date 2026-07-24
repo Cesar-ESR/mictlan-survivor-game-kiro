@@ -177,3 +177,12 @@ export function getWalkAnimationKey(spriteKey: string): string | undefined {
   const spriteSet = getEnemySpriteSet(spriteKey);
   return spriteSet?.walk.key;
 }
+
+/**
+ * Obtiene la clave de la animación de attack para un enemigo dado su spriteKey.
+ * Retorna undefined si el enemigo no tiene animación de ataque definida.
+ */
+export function getAttackAnimationKey(spriteKey: string): string | undefined {
+  const spriteSet = getEnemySpriteSet(spriteKey);
+  return spriteSet?.attack?.key;
+}

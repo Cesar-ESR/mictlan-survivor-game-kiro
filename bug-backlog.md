@@ -337,3 +337,79 @@ Los proyectiles del arma del jugador pasaban a través de muros, obstáculos y l
 - No se implementó oclusión de DECORACIONES — solo walls/obstacles/liquids bloquean. El bloqueo por decoraciones queda PENDIENTE catalogación individual de cada decoración.
 - El LOS check usa el grid lógico existente (sin costo adicional de memoria).
 - Los colliders de proyectiles usan `setCollisionByExclusion([-1])` ya configurado en las capas del mapa (herencia de BUG-001).
+
+
+---
+
+## BUG-006: Enemigos atacan sin animación
+
+**Estado:** ✅ Corregido  
+**Fecha:** 2025-01-XX  
+**Severidad:** Media (visual/feedback)
+
+### Descripción
+
+Los enemigos aplicaban daño de contacto al jugador pero permanecían en su animación de walk. No existía transición visual a una animación de ataque, eliminando el feedback visual de que el enemigo está atacando activamente.
+
+### Causa Raíz
+
+1. **Sin máquina de estados de animación**: La clase base `Enemy` no tenía concepto de estados de animación. Cada arquetipo llamaba `this.play(walkAnimKey)` en su constructor pero no existía mecanismo para cambiar a ataque.
+
+2. **DamageSystem no disparaba animación**: Cuando `checkEnemyPlayerCollisions()` aplicaba daño de contacto, no llamaba ningún método visual en el enemigo.
+
+3. **Sin registro de claves de animación en subclases**: Aunque `enemy-assets.ts` definía spritesheets de ataque para todos los enemigos, y `enemy-animations.ts` generaba las configuraciones, las subclases nunca almacenaban las claves de ataque para poder usarlas en runtime.
+
+### Corrección
+
+1. **`src/entities/Enemy.ts`** — Se añadió máquina de estados de animación:
+   - Tipo `EnemyAnimState` exportado: `'moving' | 'attacking' | 'dying'`
+   - Campos protegidos `animState`, `walkAnimKey`, `attackAnimKey`
+   - Método público `playAttackAnimation(targetX?)`: verifica estado, flipea hacia el jugador, transiciona a 'attacking', reproduce animación one-shot, y al completar vuelve a 'moving' + walk
+   - Método `getAnimState()` para lectura del estado actual
+   - `onDefeat()` ahora marca `animState = 'dying'` antes de deactivar
+
+2. **`src/config/enemy-assets.ts`** — Se añadió función `getAttackAnimationKey(spriteKey)` análoga a `getWalkAnimationKey`.
+
+3. **Archetypes (4 archivos)** — Cada constructor ahora registra `walkAnimKey` y `attackAnimKey` usando las funciones de `enemy-assets.ts`:
+   - `src/entities/enemies/Esqueleto.ts`
+   - `src/entities/enemies/Murcielago.ts`
+   - `src/entities/enemies/CalaveraLlameante.ts`
+   - `src/entities/enemies/SerpienteEmplumada.ts`
+
+4. **`src/systems/DamageSystem.ts`** — En `checkEnemyPlayerCollisions()`, se añadió `enemy.playAttackAnimation(this.player.x)` antes de aplicar el daño.
+
+### Archivos Modificados
+
+- `src/entities/Enemy.ts`
+- `src/config/enemy-assets.ts`
+- `src/entities/enemies/Esqueleto.ts`
+- `src/entities/enemies/Murcielago.ts`
+- `src/entities/enemies/CalaveraLlameante.ts`
+- `src/entities/enemies/SerpienteEmplumada.ts`
+- `src/systems/DamageSystem.ts`
+
+### Tests de Regresión
+
+- `src/entities/__tests__/bug-006-enemy-attack-animation.test.ts`
+  - Todos los arquetipos tienen attack spritesheet definido
+  - getAttackAnimationKey retorna valor para todos los sprite keys
+  - Frame counts de ataque son válidos (≥1)
+  - calavera_llameante tiene 5 frames de ataque (único)
+  - esqueleto, murcielago, serpiente tienen 4 frames de ataque
+  - Walk key difiere de attack key para todos los enemigos
+  - Las 4 animaciones de ataque aparecen en configs generadas
+  - Animaciones de ataque tienen repeat=0 (one-shot)
+  - Animaciones de walk tienen repeat=-1 (loop)
+  - Animaciones de ataque usan frameRate=10
+  - Los 4 enemigos tienen walk, attack y death definidos
+  - Paths de sprites apuntan a patrones de carpeta válidos
+  - getAttackAnimationKey retorna undefined para keys inexistentes
+
+### Notas
+
+- No se modificaron valores de daño, cooldowns, velocidades ni balance.
+- No se modificó WeaponSystem ni el ataque del jugador.
+- No se añadieron nuevos ataques de enemigos ni proyectiles.
+- Los enemigos siguen moviéndose durante la animación de ataque (no se detienen) — es daño de contacto, ya están tocando al jugador.
+- La animación de ataque se dispara una sola vez por cooldown de daño (no se repite hasta que el cooldown se cumple y vuelve a aplicar daño).
+- Si la animación de ataque no existe en el AnimationManager, el estado vuelve a 'moving' inmediatamente (graceful degradation).
