@@ -484,13 +484,13 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
 - [ ] 14. Checkpoint - Verificar combate completo
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 15. Orbes de XP
-  - [ ] 15.1 Crear `src/entities/XPOrb.ts` como sprite con valor de XP
+- [x] 15. Orbes de XP
+  - [x] 15.1 Crear `src/entities/XPOrb.ts` como sprite con valor de XP
     - Propiedades: value, creationTime, isAttracted
     - Sprite simple (círculo verde/dorado)
     - _Requirements: 8.1_
 
-  - [ ] 15.2 Crear `src/systems/OrbCollector.ts`
+  - [x] 15.2 Crear `src/systems/OrbCollector.ts`
     - `spawnOrb(position, value)`: crear orbe en posición del enemigo derrotado (pool)
     - `update(delta, playerPos)`:
       - Para cada orbe: calcular distancia al jugador
@@ -500,13 +500,13 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - `enforceOrbCap()`: si orbes > 200, eliminar los más antiguos (FIFO)
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-  - [ ] 15.3 Integrar OrbCollector con sistema de derrota de enemigos
+  - [x] 15.3 Integrar OrbCollector con sistema de derrota de enemigos
     - Escuchar evento `enemy-defeated` → llamar `spawnOrb(pos, xpReward)`
     - Al recoger orbe → llamar `XPSystem.addXP(player, value)`
     - En nivel 20: solo incrementar totalXp al recoger orbe
     - _Requirements: 3.4, 8.3, 8.6_
 
-  - [ ]* 15.4 Escribir property tests para OrbCollector (`src/systems/__tests__/orb-collector.property.test.ts`)
+  - [x]* 15.4 Escribir property tests para OrbCollector (`src/systems/__tests__/orb-collector.property.test.ts`)
     - **Property 23: Orb Attraction Behavior** — orbe se mueve a 400px/s si distancia ≤100px, estático si >100px
     - **Property 24: Orb Lifetime Expiration** — orbes eliminados después de 30s
     - **Property 25: Orb Pool Cap with FIFO Removal** — nunca más de 200 orbes, elimina más antiguos primero
