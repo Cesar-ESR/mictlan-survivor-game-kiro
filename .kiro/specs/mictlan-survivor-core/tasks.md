@@ -629,8 +629,8 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Pasar struct de stats a las escenas de fin de juego
     - _Requirements: 6.4, 4.5_
 
-- [ ] 22. Integración Delta Time en todos los sistemas
-  - [ ] 22.1 Auditar y garantizar uso de Delta Time en todos los cálculos temporales
+- [x] 22. Integración Delta Time en todos los sistemas
+  - [x] 22.1 Auditar y garantizar uso de Delta Time en todos los cálculos temporales
     - PlayerManager: `position += direction * speed * (delta/1000)`
     - Enemy.update: `position += direction * speed * (delta/1000)`
     - SerpienteEmplumada: `currentSpeed += acceleration * (delta/1000)`
@@ -644,7 +644,7 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Proyectiles: `distance += speed * (delta/1000)`
     - _Requirements: NFR-DeltaTime (todos los sistemas)_
 
-  - [ ]* 22.2 Escribir property test para Delta Time (`src/systems/__tests__/delta-time.property.test.ts`)
+  - [x]* 22.2 Escribir property test para Delta Time (`src/systems/__tests__/delta-time.property.test.ts`)
     - **Property 26: Delta Time Independence** — duplicar delta duplica desplazamiento; escala lineal
     - Testear con deltas variados (1ms, 16ms, 33ms, 100ms) para movimiento, cooldowns, timers
     - **Validates: Requirements 2.1, 3.3, 4.1, 4.4, 6.1, 6.3, 8.2, 8.4**
