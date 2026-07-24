@@ -9,6 +9,7 @@ import { PhaserMapLayerBuilder } from '../map/PhaserMapLayerBuilder';
 import type { MapLayers } from '../map/PhaserMapLayerBuilder';
 import { Player } from '../entities/Player';
 import { PlayerManager } from '../systems/PlayerManager';
+import type { GameStats } from '../types/game-stats';
 
 const { MAP_WIDTH, MAP_HEIGHT } = GAME_CONSTANTS;
 
@@ -42,6 +43,7 @@ export class GameScene extends Phaser.Scene {
   private debugWASD: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key } | null = null;
   private player!: Player;
   private playerManager!: PlayerManager;
+  private gameStats: GameStats = { survivalTime: 0, enemiesDefeated: 0, maxWave: 1 };
 
   /** Access generated map layers (null if generation failed). */
   get mapLayers(): MapLayers | null {
@@ -126,6 +128,40 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.startFollow(this.player);
     }
 
+    // --- Stats tracking event listeners ---
+
+    // Reset stats on (re)generation
+    this.gameStats = { survivalTime: 0, enemiesDefeated: 0, maxWave: 1 };
+
+    // Defeat flow: transition to DefeatScene with stats (Requirement 4.5)
+    this.events.on('player-defeated', () => {
+      this.scene.start('DefeatScene', {
+        survivalTime: this.gameStats.survivalTime,
+        totalXp: this.player.totalXp,
+      });
+    });
+
+    // Victory flow: transition to VictoryScene with full stats (Requirement 6.4)
+    this.events.on('victory', () => {
+      this.scene.start('VictoryScene', {
+        totalTime: this.gameStats.survivalTime,
+        maxWave: this.gameStats.maxWave,
+        enemiesDefeated: this.gameStats.enemiesDefeated,
+        totalXp: this.player.totalXp,
+        levelReached: this.player.level,
+      });
+    });
+
+    // Increment enemies defeated counter
+    this.events.on('enemy-defeated', () => {
+      this.gameStats.enemiesDefeated++;
+    });
+
+    // Update max wave reached
+    this.events.on('wave-changed', (wave: number) => {
+      this.gameStats.maxWave = Math.max(this.gameStats.maxWave, wave);
+    });
+
     // TODO: Configurar player/enemies colliders con walls/obstacles layers (Task 5+)
     // TODO: Instanciar sistemas (SpawnManager, WaveManager, etc.) (Task 23)
   }
@@ -192,6 +228,11 @@ export class GameScene extends Phaser.Scene {
   update(_time: number, _delta: number): void {
     if (this.isPaused) {
       return;
+    }
+
+    // Accumulate survival time (when not paused and not in debug mode)
+    if (!this.isDebugMode) {
+      this.gameStats.survivalTime += _delta / 1000;
     }
 
     // Debug camera movement

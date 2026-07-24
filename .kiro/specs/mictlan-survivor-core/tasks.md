@@ -611,20 +611,20 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
 - [ ] 20. Checkpoint - Verificar progresión y HUD
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 21. Victoria, derrota y estadísticas
-  - [ ] 21.1 Implementar flujo completo de derrota
+- [x] 21. Victoria, derrota y estadísticas
+  - [x] 21.1 Implementar flujo completo de derrota
     - DamageSystem detecta HP ≤ 0 → emitir `player-defeated`
     - GameScene escucha evento → pasar stats a DefeatScene (survivalTime, totalXp)
     - DefeatScene muestra estadísticas con opción de reintentar
     - _Requirements: 4.5_
 
-  - [ ] 21.2 Implementar flujo completo de victoria (Modo Campaña)
+  - [x] 21.2 Implementar flujo completo de victoria (Modo Campaña)
     - WaveManager detecta currentWave > finalWave → emitir `victory`
     - GameScene escucha evento → pasar stats a VictoryScene
     - VictoryScene muestra: tiempo total, oleada máxima, enemigos derrotados, XP total, nivel
     - _Requirements: 6.4_
 
-  - [ ] 21.3 Implementar contador de estadísticas en GameScene
+  - [x] 21.3 Implementar contador de estadísticas en GameScene
     - Tracker: survivalTime (acumula delta), enemiesDefeated (incrementa en defeat), maxWave
     - Pasar struct de stats a las escenas de fin de juego
     - _Requirements: 6.4, 4.5_
