@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { calculateHealthFill, calculateXPFill, formatTimerMMSS } from '../systems/hud-utils';
 import type { Upgrade, WaveChangedPayload, LevelUpPayload } from '../types/interfaces';
 import { GAME_FONT_FAMILY } from '../config/font-config';
+import { AudioManager } from '../managers/AudioManager';
 
 /**
  * HUDScene: Escena overlay lanzada en paralelo sobre GameScene.
@@ -294,6 +295,7 @@ export class HUDScene extends Phaser.Scene {
 
     // Click → emit upgrade-selected on GameScene events, then hide panel
     cardBg.on('pointerdown', () => {
+      AudioManager.getInstance(this).playSFX('CONFIRM');
       const gameScene = this.scene.get('GameScene');
       gameScene.events.emit('upgrade-selected', { upgradeId: upgrade.id });
       this.hideLevelUpPanel();
