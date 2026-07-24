@@ -39,7 +39,7 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Tipos: velocidad, HP máximo, daño arma, cadencia arma, rango arma, radio atracción orbes, etc.
     - _Requirements: 5.3, 5.8, 5.9_
 
-- [ ] 2. Inicialización de Phaser, escenas y scaffolding
+- [x] 2. Inicialización de Phaser, escenas y scaffolding
   - [x] 2.1 Crear archivo `src/main.ts` con la configuración de Phaser y arranque del juego
     - Configurar canvas 1024×768 (o responsive), physics arcade
     - Registrar todas las escenas: BootScene, GameScene, HUDScene, DefeatScene, VictoryScene
@@ -52,7 +52,7 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Si la carga falla o excede 3 segundos, mostrar mensaje de error y opción de reintentar
     - _Requirements: 1.1, 1.4_
 
-  - [ ] 2.3 Actualizar `src/scenes/GameScene.ts` — eliminar TileSprite de mapa e integrar MapGenerator
+  - [x] 2.3 Actualizar `src/scenes/GameScene.ts` — eliminar TileSprite de mapa e integrar MapGenerator
     - ELIMINAR el uso incorrecto de TileSprite que repite el sheet completo como fondo
     - El mapa ahora se genera proceduralmente via MapGenerator (Tarea 3)
     - Mantener estructura `create()`/`update()` existente, world bounds 3200×3200, lanzamiento de HUDScene
@@ -370,7 +370,7 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Test: SerpienteEmplumada acelera progresivamente y no supera maxSpeed
     - **Validates: Requirements 9.1**
 
-- [ ] 9. Checkpoint - Verificar entidades base
+- [x] 9. Checkpoint - Verificar entidades base
   - Ensure all tests pass, ask the user if questions arise.
 
 - [x] 10. SpawnManager y gestión de límite de enemigos
@@ -403,8 +403,8 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - **Property 8: Enemy Despawn by Distance** — enemigos a >1500px eliminados sin XP/orbe
     - **Validates: Requirements 3.1, 3.2, 3.5, 3.6**
 
-- [ ] 11. Sistema de oleadas y modos Campaña/Infinito
-  - [ ] 11.1 Crear `src/systems/WaveManager.ts`
+- [x] 11. Sistema de oleadas y modos Campaña/Infinito
+  - [x] 11.1 Crear `src/systems/WaveManager.ts`
     - `waveTimer` acumula delta time; al alcanzar `waveDuration` (30s) → transición
     - `transitionTimer`: pausa de ≤2s entre oleadas, emitir evento `wave-changed`
     - `calculateDifficulty(wave)`: aplicar fórmulas exponenciales
@@ -414,20 +414,20 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Notificar SpawnManager con nueva config al iniciar oleada
     - _Requirements: 6.1, 6.2, 6.3_
 
-  - [ ] 11.2 Implementar lógica de Modo Campaña y Modo Infinito en WaveManager
+  - [x] 11.2 Implementar lógica de Modo Campaña y Modo Infinito en WaveManager
     - `isVictory()`: Campaña retorna true si currentWave > finalWave; Infinito siempre false
     - `resolveWaveConfig(wave)`: si wave > última oleada configurada, repetir parámetros de la última SIN escalado adicional
     - Al detectar victoria → emitir evento para transicionar a VictoryScene con stats
     - Preservar enemigos existentes entre oleadas (NO limpiar pool al cambiar oleada)
     - _Requirements: 6.4, 6.5, 3.7_
 
-  - [ ]* 11.3 Escribir property tests para WaveManager (`src/systems/__tests__/wave-manager.property.test.ts`)
+  - [x]* 11.3 Escribir property tests para WaveManager (`src/systems/__tests__/wave-manager.property.test.ts`)
     - **Property 17: Exponential Difficulty Scaling with Clamping** — fórmulas correctas con floor/ceiling
     - **Property 18: Infinite Mode Repeats Last Wave Config** — wave > C usa parámetros de C sin escalado extra
     - **Property 19: Wave-to-Enemy-Type Mapping** — tipos correctos por rango de oleada
     - **Validates: Requirements 6.2, 6.3, 6.5, 9.4**
 
-  - [ ]* 11.4 Escribir unit tests para WaveManager (`src/systems/__tests__/wave-manager.unit.test.ts`)
+  - [x]* 11.4 Escribir unit tests para WaveManager (`src/systems/__tests__/wave-manager.unit.test.ts`)
     - Test: transición de oleada en ≤2s
     - Test: display de número de oleada emitido tras transición
     - Test: enemigos de oleada anterior sobreviven la transición
