@@ -512,8 +512,8 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - **Property 25: Orb Pool Cap with FIFO Removal** — nunca más de 200 orbes, elimina más antiguos primero
     - **Validates: Requirements 8.2, 8.4, 8.5**
 
-- [ ] 16. Modelo XP dual y sistema de nivelación
-  - [ ] 16.1 Crear `src/systems/XPSystem.ts`
+- [x] 16. Modelo XP dual y sistema de nivelación
+  - [x] 16.1 Crear `src/systems/XPSystem.ts`
     - `calculateThreshold(level)`: `level * 10 + 5`
     - `addXP(player, value)`: incrementar levelXp y totalXp
       - Si level = 20: solo totalXp, levelXp = threshold (clamped)
@@ -526,14 +526,14 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - `applyUpgrade(player, upgrade)` y `removeUpgradeFromPool(upgradeId)`
     - _Requirements: 5.1, 5.2, 5.3, 5.6, 5.7, 5.8, 5.9, 5.10, 5.11_
 
-  - [ ]* 16.2 Escribir property tests para XPSystem (`src/systems/__tests__/xp-system.property.test.ts`)
+  - [x]* 16.2 Escribir property tests para XPSystem (`src/systems/__tests__/xp-system.property.test.ts`)
     - **Property 13: XP Dual Counter Increment** — levelXp y totalXp incrementan por V; en nivel 20 solo totalXp
     - **Property 14: Level-Up Excess Carry-Over** — exceso = levelXp - threshold, se conserva como progreso
     - **Property 15: Upgrade Selection Uniqueness and Count** — 3 si N≥3, N si 0<N<3, vacío si N=0
     - **Property 16: XP Threshold Formula** — threshold = level × 10 + 5, inicial = 15
     - **Validates: Requirements 5.1, 5.2, 5.3, 5.6, 5.7, 5.8, 5.9, 8.3, 8.6**
 
-  - [ ]* 16.3 Escribir unit tests para XPSystem (`src/systems/__tests__/xp-system.unit.test.ts`)
+  - [x]* 16.3 Escribir unit tests para XPSystem (`src/systems/__tests__/xp-system.unit.test.ts`)
     - Test: nivel 20 no incrementa level, no muestra panel
     - Test: pool vacío → omite panel, reanuda inmediatamente
     - Test: pool con 1-2 opciones → muestra todas
