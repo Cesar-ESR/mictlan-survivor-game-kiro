@@ -576,33 +576,33 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Test: pausa congela spawns, orbes, proyectiles simultáneamente
     - **Validates: Requirements 5.4, 5.5**
 
-- [ ] 19. HUD completo
-  - [ ] 19.1 Implementar `HealthBar` en HUDScene
+- [x] 19. HUD completo
+  - [x] 19.1 Implementar `HealthBar` en HUDScene
     - Barra en esquina superior izquierda
     - `fillRatio = hp / maxHp`, clamped [0, 1]
     - Actualizar en el mismo frame vía evento `hp-changed`
     - _Requirements: 7.1, 7.4_
 
-  - [ ] 19.2 Implementar `XPBar` en HUDScene
+  - [x] 19.2 Implementar `XPBar` en HUDScene
     - Barra de experiencia con `fillRatio = levelXp / threshold`, clamped [0, 1]
     - Tras level-up: mostrar `excessXp / newThreshold` (NO reiniciar a 0%)
     - En nivel 20: permanece a 100%
     - Actualizar en el mismo frame vía evento `xp-changed`
     - _Requirements: 7.2, 7.5, 7.6_
 
-  - [ ] 19.3 Implementar `WaveDisplay` y `TimerDisplay` en HUDScene
+  - [x] 19.3 Implementar `WaveDisplay` y `TimerDisplay` en HUDScene
     - WaveDisplay: número de oleada actual, anuncio breve al cambiar
     - TimerDisplay: formato MM:SS (floor(s/60) pad 2 : floor(s%60) pad 2)
     - Timer usa delta time para acumulación (independiente de frame rate)
     - _Requirements: 7.3_
 
-  - [ ] 19.4 Implementar `LevelUpPanel` en HUDScene
+  - [x] 19.4 Implementar `LevelUpPanel` en HUDScene
     - Panel overlay que muestra 1-3 opciones de mejora (cards clickeables)
     - Al click → emitir evento `upgrade-selected` con la mejora elegida
     - Desaparecer tras selección
     - _Requirements: 5.3, 5.5, 5.8_
 
-  - [ ]* 19.5 Escribir property tests para HUD (`src/systems/__tests__/hud.property.test.ts`)
+  - [x]* 19.5 Escribir property tests para HUD (`src/systems/__tests__/hud.property.test.ts`)
     - **Property 20: Health Bar Proportional Fill** — fillRatio = hp/maxHp clamped [0,1]
     - **Property 21: XP Bar Proportional Fill with Level-Up Excess** — levelXp/threshold; excess/newThreshold tras level-up; 100% en nivel 20
     - **Property 22: Timer Format MM:SS** — formato correcto para cualquier S≥0
