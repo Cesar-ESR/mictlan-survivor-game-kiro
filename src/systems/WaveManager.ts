@@ -1,4 +1,4 @@
-import type { GameModeConfig, WaveConfig, DifficultyParams } from '../types/interfaces';
+import type { GameModeConfig, WaveConfig, DifficultyParams, WaveChangedPayload } from '../types/interfaces';
 import { buildWaveConfig } from '../config/wave-configs';
 import { GAME_CONSTANTS } from '../config/constants';
 
@@ -61,7 +61,8 @@ export class WaveManager {
     // Initialize wave 1: resolve config, notify spawn controller, emit event
     const config = this.resolveWaveConfig(this.currentWave);
     this.spawnController.setWaveConfig(config);
-    this.eventEmitter.emit('wave-changed', { wave: this.currentWave, config });
+    const payload: WaveChangedPayload = { wave: this.currentWave, config };
+    this.eventEmitter.emit('wave-changed', payload);
   }
 
   /**
@@ -108,7 +109,8 @@ export class WaveManager {
         // No victory: start next wave
         const config = this.resolveWaveConfig(this.currentWave);
         this.spawnController.setWaveConfig(config);
-        this.eventEmitter.emit('wave-changed', { wave: this.currentWave, config });
+        const changedPayload: WaveChangedPayload = { wave: this.currentWave, config };
+        this.eventEmitter.emit('wave-changed', changedPayload);
         this.state = 'running';
         this.waveTimer = 0;
       }

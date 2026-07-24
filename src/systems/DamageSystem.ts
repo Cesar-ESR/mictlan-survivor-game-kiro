@@ -179,12 +179,6 @@ export class DamageSystem {
           // Check for player defeat
           if (this.player.hp <= 0) {
             this.scene.events.emit('player-defeated');
-            this.scene.scene.start('DefeatScene', {
-              stats: {
-                hp: this.player.hp,
-                maxHp: this.player.maxHp,
-              },
-            });
             return;
           }
         }

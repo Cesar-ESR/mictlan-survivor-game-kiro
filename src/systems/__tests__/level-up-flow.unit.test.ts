@@ -1,11 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { Upgrade } from '../../types/interfaces';
+import type { Upgrade, LevelUpPayload } from '../../types/interfaces';
 import {
   LevelUpCoordinator,
   type LevelUpXPProvider,
   type PauseController,
   type LevelUpEventEmitter,
-  type LevelUpPayload,
 } from '../LevelUpCoordinator';
 
 // --- Fake implementations ---

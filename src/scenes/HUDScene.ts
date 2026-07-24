@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { calculateHealthFill, calculateXPFill, formatTimerMMSS } from '../systems/hud-utils';
-import type { Upgrade } from '../types/interfaces';
+import type { Upgrade, WaveChangedPayload, LevelUpPayload } from '../types/interfaces';
 
 /**
  * HUDScene: Escena overlay lanzada en paralelo sobre GameScene.
@@ -313,10 +313,10 @@ export class HUDScene extends Phaser.Scene {
   private _hpHandler = (hp: number, maxHp: number) => this.updateHealthBar(hp, maxHp);
   private _xpHandler = (levelXp: number, threshold: number, level: number, isMaxLevel?: boolean) =>
     this.updateXPBar(levelXp, threshold, level, isMaxLevel ?? false);
-  private _waveHandler = (wave: number) => this.updateWaveDisplay(wave);
-  private _levelUpHandler = (upgrades: Upgrade[]) => {
-    if (upgrades && upgrades.length > 0) {
-      this.showLevelUpPanel(upgrades);
+  private _waveHandler = (payload: WaveChangedPayload) => this.updateWaveDisplay(payload.wave);
+  private _levelUpHandler = (payload: LevelUpPayload) => {
+    if (payload && payload.upgrades.length > 0) {
+      this.showLevelUpPanel(payload.upgrades as Upgrade[]);
     }
   };
   private _timeHandler = (elapsedSeconds: number) => { this.elapsedSeconds = elapsedSeconds; };

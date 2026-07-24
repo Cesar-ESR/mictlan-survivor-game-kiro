@@ -1,13 +1,15 @@
 import Phaser from 'phaser';
+import type { GameModeConfig } from '../types/interfaces';
 
 interface DefeatData {
   survivalTime: number;
   totalXp: number;
+  gameMode?: GameModeConfig;
 }
 
 /**
  * DefeatScene: Pantalla de derrota.
- * Muestra estadísticas de la partida y opción de reintentar.
+ * Muestra estadísticas de la partida, opción de reintentar y volver al menú.
  * Requirements: 4.5
  */
 export class DefeatScene extends Phaser.Scene {
@@ -57,7 +59,22 @@ export class DefeatScene extends Phaser.Scene {
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     retryBtn.on('pointerdown', () => {
-      this.scene.start('BootScene');
+      this.scene.start('GameScene', { gameMode: this.defeatData.gameMode });
+    });
+
+    // Botón volver al menú
+    const menuBtn = this.add.text(centerX, centerY + 140, '[ Volver al menú ]', {
+      fontSize: '24px',
+      color: '#ffffff',
+      backgroundColor: '#444444',
+      padding: { x: 20, y: 10 },
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    menuBtn.on('pointerdown', () => {
+      if (this.scene.isActive('HUDScene')) {
+        this.scene.stop('HUDScene');
+      }
+      this.scene.start('MainMenuScene');
     });
   }
 }

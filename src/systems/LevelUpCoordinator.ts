@@ -1,4 +1,4 @@
-import type { Upgrade } from '../types/interfaces';
+import type { Upgrade, LevelUpPayload, UpgradeSelectedPayload } from '../types/interfaces';
 
 /** Minimal interface for pause control — real PauseSystem (Task 18) will implement this */
 export interface PauseController {
@@ -21,12 +21,6 @@ export interface LevelUpEventEmitter {
   off(event: string, fn: (...args: unknown[]) => void, context?: unknown): unknown;
 }
 
-/** Payload for level-up event */
-export interface LevelUpPayload {
-  level: number;
-  upgrades: readonly Upgrade[];
-}
-
 /** Internal state machine */
 type LevelUpFlowState =
   | { status: 'idle' }
@@ -35,7 +29,7 @@ type LevelUpFlowState =
 export class LevelUpCoordinator {
   private state: LevelUpFlowState = { status: 'idle' };
   private pausedByLevelUp = false;
-  private upgradeSelectedHandler: ((payload: { upgradeId: string }) => void) | null = null;
+  private upgradeSelectedHandler: ((payload: UpgradeSelectedPayload) => void) | null = null;
   private readonly xpProvider: LevelUpXPProvider;
   private readonly pauseController: PauseController;
   private readonly eventEmitter: LevelUpEventEmitter;

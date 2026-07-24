@@ -45,12 +45,14 @@ export class PlayerManager {
   }
 
   /**
-   * Update player position based on input and delta time.
-   * If no active input: velocity = (0,0) — stops in 1 frame.
+   * Update player velocity based on input.
+   * Phaser Arcade Physics integrates velocity into position each physics step.
+   * We only set velocity here — no manual setPosition to avoid double movement.
+   * Map boundary clamping is handled by player.setCollideWorldBounds(true).
    *
    * Requirements: 2.1, 2.2, 2.3, 2.5, 2.6
    */
-  update(delta: number): void {
+  update(_delta: number): void {
     const input = this.getInput();
     const direction = calculateDirection(input);
 
@@ -60,19 +62,9 @@ export class PlayerManager {
       return;
     }
 
-    // Apply velocity scaled by speed
+    // Apply velocity scaled by speed — Phaser handles position integration
     const vx = direction.x * this.player.speed;
     const vy = direction.y * this.player.speed;
     this.player.setVelocity(vx, vy);
-
-    // Apply position with delta time and clamp to map bounds
-    const newPos = applyMovement(
-      { x: this.player.x, y: this.player.y },
-      direction,
-      this.player.speed,
-      delta
-    );
-
-    this.player.setPosition(newPos.x, newPos.y);
   }
 }
