@@ -33,6 +33,12 @@ export class BootScene extends Phaser.Scene {
       frameHeight: 250,
     });
 
+    // Cargar assets de la barra de vida
+    this.load.image('health_frame', 'src/assets/HealthBarSpritsheets/health_frame.png');
+    this.load.image('health_fill', 'src/assets/HealthBarSpritsheets/health_fill.png');
+    this.load.image('health_damage', 'src/assets/HealthBarSpritsheets/health_damage.png');
+    this.load.image('health_glow', 'src/assets/HealthBarSpritsheets/health_glow.png');
+
     // Timeout de 3 segundos para detectar cargas estancadas
     this.time.delayedCall(3000, () => {
       if (!this.scene.isActive('GameScene')) {
