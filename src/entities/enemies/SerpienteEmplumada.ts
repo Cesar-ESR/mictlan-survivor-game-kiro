@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Enemy } from '../Enemy';
 import type { EnemySpawnConfig } from '../../types/interfaces';
 import { calculateChaseDirection, calculateAcceleration } from './enemy-movement.pure';
+import { getWalkAnimationKey } from '../../config/enemy-assets';
 
 /**
  * Serpiente Emplumada: persecución con aceleración progresiva.
@@ -29,6 +30,11 @@ export class SerpienteEmplumada extends Enemy {
     this.currentSpeed = 100;
     this.acceleration = 30;
     this.maxSpeed = 250;
+
+    const walkAnimKey = getWalkAnimationKey('serpiente_emplumada_sprite');
+    if (walkAnimKey && this.scene.anims.exists(walkAnimKey)) {
+      this.play(walkAnimKey);
+    }
   }
 
   update(delta: number, playerPos: { x: number; y: number }): void {

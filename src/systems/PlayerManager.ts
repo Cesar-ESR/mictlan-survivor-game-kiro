@@ -59,6 +59,7 @@ export class PlayerManager {
     if (direction.x === 0 && direction.y === 0) {
       // No input: stop immediately (1 frame)
       this.player.setVelocity(0, 0);
+      this.player.updateAnimation(false);
       return;
     }
 
@@ -66,5 +67,6 @@ export class PlayerManager {
     const vx = direction.x * this.player.speed;
     const vy = direction.y * this.player.speed;
     this.player.setVelocity(vx, vy);
+    this.player.updateAnimation(true);
   }
 }

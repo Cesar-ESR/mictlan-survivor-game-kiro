@@ -3,6 +3,7 @@ import { Enemy } from '../Enemy';
 import type { EnemySpawnConfig } from '../../types/interfaces';
 import { calculateDirectChaseVelocity, calculateDistance } from './enemy-movement.pure';
 import { GAME_CONSTANTS } from '../../config/constants';
+import { getWalkAnimationKey } from '../../config/enemy-assets';
 
 /**
  * Calavera Llameante: persecución directa, explota al morir si el jugador está cerca.
@@ -26,6 +27,11 @@ export class CalaveraLlameante extends Enemy {
     this.xpReward = 10;
     this.speedMultiplier = config.speedMultiplier;
     this.playerPos = { x: 0, y: 0 };
+
+    const walkAnimKey = getWalkAnimationKey('calavera_llameante_sprite');
+    if (walkAnimKey && this.scene.anims.exists(walkAnimKey)) {
+      this.play(walkAnimKey);
+    }
   }
 
   update(_delta: number, playerPos: { x: number; y: number }): void {

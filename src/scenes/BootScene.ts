@@ -1,5 +1,9 @@
 import Phaser from 'phaser';
 import { TILESET_METADATA, TILE_SIZE } from '../config/tile-catalog-data';
+import { loadEnemyAssets } from '../config/enemy-assets';
+import { registerEnemyAnimations } from '../config/enemy-animations';
+import { loadPlayerAssets } from '../config/player-assets';
+import { registerPlayerAnimations } from '../config/player-animations';
 
 /**
  * BootScene: Carga de assets iniciales y transición a GameScene.
@@ -27,17 +31,17 @@ export class BootScene extends Phaser.Scene {
       });
     }
 
-    // Cargar spritesheet del jugador (Guerrero Jaguar) — 8 frames de 32×32
-    this.load.spritesheet('hero', 'src/assets/PersonajePrincipalSpritsheets/MC_Walk.png', {
-      frameWidth: 250,
-      frameHeight: 250,
-    });
+    // Cargar spritesheet del jugador (delegado a módulo centralizado)
+    loadPlayerAssets(this.load);
 
     // Cargar assets de la barra de vida
     this.load.image('health_frame', 'src/assets/HealthBarSpritsheets/health_frame.png');
     this.load.image('health_fill', 'src/assets/HealthBarSpritsheets/health_fill.png');
     this.load.image('health_damage', 'src/assets/HealthBarSpritsheets/health_damage.png');
     this.load.image('health_glow', 'src/assets/HealthBarSpritsheets/health_glow.png');
+
+    // Cargar spritesheets de enemigos (delegado a módulo centralizado)
+    loadEnemyAssets(this.load);
 
     // Timeout de 3 segundos para detectar cargas estancadas
     this.time.delayedCall(3000, () => {
@@ -58,6 +62,10 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     if (!this.loadFailed) {
+      // Registrar animaciones (tras carga exitosa de assets)
+      registerEnemyAnimations(this.anims);
+      registerPlayerAnimations(this.anims);
+
       this.scene.start('MainMenuScene');
     }
   }

@@ -68,7 +68,6 @@ export class GameScene extends Phaser.Scene {
   // Core entities
   private player!: Player;
   private playerManager!: PlayerManager;
-  private gameStats: GameStats = { survivalTime: 0, enemiesDefeated: 0, maxWave: 1 };
 
   // Enemy systems
   private enemyRegistry!: EnemyRegistry;

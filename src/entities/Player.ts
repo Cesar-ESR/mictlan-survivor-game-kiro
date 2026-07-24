@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import { GAME_CONSTANTS } from '../config/constants';
+import { PLAYER_SPRITES } from '../config/player-assets';
 import type { LevelUpResult } from '../types/interfaces';
 
 /**
  * Player entity (Guerrero Jaguar) extending Phaser's Arcade Sprite.
- * Manages HP, XP dual counters, leveling, and damage/healing.
+ * Manages HP, XP dual counters, leveling, damage/healing, and animation state.
  *
  * Requirements: 1.5, 5.1, 5.2, 5.6, 5.7, 5.10, 5.11
  */
@@ -17,9 +18,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   xpThreshold: number;
   speed: number;
 
+  /** Current animation state for deduplication. */
+  private currentAnimState: 'idle' | 'walk' | 'attack' | 'death' = 'idle';
+
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
     super(scene, x, y, texture);
-    //this.setScale(0.5);
     this.setDisplaySize(96, 96);
     this.hp = GAME_CONSTANTS.PLAYER_BASE_HP;
     this.maxHp = GAME_CONSTANTS.PLAYER_BASE_HP;
@@ -32,6 +35,57 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // Add to scene and enable physics
     scene.add.existing(this);
     scene.physics.add.existing(this);
+
+    // Start with idle animation
+    this.playAnimState('idle');
+  }
+
+  /**
+   * Updates animation based on current movement state.
+   * Call every frame after movement is applied.
+   *
+   * Priority: death > attack > walk > idle
+   * Does NOT restart an animation if already playing the correct one.
+   */
+  updateAnimation(isMoving: boolean): void {
+    // Death takes highest priority (once dead, stay in death anim)
+    if (this.hp <= 0) {
+      this.playAnimState('death');
+      return;
+    }
+
+    // Walk vs Idle based on movement
+    if (isMoving) {
+      this.playAnimState('walk');
+    } else {
+      this.playAnimState('idle');
+    }
+  }
+
+  /**
+   * Plays an animation state only if it's different from the current one.
+   * Prevents restarting an already-playing animation.
+   */
+  private playAnimState(state: 'idle' | 'walk' | 'attack' | 'death'): void {
+    if (this.currentAnimState === state) return;
+
+    const animKey = this.getAnimKeyForState(state);
+    if (animKey && this.scene.anims.exists(animKey)) {
+      this.play(animKey);
+      this.currentAnimState = state;
+    }
+  }
+
+  /**
+   * Maps animation state to the registered animation key from player-assets.ts.
+   */
+  private getAnimKeyForState(state: 'idle' | 'walk' | 'attack' | 'death'): string | undefined {
+    switch (state) {
+      case 'idle': return PLAYER_SPRITES.idle.key;
+      case 'walk': return PLAYER_SPRITES.walk.key;
+      case 'attack': return PLAYER_SPRITES.attack.key;
+      case 'death': return PLAYER_SPRITES.death.key;
+    }
   }
 
   /**

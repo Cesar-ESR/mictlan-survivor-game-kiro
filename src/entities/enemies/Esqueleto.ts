@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Enemy } from '../Enemy';
 import type { EnemySpawnConfig } from '../../types/interfaces';
 import { calculateDirectChaseVelocity } from './enemy-movement.pure';
+import { getWalkAnimationKey } from '../../config/enemy-assets';
 
 /**
  * Esqueleto: persecución directa, enemigo básico.
@@ -23,6 +24,11 @@ export class Esqueleto extends Enemy {
     this.damage = 5;
     this.xpReward = 5;
     this.speedMultiplier = config.speedMultiplier;
+
+    const walkAnimKey = getWalkAnimationKey('esqueleto_sprite');
+    if (walkAnimKey && this.scene.anims.exists(walkAnimKey)) {
+      this.play(walkAnimKey);
+    }
   }
 
   update(_delta: number, playerPos: { x: number; y: number }): void {
