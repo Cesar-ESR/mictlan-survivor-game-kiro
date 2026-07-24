@@ -1,0 +1,339 @@
+# Bug Backlog — Mictlán Survivor
+
+## BUG-001: Player y enemigos atraviesan líquidos bloqueantes
+
+**Estado:** ✅ Corregido (v2 — diseño definitivo)  
+**Fecha:** 2025-01-XX  
+**Severidad:** Alta (gameplay-breaking)
+
+### Descripción
+
+El jugador y los enemigos podían atravesar tiles de líquido marcados como `blocking`, anulando el propósito de las regiones de líquido bloqueante como obstáculos naturales del terreno.
+
+### Decisión de Diseño Definitiva
+
+**Todos los líquidos son bloqueantes. No existe mecánica de natación.**
+
+El Player no puede nadar. Ningún líquido del juego es transitable. Todos los tipos de líquido (water, lava, spectral) bloquean el movimiento. Esta es la decisión de diseño definitiva.
+
+### Causa Raíz (Original)
+
+`PhaserMapLayerBuilder.setLiquidCollisions()` configuraba correctamente `tile.setCollision(true, true, true, true)` en tiles de líquido bloqueante. Sin embargo, en `GameScene.ts`, la sección de colliders solo registraba colisiones entre Player/Enemies y las capas `walls`/`obstacles`. Faltaban los colliders para la capa `liquids`.
+
+Además, `SpawnManager.findValidSpawnPosition()` no verificaba la walkability lógica de la posición generada, lo que permitía que enemigos aparecieran dentro de líquidos bloqueantes.
+
+### Corrección (v1 — colliders)
+
+1. **`GameScene.ts`** — Se añadieron colliders `Player ↔ liquids` y `Enemies ↔ liquids`. Se almacenan referencias a todos los colliders para destruirlos en `shutdown()`.
+
+2. **`SpawnManager.ts`** — Se añadió `setWalkabilityChecker()` que acepta una función de validación de posición. `findValidSpawnPosition()` ahora rechaza posiciones sobre tiles no-walkable.
+
+3. **`GameScene.ts`** — Tras crear el SpawnManager, se le provee un checker que consulta `grid[row][col].walkable`.
+
+### Corrección (v2 — todos los líquidos son bloqueantes)
+
+1. **`LiquidRegionGenerator.ts`** — `DEFAULT_LIQUID_CONFIG.behaviorWeights` ahora solo contiene `{ behavior: 'blocking', weight: 1 }`. El loop de aplicación siempre asigna `cell.walkable = false` independientemente del behavior.
+
+2. **`SpectralRegionGenerator.ts`** — `liquidConfig.behavior` cambiado de `'walkable'` a `'blocking'`. Se añade `gridCell.walkable = false` en el loop de colocación.
+
+3. **`PhaserMapLayerBuilder.ts`** — Simplificado: usa `setCollisionByExclusion([-1])` para la capa de líquidos (igual que walls/obstacles). Método `setLiquidCollisions` eliminado.
+
+4. **`SafeZoneCleaner.ts`** — Remueve TODOS los líquidos de la safe zone, no solo los bloqueantes.
+
+5. **`MapCell.ts`** — `LiquidBehavior` tipo marcado como `@deprecated` para `'walkable'`.
+
+### Archivos Modificados
+
+- `src/map/LiquidRegionGenerator.ts`
+- `src/map/SpectralRegionGenerator.ts`
+- `src/map/PhaserMapLayerBuilder.ts`
+- `src/map/SafeZoneCleaner.ts`
+- `src/map/MapCell.ts`
+- `src/scenes/GameScene.ts`
+- `src/systems/SpawnManager.ts`
+
+### Tests de Regresión
+
+- `src/map/__tests__/bug-001-blocking-liquids.test.ts`
+  - TODAS las celdas con líquido tienen walkable=false
+  - Regiones de agua siempre tienen behavior='blocking'
+  - Regiones de lava siempre tienen behavior='blocking'
+  - Regiones espectrales siempre tienen behavior='blocking'
+  - Safe zone no tiene ningún líquido
+  - MapValidator excluye TODAS las celdas de líquido del conteo walkable
+  - Walkability checker rechaza CUALQUIER posición en celda de líquido
+  - Walkability checker acepta posiciones en suelo sin líquido
+  - Walkability checker rechaza posiciones fuera de límites
+  - Tipos mixtos de líquido — TODOS son bloqueantes
+  - Generación permanece determinística
+  - Mínimo de accesibilidad sigue pasando
+
+### Notas
+
+- La capa `liquids` tiene colisión habilitada en TODOS los tiles (`setCollisionByExclusion([-1])`) — no existe mecánica de natación.
+- El ground subyacente se preserva debajo de los líquidos (diseño existente).
+- No se modificó la generación visual ni el algoritmo de mapas (solo la asignación de comportamiento).
+- El `liquidDensity` por defecto garantiza que el mapa sigue pasando validación con todos los líquidos bloqueantes.
+
+
+---
+
+## BUG-002: Enemigos atraviesan muros, obstáculos y líquidos
+
+**Estado:** ✅ Corregido  
+**Fecha:** 2025-01-XX  
+**Severidad:** Alta (gameplay-breaking)
+
+### Descripción
+
+Los enemigos podían atravesar tiles de muros (`walls`), obstáculos (`obstacles`) y líquidos (`liquids`) a pesar de que los colliders estaban registrados correctamente en GameScene. Los colliders existían pero no producían separación física.
+
+### Causa Raíz
+
+El `SpawnManager` creaba el pool de enemigos usando `scene.add.group({ runChildUpdate: false })`, que crea un **`Phaser.GameObjects.Group`** (grupo regular, sin física).
+
+Cuando se registran colliders con `physics.add.collider(group, tilemapLayer)`, el motor Arcade de Phaser **no resuelve correctamente** las colisiones tile-vs-sprite para hijos de un grupo regular. El sistema de física necesita un **`Phaser.Physics.Arcade.Group`** para iterar correctamente los bodies y aplicar la separación contra capas de tilemap.
+
+Cada enemigo ya tenía su propio physics body (creado en el constructor de `Enemy` via `scene.physics.add.existing(this)`), pero al estar en un grupo regular, el collider no los procesaba.
+
+### Corrección
+
+1. **`src/systems/SpawnManager.ts`** — Se cambió la creación del pool de:
+   ```typescript
+   this.enemyPool = scene.add.group({ runChildUpdate: false });
+   ```
+   a:
+   ```typescript
+   this.enemyPool = scene.physics.add.group({ runChildUpdate: false });
+   ```
+
+2. Se actualizó el tipo del campo `enemyPool` de `Phaser.GameObjects.Group` a `Phaser.Physics.Arcade.Group`.
+
+3. Se actualizó el tipo de retorno de `getEnemyPool()` a `Phaser.Physics.Arcade.Group`.
+
+### Compatibilidad
+
+- `Phaser.Physics.Arcade.Group` extiende `Phaser.GameObjects.Group`, por lo que `DamageSystem` y cualquier otro consumidor que espere `Phaser.GameObjects.Group` siguen funcionando sin cambios.
+- El constructor de `Enemy` ya llama a `scene.physics.add.existing(this)`. Cuando se añade un sprite que ya tiene body a un `Physics.Arcade.Group`, Phaser reconoce que ya tiene body y no crea uno duplicado.
+- Los colliders en `GameScene` (`physics.add.collider(enemyPool, walls/obstacles/liquids)`) ahora funcionan correctamente porque el grupo es de tipo Physics.Arcade.
+
+### Archivos Modificados
+
+- `src/systems/SpawnManager.ts`
+
+### Tests de Regresión
+
+- `src/systems/__tests__/bug-002-enemy-map-collisions.test.ts`
+  - Velocidad: todos los arquetipos usan vectores de velocidad, no manipulación directa de posición
+  - Esqueleto: persecución directa produce vector de velocidad correcto
+  - CalaveraLlameante: persecución directa produce vector de velocidad correcto
+  - SerpienteEmplumada: persecución con aceleración produce vector de velocidad correcto
+  - Murciélago: zigzag produce vector de velocidad acotado
+  - SpawnManager exporta getEnemyPool con firma correcta
+  - Velocidad es independiente de posición absoluta del enemigo
+  - Zigzag produce perturbación acotada por amplitud
+  - Distancia cero produce velocidad cero (sin NaN)
+  - Magnitud de velocidad escala correctamente con speedMultiplier
+
+### Notas
+
+- No se modificaron los sistemas de combate, XP, HUD, oleadas, menús ni PlayerManager.
+- No se implementó pathfinding — los enemigos siguen con persecución por velocidad.
+- No se cambió la renderización visual de los enemigos.
+- No se modificó la generación del mapa ni los flags de colisión de las capas (ya eran correctos).
+- La corrección es mínima: un solo cambio de tipo de grupo que habilita la resolución de colisiones del motor Arcade.
+
+
+---
+
+## BUG-003: Enemigos se renderizan debajo de las texturas del mapa
+
+**Estado:** ✅ Corregido  
+**Fecha:** 2025-01-XX  
+**Severidad:** Media (visual)
+
+### Descripción
+
+Los enemigos, proyectiles y orbes de XP se renderizaban por debajo de las capas del mapa (líquidos, bordes, decoraciones, muros, obstáculos). Esto hacía que las entidades fueran invisibles o parcialmente ocultas detrás de los tiles del escenario.
+
+### Causa Raíz
+
+La clase base `Enemy` no llamaba a `setDepth()` en su constructor. Los sprites de Phaser tienen depth 0 por defecto. Las capas del mapa usan depths 0-4:
+- Ground: 0
+- Liquids: 1
+- Borders: 2
+- Decorations: 3
+- Walls: 4
+- Obstacles: 4
+
+Los enemigos con depth 0 se renderizaban DETRÁS de todas las capas superiores al ground. El mismo problema afectaba a los proyectiles (`Projectile`) y orbes de XP (`XPOrb`).
+
+El Player ya tenía `setDepth(100)` configurado en GameScene, por lo que se renderizaba correctamente.
+
+### Corrección
+
+Se añadieron constantes de profundidad de renderizado en `GAME_CONSTANTS` y se aplicaron en los constructores/métodos de activación correspondientes:
+
+1. **`src/config/constants.ts`** — Se añadieron constantes de depth:
+   - `ENTITY_DEPTH_ORBS: 50`
+   - `ENTITY_DEPTH_PROJECTILES: 90`
+   - `ENTITY_DEPTH_ENEMIES: 100`
+   - `ENTITY_DEPTH_PLAYER: 100`
+
+2. **`src/entities/Enemy.ts`** — Se añadió `this.setDepth(GAME_CONSTANTS.ENTITY_DEPTH_ENEMIES)` en el constructor, después de `setScale(0.45)`.
+
+3. **`src/entities/XPOrb.ts`** — Se añadió `this.setDepth(GAME_CONSTANTS.ENTITY_DEPTH_ORBS)` después de `scene.physics.add.existing(this)`.
+
+4. **`src/entities/Projectile.ts`** — Se añadió `this.setDepth(GAME_CONSTANTS.ENTITY_DEPTH_PROJECTILES)` en el método `activate()`.
+
+5. **`src/scenes/GameScene.ts`** — Se cambió `this.player.setDepth(100)` por `this.player.setDepth(GAME_CONSTANTS.ENTITY_DEPTH_PLAYER)` para consistencia.
+
+### Jerarquía de Profundidad
+
+| Entidad | Depth |
+|---------|-------|
+| Ground | 0 |
+| Liquids | 1 |
+| Borders | 2 |
+| Decorations | 3 |
+| Walls/Obstacles | 4 |
+| XP Orbs | 50 |
+| Projectiles | 90 |
+| Enemies | 100 |
+| Player | 100 |
+
+### Archivos Modificados
+
+- `src/config/constants.ts`
+- `src/entities/Enemy.ts`
+- `src/entities/XPOrb.ts`
+- `src/entities/Projectile.ts`
+- `src/scenes/GameScene.ts`
+
+### Tests de Regresión
+
+- `src/systems/__tests__/bug-003-render-order.test.ts`
+  - ENTITY_DEPTH_ENEMIES es mayor que max map layer depth
+  - ENTITY_DEPTH_PLAYER es mayor que max map layer depth
+  - ENTITY_DEPTH_PROJECTILES es mayor que max map layer depth
+  - ENTITY_DEPTH_ORBS es mayor que max map layer depth
+  - ENTITY_DEPTH_PLAYER >= ENTITY_DEPTH_ENEMIES (igual está bien para top-down)
+  - ENTITY_DEPTH_ORBS < ENTITY_DEPTH_ENEMIES (orbes debajo de entidades)
+  - ENTITY_DEPTH_PROJECTILES < ENTITY_DEPTH_ENEMIES (proyectiles debajo de entidades)
+  - Jerarquía de depth: orbs < projectiles < enemies <= player
+  - LAYER_DEPTHS en código fuente coincide con max esperado de 4
+
+### Notas
+
+- No se modificaron sistemas de combate, XP, HUD, oleadas ni menús.
+- No se cambió la generación del mapa ni los flags de colisión.
+- Se usó un enfoque de depth fijo (no y-sort dinámico) ya que es un survivor top-down donde el ordenamiento por Y no es crítico.
+- Player y enemigos comparten el mismo depth (100) — en un survivor top-down no hay oclusión relevante entre ellos.
+
+
+---
+
+## BUG-004: Rango excesivo del arma
+
+**Estado:** ✅ Corregido  
+**Fecha:** 2025-01-XX  
+**Severidad:** Media (balance-breaking)
+
+### Descripción
+
+`GAME_CONSTANTS.WEAPON_RANGE` era 800px — casi el ancho completo del viewport. El jugador podía atacar enemigos a distancias visualmente absurdas, eliminando el riesgo táctico de acercarse a los enemigos.
+
+### Causa Raíz
+
+El valor `WEAPON_RANGE: 800` en `src/config/constants.ts` era un placeholder de desarrollo que nunca fue ajustado al balance real del juego. Igualmente `PROJECTILE_MAX_DISTANCE: 1000` era más del doble de lo razonable.
+
+### Corrección
+
+1. **`src/config/constants.ts`** — `WEAPON_RANGE` reducido de 800 a **384** (12 tiles × 32px — distancia razonable de ataque).
+2. **`src/config/constants.ts`** — `PROJECTILE_MAX_DISTANCE` reducido de 1000 a **450** (ligeramente más que el rango para acomodar el tiempo de vuelo).
+
+### Archivos Modificados
+
+- `src/config/constants.ts`
+- `src/systems/__tests__/weapon-system.property.test.ts` (comentarios y nombres de test actualizados)
+- `src/systems/__tests__/weapon-system.unit.test.ts` (comentarios y distancias en tests ajustados)
+
+### Tests de Regresión
+
+- `src/systems/__tests__/bug-004-weapon-range.test.ts`
+  - WEAPON_RANGE es 384 (12 tiles × 32px)
+  - PROJECTILE_MAX_DISTANCE es 450 (mayor que range)
+  - PROJECTILE_MAX_DISTANCE > WEAPON_RANGE
+  - Enemigo a exactamente 384px es seleccionable
+  - Enemigo a 385px NO es seleccionable
+  - Enemigo al rango antiguo (800px) NO es seleccionable
+  - Enemigo dentro de 12 tiles diagonal es seleccionable
+
+### Notas
+
+- No se modificaron sistemas de AI, XP, HUD, oleadas ni menús.
+- Los tests existentes de weapon-system usaban `GAME_CONSTANTS.WEAPON_RANGE` (no hardcoded 800), así que adaptaron automáticamente al nuevo valor.
+
+
+---
+
+## BUG-005: Proyectiles atraviesan capas bloqueantes y targeting sin línea de visión
+
+**Estado:** ✅ Corregido  
+**Fecha:** 2025-01-XX  
+**Severidad:** Alta (gameplay-breaking)
+
+### Descripción
+
+Los proyectiles del arma del jugador pasaban a través de muros, obstáculos y líquidos sin detenerse. Adicionalmente, `findClosestEnemy()` no verificaba línea de visión — seleccionaba objetivos detrás de paredes como blancos válidos.
+
+### Causa Raíz
+
+1. **No existían colliders proyectil↔mapa.** GameScene solo registraba colisiones para Player↔{walls,obstacles,liquids} y Enemies↔{walls,obstacles,liquids}. El pool de proyectiles nunca fue colisionado contra ninguna capa del mapa.
+
+2. **No existía verificación de línea de visión.** `findClosestEnemy()` solo verificaba distancia y estado (active/hp), sin considerar si había obstáculos físicos entre el jugador y el objetivo.
+
+### Corrección
+
+1. **`src/systems/line-of-sight.ts`** — Nuevo módulo con función pura `hasLineOfSight()` que usa el algoritmo de Bresenham para recorrer todas las celdas del grid lógico entre dos posiciones. Devuelve `false` si alguna celda intermedia tiene wall, obstacle, o liquid.
+
+2. **`src/systems/WeaponSystem.ts`** — Se añadió:
+   - Tipo `LineOfSightChecker` exportado
+   - Campo privado `losChecker`
+   - Método público `setLineOfSightChecker(checker)`
+   - Método privado `findClosestVisibleEnemy()` que ordena candidatos por distancia y selecciona el primero con LOS claro
+   - `update()` ahora usa `findClosestVisibleEnemy` cuando hay checker configurado
+
+3. **`src/scenes/GameScene.ts`** — Se añadieron:
+   - Colliders `projectilePool ↔ walls/obstacles/liquids` con callback `onProjectileHitMap` que recicla el proyectil
+   - Provisión del LOS checker al WeaponSystem usando el `logicalGrid` existente
+
+### Archivos Modificados
+
+- `src/systems/line-of-sight.ts` (NUEVO)
+- `src/systems/WeaponSystem.ts`
+- `src/scenes/GameScene.ts`
+
+### Tests de Regresión
+
+- `src/systems/__tests__/bug-005-projectile-occlusion.test.ts`
+  - hasLineOfSight: camino despejado retorna true
+  - hasLineOfSight: muro intermedio retorna false
+  - hasLineOfSight: líquido intermedio retorna false
+  - hasLineOfSight: misma celda siempre retorna true
+  - hasLineOfSight: camino diagonal con muro retorna false
+  - hasLineOfSight: camino diagonal sin muro retorna true
+  - hasLineOfSight: celda adyacente libre es alcanzable
+  - hasLineOfSight: celda adyacente bloqueada retorna false
+  - hasLineOfSight: bloqueador en celda de inicio se ignora
+  - hasLineOfSight: bloqueador en celda final bloquea el camino
+  - hasLineOfSight: camino vertical con bloqueador
+  - hasLineOfSight: bloqueador al lado del camino no bloquea
+  - Integración conceptual: enemigo más cercano detrás de muro es saltado
+
+### Notas
+
+- No se modificaron enemy AI, XP, HUD, oleadas ni menús.
+- No se implementó oclusión de DECORACIONES — solo walls/obstacles/liquids bloquean. El bloqueo por decoraciones queda PENDIENTE catalogación individual de cada decoración.
+- El LOS check usa el grid lógico existente (sin costo adicional de memoria).
+- Los colliders de proyectiles usan `setCollisionByExclusion([-1])` ya configurado en las capas del mapa (herencia de BUG-001).

@@ -407,16 +407,15 @@ describe('SafeZoneCleaner', () => {
     }
   });
 
-  it('18. Safe zone: no blocking liquids after clear', () => {
+  it('18. Safe zone: no liquids after clear', () => {
     const { grid, config } = runFullPipeline('sz-no-blocking-liquids');
 
     for (let row = 0; row < config.heightInTiles; row++) {
       for (let col = 0; col < config.widthInTiles; col++) {
         const cell = grid[row][col];
         if (cell.inSafeZone) {
-          if (cell.liquidConfig !== null) {
-            expect(cell.liquidConfig.behavior).not.toBe('blocking');
-          }
+          expect(cell.liquid).toBeNull();
+          expect(cell.liquidConfig).toBeNull();
         }
       }
     }

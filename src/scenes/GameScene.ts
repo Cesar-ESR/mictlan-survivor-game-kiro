@@ -14,12 +14,14 @@ import { SpawnManager } from '../systems/SpawnManager';
 import { WaveManager } from '../systems/WaveManager';
 import { WeaponSystem } from '../systems/WeaponSystem';
 import type { WeaponConfig } from '../systems/WeaponSystem';
+import { hasLineOfSight } from '../systems/line-of-sight';
 import { DamageSystem } from '../systems/DamageSystem';
 import { OrbCollector } from '../systems/OrbCollector';
 import { XPSystem } from '../systems/XPSystem';
 import { LevelUpCoordinator } from '../systems/LevelUpCoordinator';
 import { PauseSystem } from '../systems/PauseSystem';
 import { registerEnemyTypes } from '../entities/enemies';
+import { Projectile } from '../entities/Projectile';
 import { INITIAL_UPGRADE_POOL } from '../config/upgrades';
 import type { GameStats } from '../types/game-stats';
 import type { GameModeConfig, WaveChangedPayload } from '../types/interfaces';
@@ -86,6 +88,12 @@ export class GameScene extends Phaser.Scene {
   private levelUpCoordinator!: LevelUpCoordinator;
   private pauseSystem!: PauseSystem;
 
+  // Collider references for cleanup (BUG-001)
+  private colliders: Phaser.Physics.Arcade.Collider[] = [];
+
+  // Logical grid reference for walkability checks (BUG-001)
+  private logicalGrid: import('../map/MapCell').LogicalMapGrid | null = null;
+
   // Game mode
   private gameModeConfig: GameModeConfig = { mode: 'campaign', finalWave: 10 };
 
@@ -142,6 +150,9 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    // Store grid reference for walkability checks (BUG-001)
+    this.logicalGrid = result.grid;
+
     // Build Phaser tilemap layers from the logical grid
     const builder = new PhaserMapLayerBuilder();
     this._mapLayers = builder.build(this, result.grid);
@@ -167,7 +178,7 @@ export class GameScene extends Phaser.Scene {
 
     // --- 1. Create Player + PlayerManager ---
     this.player = new Player(this, SAFE_ZONE_CENTER_X, SAFE_ZONE_CENTER_Y, 'hero');
-    this.player.setDepth(100);
+    this.player.setDepth(GAME_CONSTANTS.ENTITY_DEPTH_PLAYER);
     this.player.setCollideWorldBounds(true);
     this.playerManager = new PlayerManager(this.player, this);
 
@@ -177,6 +188,19 @@ export class GameScene extends Phaser.Scene {
 
     // --- 3. SpawnManager ---
     this.spawnManager = new SpawnManager(this, this.enemyRegistry);
+
+    // Provide walkability checker to prevent spawning in blocking liquids (BUG-001)
+    if (this.logicalGrid) {
+      const grid = this.logicalGrid;
+      const gridHeight = grid.length;
+      const gridWidth = gridHeight > 0 ? grid[0].length : 0;
+      this.spawnManager.setWalkabilityChecker((x, y) => {
+        const col = Math.floor(x / 32);
+        const row = Math.floor(y / 32);
+        if (row < 0 || row >= gridHeight || col < 0 || col >= gridWidth) return false;
+        return grid[row][col].walkable;
+      });
+    }
 
     // --- 4. Use stored GameModeConfig (resolved in init) ---
 
@@ -229,14 +253,48 @@ export class GameScene extends Phaser.Scene {
     this.gameStats = { survivalTime: 0, enemiesDefeated: 0, maxWave: 1 };
 
     // --- 13. Configure colliders ---
+    // Destroy previous colliders if regenerating
+    for (const collider of this.colliders) {
+      collider.destroy();
+    }
+    this.colliders = [];
+
     if (this._mapLayers) {
       // Player collides with walls and obstacles
-      this.physics.add.collider(this.player, this._mapLayers.walls);
-      this.physics.add.collider(this.player, this._mapLayers.obstacles);
+      this.colliders.push(this.physics.add.collider(this.player, this._mapLayers.walls));
+      this.colliders.push(this.physics.add.collider(this.player, this._mapLayers.obstacles));
+
+      // Player collides with blocking liquids (BUG-001)
+      this.colliders.push(this.physics.add.collider(this.player, this._mapLayers.liquids));
 
       // Enemy group collides with walls and obstacles
-      this.physics.add.collider(this.spawnManager.getEnemyPool(), this._mapLayers.walls);
-      this.physics.add.collider(this.spawnManager.getEnemyPool(), this._mapLayers.obstacles);
+      this.colliders.push(this.physics.add.collider(this.spawnManager.getEnemyPool(), this._mapLayers.walls));
+      this.colliders.push(this.physics.add.collider(this.spawnManager.getEnemyPool(), this._mapLayers.obstacles));
+
+      // Enemy group collides with blocking liquids (BUG-001)
+      this.colliders.push(this.physics.add.collider(this.spawnManager.getEnemyPool(), this._mapLayers.liquids));
+
+      // Projectiles collide with blocking layers (BUG-005)
+      const projPool = this.weaponSystem.getProjectilePool();
+      const projHitCb = this.onProjectileHitMap as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback;
+      this.colliders.push(this.physics.add.collider(projPool, this._mapLayers.walls, projHitCb, undefined, this));
+      this.colliders.push(this.physics.add.collider(projPool, this._mapLayers.obstacles, projHitCb, undefined, this));
+      this.colliders.push(this.physics.add.collider(projPool, this._mapLayers.liquids, projHitCb, undefined, this));
+    }
+
+    // Provide line-of-sight checker to WeaponSystem (BUG-005)
+    if (this.logicalGrid) {
+      const grid = this.logicalGrid;
+      const gridHeight = grid.length;
+      const gridWidth = gridHeight > 0 ? grid[0].length : 0;
+
+      this.weaponSystem.setLineOfSightChecker((start, end) => {
+        return hasLineOfSight(start, end, 32, (col, row) => {
+          if (row < 0 || row >= gridHeight || col < 0 || col >= gridWidth) return true;
+          const cell = grid[row][col];
+          return cell.wall !== null || cell.obstacle !== null || cell.liquid !== null;
+        });
+      });
     }
 
     // --- 14. Register game listeners ---
@@ -327,6 +385,18 @@ export class GameScene extends Phaser.Scene {
   };
 
   /**
+   * Callback when a projectile collides with a map blocking layer (BUG-005).
+   * Recycles the projectile so it stops on impact.
+   */
+  private onProjectileHitMap(
+    projectile: Phaser.Types.Physics.Arcade.GameObjectWithBody | Phaser.Tilemaps.Tile,
+  ): void {
+    if ('recycle' in projectile && (projectile as Phaser.GameObjects.GameObject).active) {
+      (projectile as Projectile).recycle();
+    }
+  }
+
+  /**
    * Shutdown: removes all event listeners registered by this scene.
    * Called automatically by Phaser on scene shutdown/restart.
    */
@@ -336,6 +406,15 @@ export class GameScene extends Phaser.Scene {
     this.events.off('enemy-defeated', this.onEnemyDefeated, this);
     this.events.off('wave-changed', this.onWaveChanged, this);
     this.events.off('orb-collected', this.onOrbCollected, this);
+
+    // Destroy colliders (BUG-001)
+    for (const collider of this.colliders) {
+      collider.destroy();
+    }
+    this.colliders = [];
+
+    // Clear grid reference
+    this.logicalGrid = null;
 
     // Destroy systems with cleanup methods
     this.levelUpCoordinator?.destroy();

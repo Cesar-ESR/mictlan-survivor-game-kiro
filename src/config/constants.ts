@@ -28,8 +28,8 @@ export const GAME_CONSTANTS = {
   // Weapon
   WEAPON_BASE_DAMAGE: 10,
   WEAPON_BASE_FIRE_RATE: 1000,
-  WEAPON_RANGE: 800,
-  PROJECTILE_MAX_DISTANCE: 1000,
+  WEAPON_RANGE: 384,                // 12 tiles × 32px (BUG-004: was 800 — too far)
+  PROJECTILE_MAX_DISTANCE: 450,     // slightly more than range (BUG-004: was 1000)
 
   // Combat
   CONTACT_DAMAGE_COOLDOWN: 1000,
@@ -54,6 +54,12 @@ export const GAME_CONSTANTS = {
   // Calavera Llameante
   EXPLOSION_RADIUS: 100,
   EXPLOSION_DAMAGE: 15,
+
+  // Rendering depths for entities (above map layers which use 0-4)
+  ENTITY_DEPTH_ORBS: 50,
+  ENTITY_DEPTH_PROJECTILES: 90,
+  ENTITY_DEPTH_ENEMIES: 100,
+  ENTITY_DEPTH_PLAYER: 100,
 } as const;
 
 /** Función pura para calcular el umbral de XP para un nivel dado. */

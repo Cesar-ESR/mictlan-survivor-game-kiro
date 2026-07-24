@@ -4,12 +4,11 @@
  * Para cada celda donde inSafeZone === true:
  * - wall = null
  * - obstacle = null
- * - Si liquidConfig?.behavior === 'blocking': liquid = null, liquidConfig = null
+ * - liquid = null, liquidConfig = null (ALL liquids removed — no swimming mechanic)
  * - decoration = null
  * - walkable = true
  * - structureMask = null
  * - Preserva cell.ground (nunca se anula)
- * - Preserva líquidos walkable (behavior !== 'blocking')
  *
  * Después de limpiar todas las celdas de la zona segura:
  * - Recomputa border masks (por si se removieron líquidos)
@@ -40,8 +39,8 @@ export function clearSafeZone(grid: LogicalMapGrid): void {
       // Remove obstacles
       cell.obstacle = null;
 
-      // Remove blocking liquids only; keep walkable liquids
-      if (cell.liquidConfig?.behavior === 'blocking') {
+      // Remove ALL liquids — all liquid types block movement
+      if (cell.liquid !== null) {
         cell.liquid = null;
         cell.liquidConfig = null;
       }

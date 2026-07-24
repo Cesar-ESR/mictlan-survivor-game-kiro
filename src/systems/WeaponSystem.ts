@@ -3,6 +3,9 @@ import { findClosestEnemy, calculateProjectileVelocity } from './weapon-utils';
 import type { WeaponTarget } from './weapon-utils';
 import { Projectile } from '../entities/Projectile';
 
+/** Line-of-sight checker function signature (BUG-005). */
+export type LineOfSightChecker = (start: { x: number; y: number }, end: { x: number; y: number }) => boolean;
+
 /**
  * Configuration for the WeaponSystem.
  */
@@ -32,6 +35,7 @@ export class WeaponSystem {
   private damage: number;
   private fireTimer: number = 0;
   private projectilePool: Phaser.Physics.Arcade.Group;
+  private losChecker: LineOfSightChecker | null = null;
 
   constructor(scene: Phaser.Scene, config: WeaponConfig) {
     this.fireRateMs = config.fireRateMs;
@@ -72,8 +76,13 @@ export class WeaponSystem {
     if (this.fireTimer >= this.fireRateMs) {
       this.fireTimer -= this.fireRateMs;
 
-      // Find closest enemy
-      const target = findClosestEnemy(playerPos, enemies, this.range);
+      // Find closest enemy (with LOS check if available — BUG-005)
+      let target: WeaponTarget | null;
+      if (this.losChecker) {
+        target = this.findClosestVisibleEnemy(playerPos, enemies);
+      } else {
+        target = findClosestEnemy(playerPos, enemies, this.range);
+      }
 
       if (target) {
         this.fireProjectile(playerPos, target);
@@ -83,6 +92,40 @@ export class WeaponSystem {
 
     // Update active projectiles (distance tracking and recycling)
     this.updateProjectiles(deltaMs);
+  }
+
+  /**
+   * Finds the closest enemy that has clear line of sight from playerPos (BUG-005).
+   * Falls back to standard range check for distance, then applies LOS filter.
+   */
+  private findClosestVisibleEnemy(playerPos: { x: number; y: number }, enemies: WeaponTarget[]): WeaponTarget | null {
+    if (!enemies || enemies.length === 0) return null;
+
+    const rangeSq = this.range * this.range;
+    const candidates: Array<{ enemy: WeaponTarget; distSq: number }> = [];
+
+    for (const enemy of enemies) {
+      if (!enemy.active || enemy.hp <= 0) continue;
+      if (!isFinite(enemy.x) || !isFinite(enemy.y)) continue;
+      const dx = enemy.x - playerPos.x;
+      const dy = enemy.y - playerPos.y;
+      const distSq = dx * dx + dy * dy;
+      if (distSq <= rangeSq) {
+        candidates.push({ enemy, distSq });
+      }
+    }
+
+    // Sort by distance (closest first)
+    candidates.sort((a, b) => a.distSq - b.distSq);
+
+    // Return first with clear line of sight
+    for (const { enemy } of candidates) {
+      if (this.losChecker!(playerPos, enemy)) {
+        return enemy;
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -120,6 +163,14 @@ export class WeaponSystem {
         projectile.recycle();
       }
     }
+  }
+
+  /**
+   * Sets a line-of-sight checker function (BUG-005).
+   * When set, targeting will skip enemies that are behind walls/obstacles/liquids.
+   */
+  setLineOfSightChecker(checker: LineOfSightChecker): void {
+    this.losChecker = checker;
   }
 
   /**

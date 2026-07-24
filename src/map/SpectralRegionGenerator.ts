@@ -117,7 +117,7 @@ function placeTemplate(
 ): void {
   const liquidConfig: LiquidConfig = {
     type: 'spectral',
-    behavior: 'walkable',
+    behavior: 'blocking',
   };
 
   for (const cell of template.cells) {
@@ -131,7 +131,7 @@ function placeTemplate(
     gridCell.liquidRotation = cell.rotation;
     gridCell.liquidFlipX = cell.flipX;
     gridCell.liquidFlipY = cell.flipY;
+    gridCell.walkable = false; // All liquids block movement
     // Ground is preserved (not removed)
-    // walkable stays true for 'walkable' behavior
   }
 }

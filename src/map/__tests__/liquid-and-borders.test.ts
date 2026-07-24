@@ -190,8 +190,8 @@ describe('generateLiquidRegions — Density tolerance', () => {
 });
 
 describe('generateLiquidRegions — Behavior affects walkable', () => {
-  it('blocking liquid sets walkable=false', () => {
-    // Use 100% blocking to test this
+  it('all liquids set walkable=false', () => {
+    // With default config (all blocking), every liquid cell is non-walkable
     const config = createMapGenerationConfig('blocking-test', { liquidDensity: 0.05 });
     const grid = createEmptyGrid(100, 100);
     const rng = new SeededRandom('blocking-test');
@@ -199,44 +199,20 @@ describe('generateLiquidRegions — Behavior affects walkable', () => {
     markSafeZone(grid, config);
 
     const rng2 = new SeededRandom('blocking-behavior');
-    generateLiquidRegions(grid, config, rng2, catalog, {
-      ...DEFAULT_LIQUID_CONFIG,
-      behaviorWeights: [{ behavior: 'blocking', weight: 1 }],
-    });
+    generateLiquidRegions(grid, config, rng2, catalog);
     clearLiquidsFromSafeZone(grid);
 
+    let liquidCount = 0;
     for (let row = 0; row < 100; row++) {
       for (let col = 0; col < 100; col++) {
         const cell = grid[row][col];
-        if (cell.liquid !== null && cell.liquidConfig?.behavior === 'blocking') {
+        if (cell.liquid !== null) {
           expect(cell.walkable, `Cell (${row},${col}) should be non-walkable`).toBe(false);
+          liquidCount++;
         }
       }
     }
-  });
-
-  it('walkable liquid preserves walkable=true', () => {
-    const config = createMapGenerationConfig('walkable-test', { liquidDensity: 0.05 });
-    const grid = createEmptyGrid(100, 100);
-    const rng = new SeededRandom('walkable-test');
-    generateGround(grid, rng, catalog);
-    markSafeZone(grid, config);
-
-    const rng2 = new SeededRandom('walkable-behavior');
-    generateLiquidRegions(grid, config, rng2, catalog, {
-      ...DEFAULT_LIQUID_CONFIG,
-      behaviorWeights: [{ behavior: 'walkable', weight: 1 }],
-    });
-    clearLiquidsFromSafeZone(grid);
-
-    for (let row = 0; row < 100; row++) {
-      for (let col = 0; col < 100; col++) {
-        const cell = grid[row][col];
-        if (cell.liquid !== null && cell.liquidConfig?.behavior === 'walkable') {
-          expect(cell.walkable, `Cell (${row},${col}) should remain walkable`).toBe(true);
-        }
-      }
-    }
+    expect(liquidCount).toBeGreaterThan(0);
   });
 });
 

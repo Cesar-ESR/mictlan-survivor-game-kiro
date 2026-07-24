@@ -13,7 +13,7 @@ import type { CameraViewport, MapBounds } from './spawn-utils';
  * Requirements: 3.1, 3.2, 3.5, 3.6, 6.2, 9.4
  */
 export class SpawnManager {
-  private enemyPool: Phaser.GameObjects.Group;
+  private enemyPool: Phaser.Physics.Arcade.Group;
   private spawnTimer: number;
   private spawnInterval: number;
   private maxEnemies: number;
@@ -23,6 +23,9 @@ export class SpawnManager {
   private speedMultiplier: number;
   private enemyRegistry: EnemyRegistry;
   private scene: Phaser.Scene;
+
+  /** Optional walkability checker to prevent spawning in non-walkable tiles (BUG-001). */
+  private walkabilityChecker: ((x: number, y: number) => boolean) | null = null;
 
   private static readonly MAP_BOUNDS: MapBounds = {
     minX: 0,
@@ -34,7 +37,7 @@ export class SpawnManager {
   constructor(scene: Phaser.Scene, enemyRegistry: EnemyRegistry) {
     this.scene = scene;
     this.enemyRegistry = enemyRegistry;
-    this.enemyPool = scene.add.group({ runChildUpdate: false });
+    this.enemyPool = scene.physics.add.group({ runChildUpdate: false });
     this.spawnTimer = 0;
     this.spawnInterval = GAME_CONSTANTS.BASE_SPAWN_INTERVAL;
     this.maxEnemies = GAME_CONSTANTS.DEFAULT_MAX_ENEMIES;
@@ -89,8 +92,18 @@ export class SpawnManager {
   /**
    * Retorna el grupo de enemigos para uso externo (colisiones, etc.)
    */
-  getEnemyPool(): Phaser.GameObjects.Group {
+  getEnemyPool(): Phaser.Physics.Arcade.Group {
     return this.enemyPool;
+  }
+
+  /**
+   * Sets a walkability checker function to prevent spawning in non-walkable tiles.
+   * BUG-001: Prevents enemies from spawning inside blocking liquids.
+   *
+   * @param checker Function that returns true if position (x, y) in pixels is walkable.
+   */
+  setWalkabilityChecker(checker: (x: number, y: number) => boolean): void {
+    this.walkabilityChecker = checker;
   }
 
   /**
@@ -127,7 +140,7 @@ export class SpawnManager {
 
   /**
    * Finds a valid spawn position outside the camera viewport but within map bounds.
-   * Uses up to 10 attempts.
+   * Uses up to 10 attempts. Also checks walkability if a checker is set (BUG-001).
    */
   private findValidSpawnPosition(
     camera: Phaser.Cameras.Scene2D.Camera,
@@ -139,14 +152,28 @@ export class SpawnManager {
       height: camera.worldView.height,
     };
 
-    return generateSpawnPosition(
-      viewport,
-      SpawnManager.MAP_BOUNDS,
-      GAME_CONSTANTS.SPAWN_MIN_DISTANCE_FROM_EDGE,
-      GAME_CONSTANTS.SPAWN_MAX_DISTANCE_FROM_EDGE,
-      () => Math.random(),
-      10,
-    );
+    const maxAttempts = 10;
+    for (let i = 0; i < maxAttempts; i++) {
+      const pos = generateSpawnPosition(
+        viewport,
+        SpawnManager.MAP_BOUNDS,
+        GAME_CONSTANTS.SPAWN_MIN_DISTANCE_FROM_EDGE,
+        GAME_CONSTANTS.SPAWN_MAX_DISTANCE_FROM_EDGE,
+        () => Math.random(),
+        1, // single attempt per call — we handle retries ourselves
+      );
+
+      if (!pos) continue;
+
+      // BUG-001: Check walkability at the generated position
+      if (this.walkabilityChecker && !this.walkabilityChecker(pos.x, pos.y)) {
+        continue;
+      }
+
+      return pos;
+    }
+
+    return null;
   }
 
   /**

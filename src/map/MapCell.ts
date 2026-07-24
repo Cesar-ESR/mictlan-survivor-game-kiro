@@ -10,7 +10,11 @@
 
 import type { TileReference } from './TileCatalog';
 
-/** Comportamiento de un líquido en la celda. */
+/**
+ * Comportamiento de un líquido en la celda.
+ * @deprecated 'walkable' is no longer produced. All liquids are blocking.
+ * Kept for type compatibility. Only 'blocking' and 'damaging' are used.
+ */
 export type LiquidBehavior = 'walkable' | 'blocking' | 'damaging';
 
 /** Configuración de líquido para una celda. */

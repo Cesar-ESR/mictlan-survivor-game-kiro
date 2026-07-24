@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 
+import { GAME_CONSTANTS } from '../config/constants';
+
 /** Global monotonic counter for FIFO ordering without wall-clock dependency */
 let orbSequenceCounter = 0;
 
@@ -28,5 +30,6 @@ export class XPOrb extends Phaser.Physics.Arcade.Sprite {
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
+    this.setDepth(GAME_CONSTANTS.ENTITY_DEPTH_ORBS);
   }
 }

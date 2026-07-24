@@ -10,8 +10,8 @@ import { GAME_CONSTANTS } from '../../config/constants';
  * **Validates: Requirements 4.1, 4.6**
  */
 describe('WeaponSystem Unit Tests', () => {
-  const RANGE = GAME_CONSTANTS.WEAPON_RANGE; // 800
-  const MAX_DISTANCE = GAME_CONSTANTS.PROJECTILE_MAX_DISTANCE; // 1000
+  const RANGE = GAME_CONSTANTS.WEAPON_RANGE; // 384 (BUG-004)
+  const MAX_DISTANCE = GAME_CONSTANTS.PROJECTILE_MAX_DISTANCE; // 450 (BUG-004)
   const FIRE_RATE = GAME_CONSTANTS.WEAPON_BASE_FIRE_RATE; // 1000ms
   const DAMAGE = GAME_CONSTANTS.WEAPON_BASE_DAMAGE; // 10
 
@@ -83,25 +83,25 @@ describe('WeaponSystem Unit Tests', () => {
 
     it('5. Selects closest enemy', () => {
       const enemies: WeaponTarget[] = [
-        { x: 500, y: 100, active: true, hp: 10 }, // distance 400
-        { x: 300, y: 100, active: true, hp: 10 }, // distance 200 (closest)
-        { x: 700, y: 100, active: true, hp: 10 }, // distance 600
+        { x: 350, y: 100, active: true, hp: 10 }, // distance 250
+        { x: 250, y: 100, active: true, hp: 10 }, // distance 150 (closest)
+        { x: 450, y: 100, active: true, hp: 10 }, // distance 350
       ];
       const result = findClosestEnemy(playerPos, enemies, RANGE);
       expect(result).toBe(enemies[1]);
     });
 
-    it('6. Enemy at exactly 800px is valid', () => {
+    it('6. Enemy at exactly WEAPON_RANGE is valid', () => {
       const enemies: WeaponTarget[] = [
-        { x: 100 + RANGE, y: 100, active: true, hp: 10 }, // exactly 800px
+        { x: 100 + RANGE, y: 100, active: true, hp: 10 }, // exactly at range
       ];
       const result = findClosestEnemy(playerPos, enemies, RANGE);
       expect(result).toBe(enemies[0]);
     });
 
-    it('7. Enemy at >800px is invalid', () => {
+    it('7. Enemy beyond WEAPON_RANGE is invalid', () => {
       const enemies: WeaponTarget[] = [
-        { x: 100 + RANGE + 1, y: 100, active: true, hp: 10 }, // 801px
+        { x: 100 + RANGE + 1, y: 100, active: true, hp: 10 }, // 1px beyond range
       ];
       const result = findClosestEnemy(playerPos, enemies, RANGE);
       expect(result).toBeNull();
@@ -110,7 +110,7 @@ describe('WeaponSystem Unit Tests', () => {
     it('ignores inactive enemies', () => {
       const enemies: WeaponTarget[] = [
         { x: 200, y: 100, active: false, hp: 10 }, // inactive
-        { x: 500, y: 100, active: true, hp: 10 },
+        { x: 300, y: 100, active: true, hp: 10 },  // distance 200, within range
       ];
       const result = findClosestEnemy(playerPos, enemies, RANGE);
       expect(result).toBe(enemies[1]);
@@ -119,7 +119,7 @@ describe('WeaponSystem Unit Tests', () => {
     it('ignores enemies with hp <= 0', () => {
       const enemies: WeaponTarget[] = [
         { x: 200, y: 100, active: true, hp: 0 },  // dead
-        { x: 500, y: 100, active: true, hp: 10 },
+        { x: 300, y: 100, active: true, hp: 10 }, // distance 200, within range
       ];
       const result = findClosestEnemy(playerPos, enemies, RANGE);
       expect(result).toBe(enemies[1]);
@@ -295,7 +295,7 @@ describe('WeaponSystem Unit Tests', () => {
       expect(p.distanceTravelled).toBe(0);
     });
 
-    it('16. At 1000px distance: recycles', () => {
+    it('16. At MAX_DISTANCE: recycles', () => {
       const p = createSimProjectile();
       activateSimProjectile(p, 0, 0, 600, 0, DAMAGE, 600);
 

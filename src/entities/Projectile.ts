@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 
+import { GAME_CONSTANTS } from '../config/constants';
+
 /**
  * Projectile entity that extends Phaser.Physics.Arcade.Sprite
  * for integration with the physics system and DamageSystem.
@@ -34,6 +36,7 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
     this.distanceTravelled = 0;
     this.setActive(true);
     this.setVisible(true);
+    this.setDepth(GAME_CONSTANTS.ENTITY_DEPTH_PROJECTILES);
 
     if (this.body) {
       (this.body as Phaser.Physics.Arcade.Body).enable = true;
