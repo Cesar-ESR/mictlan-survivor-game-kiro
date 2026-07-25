@@ -5,6 +5,7 @@ import { MENU_ASSETS } from '../config/menu-assets';
 import { PixelButton } from '../components/PixelButton';
 import { FONT_STYLES } from '../config/font-config';
 import { AudioManager } from '../managers/AudioManager';
+import type { CinematicSceneData } from '../cinematic/cinematic-types';
 
 /**
  * MainMenuScene: Pantalla principal con selección de modo de juego.
@@ -62,7 +63,7 @@ export class MainMenuScene extends Phaser.Scene {
         if (this.hasSelected) return;
         this.hasSelected = true;
         AudioManager.getInstance(this).playSFX('CONFIRM');
-        this.startGame(createCampaignModeConfig());
+        this.startCinematic(createCampaignModeConfig());
       },
     });
 
@@ -95,6 +96,18 @@ export class MainMenuScene extends Phaser.Scene {
     // Fade out de la música del menú antes de cambiar de escena
     AudioManager.getInstance(this).stopWithFadeOut(600, () => {
       this.scene.start('GameScene', { gameMode });
+    });
+  }
+
+  private startCinematic(gameMode: GameModeConfig): void {
+    // Fade out de la música del menú, luego iniciar cinemática de intro
+    AudioManager.getInstance(this).stopWithFadeOut(600, () => {
+      const cinematicData: CinematicSceneData = {
+        cinematicKey: 'cinematic_intro_campaign',
+        nextScene: 'GameScene',
+        nextSceneData: { gameMode },
+      };
+      this.scene.start('CinematicScene', cinematicData);
     });
   }
 }

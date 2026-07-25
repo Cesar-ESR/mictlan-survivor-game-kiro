@@ -8,6 +8,7 @@ import { loadXPOrbAssets } from '../config/xp-orb-assets';
 import { loadMenuAssets } from '../config/menu-assets';
 import { loadButtonAssets } from '../config/button-assets';
 import { loadMusicAssets, loadSFXAssets } from '../config/audio-assets';
+import { loadCinematicAssets } from '../cinematic/cinematic-assets';
 import { GAME_FONT_FAMILY } from '../config/font-config';
 
 /**
@@ -62,6 +63,9 @@ export class BootScene extends Phaser.Scene {
 
     // Cargar efectos de sonido (delegado a módulo centralizado)
     loadSFXAssets(this.load);
+
+    // Cargar assets del sistema de cinemáticas (fondos, splash arts, JSON)
+    loadCinematicAssets(this.load);
 
     // Timeout de 3 segundos para detectar cargas estancadas
     this.time.delayedCall(3000, () => {

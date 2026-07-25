@@ -1,0 +1,516 @@
+{
+  "id": "intro_campaign",
+  "title": "El despertar en el Mictlán",
+  "steps": [
+    {
+      "type": "background",
+      "image": "BackgroundNivel1Dialogs"
+    },
+    {
+      "type": "narration",
+      "text": "El Guerrero Jaguar abre lentamente los ojos."
+    },
+    {
+      "type": "narration",
+      "text": "La batalla ha desaparecido."
+    },
+    {
+      "type": "narration",
+      "text": "Frente a él solo se extiende un paisaje silencioso y desconocido."
+    },
+    {
+      "type": "narration",
+      "text": "A su lado descansa un xoloitzcuintle de pelaje oscuro."
+    },
+    {
+      "type": "narration",
+      "text": "El guerrero se incorpora y, con el respeto que siempre aprendió a tener hacia estos animales sagrados, acaricia suavemente su cabeza."
+    },
+
+    {
+      "type": "dialog",
+      "speaker": "xolotl",
+      "name": "Xólotl",
+      "portrait": "PerroGuiaSplashArt",
+      "text": "Has despertado."
+    },
+    {
+      "type": "dialog",
+      "speaker": "warrior",
+      "name": "Guerrero Jaguar",
+      "portrait": "GuerreroJaguarSplashArt",
+      "text": "¿Dónde estoy?"
+    },
+    {
+      "type": "dialog",
+      "speaker": "xolotl",
+      "name": "Xólotl",
+      "portrait": "PerroGuiaSplashArt",
+      "text": "Estás en el Mictlán."
+    },
+    {
+      "type": "dialog",
+      "speaker": "warrior",
+      "name": "Guerrero Jaguar",
+      "portrait": "GuerreroJaguarSplashArt",
+      "text": "Entonces los ancianos estaban equivocados."
+    },
+    {
+      "type": "dialog",
+      "speaker": "warrior",
+      "name": "Guerrero Jaguar",
+      "portrait": "GuerreroJaguarSplashArt",
+      "text": "Decían que los guerreros que morían en combate acompañaban al Sol en el Tonatiuhichan."
+    },
+    {
+      "type": "dialog",
+      "speaker": "xolotl",
+      "name": "Xólotl",
+      "portrait": "PerroGuiaSplashArt",
+      "text": "No estaban equivocados."
+    },
+    {
+      "type": "dialog",
+      "speaker": "xolotl",
+      "name": "Xólotl",
+      "portrait": "PerroGuiaSplashArt",
+      "text": "Los guerreros que entregan su vida en batalla son dignos de caminar junto al Sol."
+    },
+    {
+      "type": "dialog",
+      "speaker": "xolotl",
+      "name": "Xólotl",
+      "portrait": "PerroGuiaSplashArt",
+      "text": "Así como las mujeres que entregan su vida al dar una nueva vida."
+    },
+    {
+      "type": "dialog",
+      "speaker": "xolotl",
+      "name": "Xólotl",
+      "portrait": "PerroGuiaSplashArt",
+      "text": "Ese siempre ha sido el orden."
+    },
+    {
+      "type": "dialog",
+      "speaker": "warrior",
+      "name": "Guerrero Jaguar",
+      "portrait": "GuerreroJaguarSplashArt",
+      "text": "Entonces ese es mi destino."
+    },
+    {
+      "type": "dialog",
+      "speaker": "xolotl",
+      "name": "Xólotl",
+      "portrait": "PerroGuiaSplashArt",
+      "text": "Sí."
+    },
+
+    {
+      "type": "narration",
+      "text": "Sin decir una palabra más, comienza a caminar."
+    },
+    {
+      "type": "narration",
+      "text": "Xólotl permanece donde está."
+    },
+
+    {
+      "type": "dialog",
+      "speaker": "xolotl",
+      "name": "Xólotl",
+      "portrait": "PerroGuiaSplashArt",
+      "text": "No existe un camino hacia el Tonatiuhichan desde aquí."
+    },
+
+    {
+      "type": "narration",
+      "text": "El guerrero se detiene."
+    },
+    {
+      "type": "narration",
+      "text": "Desenvaina lentamente su macuahuitl."
+    },
+    {
+      "type": "narration",
+      "text": "Lo clava en la tierra del Mictlán."
+    },
+    {
+      "type": "narration",
+      "text": "Pequeñas grietas aparecen alrededor del arma."
+    },
+    {
+      "type": "narration",
+      "text": "El guerrero mantiene firme el mango."
+    },
+
+    {
+      "type": "dialog",
+      "speaker": "warrior",
+      "name": "Guerrero Jaguar",
+      "portrait": "GuerreroJaguarSplashArt",
+      "text": "Entonces..."
+    },
+    {
+      "type": "dialog",
+      "speaker": "warrior",
+      "name": "Guerrero Jaguar",
+      "portrait": "GuerreroJaguarSplashArt",
+      "text": "Crearé uno."
+    },
+
+    {
+      "type": "background",
+      "image": "BackgroundNivel2Dialogs"
+    },
+
+    {
+      "type": "narration",
+      "text": "El silencio invade nuevamente el lugar."
+    },
+    {
+      "type": "narration",
+      "text": "Las grietas dejan de avanzar."
+    },
+    {
+      "type": "narration",
+      "text": "Dos presencias aparecen frente al guerrero."
+    },
+    {
+      "type": "narration",
+      "text": "No llegan desde ninguna dirección."
+    },
+    {
+      "type": "narration",
+      "text": "Simplemente están ahí."
+    },
+    {
+      "type": "narration",
+      "text": "El Señor y la Señora del Mictlán."
+    },
+    {
+      "type": "narration",
+      "text": "Las grietas desaparecen sin dejar rastro."
+    },
+    {
+      "type": "narration",
+      "text": "La piedra vuelve a unirse como si jamás hubiera sido alterada."
+    },
+    {
+      "type": "narration",
+      "text": "El Guerrero Jaguar observa el suelo."
+    },
+    {
+      "type": "narration",
+      "text": "Luego levanta la mirada."
+    },
+    {
+      "type": "narration",
+      "text": "Comprende que está frente a los gobernantes del inframundo."
+    },
+    {
+      "type": "narration",
+      "text": "Guarda lentamente su macuahuitl."
+    },
+    {
+      "type": "narration",
+      "text": "Inclina la cabeza con respeto."
+    },
+
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "Soy Mictlantecuhtli."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "Gobernante del Mictlán."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "Toda carne desaparece."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "Solo el destino permanece."
+    },
+
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "Soy Mictecacíhuatl."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "Gobernante del Mictlán."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "La vida y la muerte no se enfrentan."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "Son un mismo ciclo."
+    },
+
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "Has llegado al Mictlán como dos almas."
+    },
+    {
+      "type": "dialog",
+      "speaker": "warrior",
+      "name": "Guerrero Jaguar",
+      "portrait": "GuerreroJaguarSplashArt",
+      "text": "Morí solo."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "No."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "Moriste al mismo tiempo que la madre de tu hijo."
+    },
+    {
+      "type": "dialog",
+      "speaker": "warrior",
+      "name": "Guerrero Jaguar",
+      "portrait": "GuerreroJaguarSplashArt",
+      "text": "Ella permanecía en nuestro hogar."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "Murió dando a luz."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "Ambos abandonaron el mundo de los vivos en el mismo instante."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "Sus almas llegaron entrelazadas."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "Jamás habíamos recibido dos almas unidas por una misma muerte."
+    },
+    {
+      "type": "dialog",
+      "speaker": "warrior",
+      "name": "Guerrero Jaguar",
+      "portrait": "GuerreroJaguarSplashArt",
+      "text": "Si ambos cumplimos con nuestro deber..."
+    },
+    {
+      "type": "dialog",
+      "speaker": "warrior",
+      "name": "Guerrero Jaguar",
+      "portrait": "GuerreroJaguarSplashArt",
+      "text": "¿Cómo terminamos en el Mictlán?"
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "No lo sabemos."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "Jamás habíamos recibido dos almas entrelazadas."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "Es un hecho sin precedentes."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "Ni los antiguos relatos hablan de ello."
+    },
+    {
+      "type": "dialog",
+      "speaker": "warrior",
+      "name": "Guerrero Jaguar",
+      "portrait": "GuerreroJaguarSplashArt",
+      "text": "Desde que empuñé un macuahuitl me enseñaron cuál era el mayor honor de un guerrero."
+    },
+    {
+      "type": "dialog",
+      "speaker": "warrior",
+      "name": "Guerrero Jaguar",
+      "portrait": "GuerreroJaguarSplashArt",
+      "text": "Caminar junto al Sol."
+    },
+    {
+      "type": "dialog",
+      "speaker": "warrior",
+      "name": "Guerrero Jaguar",
+      "portrait": "GuerreroJaguarSplashArt",
+      "text": "Ella también libró una batalla."
+    },
+    {
+      "type": "dialog",
+      "speaker": "warrior",
+      "name": "Guerrero Jaguar",
+      "portrait": "GuerreroJaguarSplashArt",
+      "text": "Su sacrificio merece el mismo honor."
+    },
+    {
+      "type": "dialog",
+      "speaker": "warrior",
+      "name": "Guerrero Jaguar",
+      "portrait": "GuerreroJaguarSplashArt",
+      "text": "Exijo que nuestro destino sea respetado."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "El destino no se concede."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "Se cumple."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "Y el vuestro permanece incompleto."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "El Tonatiuhichan no pertenece al Mictlán."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "Nosotros no conducimos las almas hasta él."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "Solo preservamos el orden del último reino."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "Si deseas abandonar el Mictlán..."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "Deberás abrirte paso por sus dominios."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "El camino pondrá a prueba tu voluntad."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "Y también la fuerza del vínculo que une ambas almas."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "El orden debe preservarse."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictecacihuatl",
+      "name": "Mictecacíhuatl",
+      "portrait": "Gobernante2",
+      "text": "Por ello recibirás una bendición."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "Elige con sabiduría."
+    },
+    {
+      "type": "dialog",
+      "speaker": "mictlantecuhtli",
+      "name": "Mictlantecuhtli",
+      "portrait": "Gobernante1",
+      "text": "Solo una te acompañará hasta el final del viaje."
+    }
+  ]
+}
