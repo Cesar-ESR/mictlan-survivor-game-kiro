@@ -58,9 +58,18 @@ export class WaveManager {
     this.waveDurationMs = GAME_CONSTANTS.WAVE_DURATION * 1000; // 30s → 30000ms
     this.transitionDurationMs = GAME_CONSTANTS.WAVE_TRANSITION_TIME * 1000; // 2s → 2000ms
 
-    // Initialize wave 1: resolve config, notify spawn controller, emit event
+    // Initialize wave 1: resolve config, notify spawn controller
     const config = this.resolveWaveConfig(this.currentWave);
     this.spawnController.setWaveConfig(config);
+  }
+
+  /**
+   * Emits the initial wave-changed event. Must be called AFTER all listeners
+   * (e.g., HUDScene) are registered to avoid emitting to unready consumers.
+   * BUG-009: Moved out of constructor to control emission timing.
+   */
+  emitInitialState(): void {
+    const config = this.resolveWaveConfig(this.currentWave);
     const payload: WaveChangedPayload = { wave: this.currentWave, config };
     this.eventEmitter.emit('wave-changed', payload);
   }

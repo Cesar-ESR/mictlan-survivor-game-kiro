@@ -41,7 +41,8 @@ describe('Preflight Contracts', () => {
         },
       };
 
-      new WaveManager({ mode: 'campaign', finalWave: 10 }, spawnController, eventEmitter);
+      const wm = new WaveManager({ mode: 'campaign', finalWave: 10 }, spawnController, eventEmitter);
+      wm.emitInitialState();
 
       expect(emittedPayloads).toHaveLength(1);
       const payload = emittedPayloads[0];

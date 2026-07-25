@@ -5,6 +5,14 @@ import { calculateOrbAttraction, shouldCollectOrb } from './orb-utils';
 import { DEFAULT_XP_ORB_VARIANT } from '../config/xp-orb-assets';
 import type { XPOrbVariant } from '../config/xp-orb-assets';
 
+/** Payload emitted by Enemy.onDefeat() */
+interface EnemyDefeatedPayload {
+  x: number;
+  y: number;
+  xpReward: number;
+  xpOrbVariant?: XPOrbVariant;
+}
+
 /**
  * Manages XP orb spawning, attraction, collection, expiration, and pool cap.
  *
@@ -18,8 +26,15 @@ export class OrbCollector {
   private orbLifetime: number;
   private scene: Phaser.Scene;
   private player: { addXP(value: number): unknown } | null;
+  private isDestroyed = false;
 
   private static readonly COLLECTION_RADIUS = 16;
+
+  /** Stored handler for proper listener removal (BUG-010) */
+  private readonly enemyDefeatedHandler = (data: EnemyDefeatedPayload): void => {
+    if (this.isDestroyed) return;
+    this.spawnOrb({ x: data.x, y: data.y }, data.xpReward, data.xpOrbVariant);
+  };
 
   constructor(scene: Phaser.Scene, player?: { addXP(value: number): unknown }) {
     this.scene = scene;
@@ -34,16 +49,15 @@ export class OrbCollector {
       runChildUpdate: false,
     });
 
-    // Listen for enemy defeats to spawn orbs (Subtask 15.3)
-    this.scene.events.on('enemy-defeated', (data: { x: number; y: number; xpReward: number; xpOrbVariant?: XPOrbVariant }) => {
-      this.spawnOrb({ x: data.x, y: data.y }, data.xpReward, data.xpOrbVariant);
-    });
+    // Listen for enemy defeats to spawn orbs (Subtask 15.3, BUG-010: stored handler)
+    this.scene.events.on('enemy-defeated', this.enemyDefeatedHandler);
   }
 
   /**
    * Spawns an XP orb at the given position with the specified value and visual variant.
    */
   spawnOrb(position: { x: number; y: number }, value: number, variant: XPOrbVariant = DEFAULT_XP_ORB_VARIANT): void {
+    if (this.isDestroyed) return;
     const orb = new XPOrb(this.scene, position.x, position.y, value, variant);
     orb.setActive(true);
     orb.setVisible(true);
@@ -55,6 +69,8 @@ export class OrbCollector {
    * Main update loop: ages orbs, removes expired, attracts and collects orbs near the player.
    */
   update(delta: number, playerPos: { x: number; y: number }): void {
+    if (this.isDestroyed) return;
+
     // Age all active orbs by delta (ms)
     const allActive = this.orbPool.getChildren().filter(
       (child) => child.active
@@ -169,10 +185,14 @@ export class OrbCollector {
   }
 
   /**
-   * Cleanup: removes event listener and destroys the orb pool.
+   * Cleanup: removes event listener by reference and destroys the orb pool.
+   * BUG-010: Uses stored handler reference for precise removal.
+   * Idempotent — safe to call multiple times.
    */
   destroy(): void {
-    this.scene.events.off('enemy-defeated');
+    if (this.isDestroyed) return;
+    this.isDestroyed = true;
+    this.scene.events.off('enemy-defeated', this.enemyDefeatedHandler);
     this.orbPool.destroy(true);
   }
 }

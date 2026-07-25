@@ -595,3 +595,169 @@ Esto cumple la restricción de que PauseSystem siempre resuma even on error.
 - No se modificó el mapa, enemigos, armas, oleadas ni animaciones.
 - Los upgrades ahora mutan directamente el estado (en vez del patrón funcional spread anterior) porque Player y WeaponSystem son clases mutables de Phaser.
 - El `PlayerState` interface sigue existiendo por compatibilidad pero ya no se usa en upgrades.
+
+
+---
+
+## BUG-009 — Reintentar falla por recurso nulo del HUD
+
+**Estado:** ✅ Corregido (V2 — handshake hud-ready)  
+**Fecha:** 2025-07-XX  
+**Severidad:** Crítica (gameplay-breaking crash)
+
+### Descripción
+
+Después de morir, pulsar "Reintentar" provocaba un `TypeError: Cannot read properties of null (reading 'drawImage')` en `HUDScene.updateWaveDisplay`. La nueva partida no iniciaba.
+
+### Primera corrección (V1) — Insuficiente
+
+Se movió la emisión de `wave-changed` del constructor de WaveManager a un método `emitInitialState()` llamado inmediatamente después de `scene.launch('HUDScene')`. Esto no resolvió el bug porque **`scene.launch()` en Phaser no garantiza que `HUDScene.create()` haya completado** antes de continuar la ejecución síncrona. El `waveText` aún no existía cuando llegaba el evento.
+
+### Causa raíz real
+
+`scene.launch('HUDScene')` + `waveManager.emitInitialState()` en secuencia síncrona. En el flujo de retry, HUDScene.create() no se ejecutaba síncronamente tras launch, por lo que `waveText` era null cuando el handler `_waveHandler` se disparaba.
+
+### Corrección (V2) — Handshake hud-ready
+
+1. **`src/scenes/GameScene.ts`** — Se implementó un handshake con `runId`:
+   - Genera un `runId` único por partida
+   - Registra listener `'hud-ready'` ANTES de lanzar HUDScene
+   - Pasa `{ runId }` al launch de HUDScene
+   - `hudReadyHandler` verifica runId, guarda idempotencia, luego llama `emitInitialState()`
+   - Cleanup del listener en `shutdown()`
+
+2. **`src/scenes/HUDScene.ts`** — Emite `'hud-ready'` al FINAL de `create()`:
+   - Almacena `runId` recibido en `init(data)`
+   - Crea TODOS los objetos visuales primero
+   - Registra handlers después
+   - Emite `'hud-ready'` como último paso
+   - `updateWaveDisplay()` tiene guard `if (this.isShuttingDown) return`
+   - `shutdown()` marca flags de protección
+
+3. **`src/scenes/DefeatScene.ts`** — Botones con `transitionInProgress`:
+   - Flag reseteado en `init()`
+   - Ambos botones se deshabilitan juntos
+   - No quedan bloqueados permanentemente
+
+4. **`src/scenes/VictoryScene.ts`** — Mismo patrón que DefeatScene
+
+### Flujo final
+
+```
+DefeatScene: handleRetry() → transitionInProgress=true → disable buttons
+  → scene.start('GameScene', { gameMode })
+GameScene.create() → generateMap():
+  → WaveManager constructor (NO emite)
+  → ... otros sistemas ...
+  → genera runId
+  → events.on('hud-ready', hudReadyHandler)
+  → scene.stop('HUDScene') si activo
+  → scene.launch('HUDScene', { runId })
+HUDScene.init({ runId })
+HUDScene.create():
+  → createWaveDisplay() [waveText creado]
+  → registerEventListeners() [_waveHandler registrado]
+  → isHudReady = true
+  → emit('hud-ready', { runId })
+GameScene.hudReadyHandler:
+  → verifica runId
+  → waveManager.emitInitialState() → wave-changed
+  → _waveHandler → updateWaveDisplay(1) → waveText.setText(...) ✓
+```
+
+### Archivos Modificados
+
+- `src/scenes/GameScene.ts` — runId, hudReadyHandler, handshake launch
+- `src/scenes/HUDScene.ts` — init, isShuttingDown, isHudReady, emit hud-ready
+- `src/scenes/DefeatScene.ts` — transitionInProgress pattern
+- `src/scenes/VictoryScene.ts` — transitionInProgress pattern
+- `src/scenes/__tests__/bug-009-retry-lifecycle.test.ts` — reescrito con tests de handshake
+
+### Tests de Regresión
+
+- `src/scenes/__tests__/bug-009-retry-lifecycle.test.ts` (26 tests)
+  - Constructor no emite wave-changed
+  - emitInitialState solo se llama después del handshake
+  - RunId incorrecto no dispara emisión
+  - Handshake idempotente (doble hud-ready no re-emite)
+  - Retry preserva GameModeConfig
+  - Retry reinicia estadísticas, Recuerdos y fragmentos
+  - Listener shutdown guard previene crash
+  - Tres ciclos no acumulan listeners
+  - transitionInProgress bloquea doble clic
+  - Botones se deshabilitan juntos
+
+### Notas
+
+- No se usó optional chaining como corrección
+- No se usó setTimeout/delayedCall
+- No se modificó balance, oleadas, recuerdos, enemigos, armas, mapa ni combate
+- No se modificó requirements.md, design.md ni tasks.md
+
+
+---
+
+## BUG-010 — OrbCollector usa una Scene inválida al generar XPOrb
+
+**Estado:** ✅ Corregido  
+**Fecha:** 2025-07-XX  
+**Severidad:** Crítica (gameplay-breaking crash)
+
+### Descripción
+
+Al derrotar un enemigo, OrbCollector lanzaba `TypeError: Cannot read properties of undefined (reading 'add')` al intentar crear un XPOrb.
+
+### Causa Raíz
+
+El constructor de OrbCollector registraba un **lambda anónimo** como listener del evento `'enemy-defeated'`:
+```typescript
+this.scene.events.on('enemy-defeated', (data) => { this.spawnOrb(...); });
+```
+
+Problemas:
+1. El lambda anónimo no puede eliminarse con `off()` por referencia
+2. `destroy()` hacía `this.scene.events.off('enemy-defeated')` sin callback — esto eliminaba TODOS los listeners de ese evento (incluyendo los de otros sistemas)
+3. En ciclos retry, si el OrbCollector anterior no se destruía limpiamente, su lambda persistía con `this.scene` apuntando a una escena destruida donde `scene.physics` era `undefined`
+4. Al dispararse `enemy-defeated`, el lambda intentaba `new XPOrb(this.scene, ...)` → XPOrb constructor: `scene.add.existing(this)` → `undefined.add` → TypeError
+
+### Corrección
+
+1. **`src/systems/OrbCollector.ts`** — Handler reemplazado por arrow function almacenada como propiedad de clase:
+   ```typescript
+   private readonly enemyDefeatedHandler = (data: EnemyDefeatedPayload): void => {
+     if (this.isDestroyed) return;
+     this.spawnOrb(...);
+   };
+   ```
+   - `destroy()` ahora es idempotente y elimina solo su propio handler por referencia
+   - Guard `isDestroyed` previene ejecución post-destroy
+   - `spawnOrb()` y `update()` también tienen guard
+   - Otros listeners de `'enemy-defeated'` no se ven afectados
+
+### Archivos Modificados
+
+- `src/systems/OrbCollector.ts`
+
+### Archivos Creados
+
+- `src/systems/__tests__/bug-010-orb-collector-lifecycle.test.ts` (24 tests)
+
+### Tests de Regresión
+
+- Handler registra exactamente un listener por construcción
+- Payload (x, y, xpReward, xpOrbVariant) se forwarda correctamente
+- Arrow function preserva `this` context
+- `destroy()` elimina solo su propio listener (otros sobreviven)
+- Evento post-destroy no genera orbes
+- `destroy()` es idempotente
+- Tres ciclos retry no acumulan listeners
+- Handler stale no crashea cuando se invoca directamente
+- Múltiples OrbCollectors en misma scene son independientes
+- No TypeError por `undefined.add`
+
+### Notas
+
+- No se modificaron enemigos, daño, XP, oleadas, balance, mapa, Recuerdos ni combate
+- No se usó optional chaining como corrección principal
+- La corrección es compatible con BUG-009 (handshake hud-ready)
+- El guard `isDestroyed` es una segunda línea de defensa; la correcta eliminación del listener por referencia es la corrección primaria

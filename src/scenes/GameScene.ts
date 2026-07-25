@@ -98,6 +98,10 @@ export class GameScene extends Phaser.Scene {
   // Logical grid reference for walkability checks (BUG-001)
   private logicalGrid: import('../map/MapCell').LogicalMapGrid | null = null;
 
+  // HUD-ready handshake (BUG-009 V2)
+  private runId: string = '';
+  private initialWaveStateEmitted = false;
+
   // Game mode
   private gameModeConfig: GameModeConfig = { mode: 'campaign', finalWave: 10 };
 
@@ -319,10 +323,18 @@ export class GameScene extends Phaser.Scene {
     // --- 14. Register game listeners ---
     this.registerGameListeners();
 
-    // --- 15. Launch HUDScene ---
-    if (!this.scene.isActive('HUDScene')) {
-      this.scene.launch('HUDScene');
+    // --- 15. Launch HUDScene with handshake (BUG-009 V2) ---
+    this.runId = `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    this.initialWaveStateEmitted = false;
+
+    // Register hud-ready listener BEFORE launching (ensures we catch it)
+    this.events.off('hud-ready', this.hudReadyHandler, this);
+    this.events.on('hud-ready', this.hudReadyHandler, this);
+
+    if (this.scene.isActive('HUDScene')) {
+      this.scene.stop('HUDScene');
     }
+    this.scene.launch('HUDScene', { runId: this.runId });
 
     // Camera follows player, stops at map edges (native Phaser behavior with setBounds)
     if (!this.isDebugMode) {
@@ -346,6 +358,15 @@ export class GameScene extends Phaser.Scene {
     this.events.on('wave-changed', this.onWaveChanged, this);
     this.events.on('orb-collected', this.onOrbCollected, this);
   }
+
+  /** Handles HUDScene signaling it's fully ready (BUG-009 V2) */
+  private hudReadyHandler = (payload: { runId: string }): void => {
+    if (payload.runId !== this.runId) return;
+    if (this.initialWaveStateEmitted) return;
+    this.initialWaveStateEmitted = true;
+    this.events.off('hud-ready', this.hudReadyHandler, this);
+    this.waveManager.emitInitialState();
+  };
 
   /**
    * Reads the blessing selection from BlessingManager and applies
@@ -462,6 +483,7 @@ export class GameScene extends Phaser.Scene {
     this.events.off('enemy-defeated', this.onEnemyDefeated, this);
     this.events.off('wave-changed', this.onWaveChanged, this);
     this.events.off('orb-collected', this.onOrbCollected, this);
+    this.events.off('hud-ready', this.hudReadyHandler, this);
 
     // Remove death animation listener in case shutdown happens during dying state
     this.player?.off('death-animation-complete', this.onDeathAnimationComplete, this);
@@ -481,46 +503,10 @@ export class GameScene extends Phaser.Scene {
     this.weaponSystem?.destroy();
     this.orbCollector?.destroy();
 
-    // Stop HUD
+    // Stop HUD (BUG-009: ensure HUD is always stopped during shutdown)
     if (this.scene.isActive('HUDScene')) {
       this.scene.stop('HUDScene');
     }
-    // --- Stats tracking event listeners ---
-
-    // Reset stats on (re)generation
-    this.gameStats = { survivalTime: 0, enemiesDefeated: 0, maxWave: 1 };
-
-    // Defeat flow: transition to DefeatScene with stats (Requirement 4.5)
-    this.events.on('player-defeated', () => {
-      this.scene.start('DefeatScene', {
-        survivalTime: this.gameStats.survivalTime,
-        totalXp: this.player.totalXp,
-      });
-    });
-
-    // Victory flow: transition to VictoryScene with full stats (Requirement 6.4)
-    this.events.on('victory', () => {
-      this.scene.start('VictoryScene', {
-        totalTime: this.gameStats.survivalTime,
-        maxWave: this.gameStats.maxWave,
-        enemiesDefeated: this.gameStats.enemiesDefeated,
-        totalXp: this.player.totalXp,
-        levelReached: this.player.level,
-      });
-    });
-
-    // Increment enemies defeated counter
-    this.events.on('enemy-defeated', () => {
-      this.gameStats.enemiesDefeated++;
-    });
-
-    // Update max wave reached
-    this.events.on('wave-changed', (wave: number) => {
-      this.gameStats.maxWave = Math.max(this.gameStats.maxWave, wave);
-    });
-
-    // TODO: Configurar player/enemies colliders con walls/obstacles layers (Task 5+)
-    // TODO: Instanciar sistemas (SpawnManager, WaveManager, etc.) (Task 23)
   }
 
   private setupDebugControls(result: Extract<LogicalMapGenerationResult, { success: true }>): void {

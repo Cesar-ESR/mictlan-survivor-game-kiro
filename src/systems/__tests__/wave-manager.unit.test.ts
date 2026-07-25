@@ -47,11 +47,12 @@ describe('WaveManager Unit Tests', () => {
     });
 
     it('emits wave-changed at start with wave 1', () => {
-      new WaveManager(
+      const wm = new WaveManager(
         { mode: 'campaign', finalWave: 10 },
         spawnController,
         eventEmitter,
       );
+      wm.emitInitialState();
 
       const waveChangedEvents = eventEmitter.events.filter((e) => e.event === 'wave-changed');
       expect(waveChangedEvents).toHaveLength(1);
@@ -83,6 +84,7 @@ describe('WaveManager Unit Tests', () => {
         spawnController,
         eventEmitter,
       );
+      manager.emitInitialState();
 
       // Complete wave 1 + transition
       manager.update(WAVE_DURATION_MS);
