@@ -21,6 +21,8 @@ import { GAME_FONT_FAMILY } from '../config/font-config';
 export class CinematicScene extends Phaser.Scene {
   private cinematicPlayer: CinematicPlayer | null = null;
   private sceneData: CinematicSceneData | null = null;
+  private skipButton: Phaser.GameObjects.Text | null = null;
+  private isTransitioningToNext = false;
 
   constructor() {
     super({ key: 'CinematicScene' });
@@ -106,6 +108,9 @@ export class CinematicScene extends Phaser.Scene {
     this.cinematicPlayer = new CinematicPlayer(this, cinematicData);
     this.cinematicPlayer.start(background, splashArt, nameText, dialogText);
 
+    // ─── Skip Button ────────────────────────────────────────────────────────
+    this.createSkipButton();
+
     // ─── Input: avanzar con click, Space o Enter ────────────────────────────
     this.input.on('pointerdown', this.onAdvance, this);
     if (this.input.keyboard) {
@@ -123,6 +128,11 @@ export class CinematicScene extends Phaser.Scene {
 
   private transitionToNext(): void {
     if (!this.sceneData) return;
+    if (this.isTransitioningToNext) return;
+    this.isTransitioningToNext = true;
+
+    // Ocultar botón skip
+    this.hideSkipButton();
 
     // Limpiar listeners
     this.input.off('pointerdown', this.onAdvance, this);
@@ -138,6 +148,45 @@ export class CinematicScene extends Phaser.Scene {
 
     // Transicionar a la siguiente escena
     this.scene.start(this.sceneData.nextScene, this.sceneData.nextSceneData);
+  }
+
+  private createSkipButton(): void {
+    const { width } = this.cameras.main;
+    this.skipButton = this.add.text(width - 20, 20, 'Skip', {
+      fontFamily: GAME_FONT_FAMILY,
+      fontSize: '14px',
+      color: '#ffffff',
+    })
+      .setOrigin(1, 0)
+      .setDepth(50)
+      .setAlpha(0.7)
+      .setInteractive({ useHandCursor: true });
+
+    this.skipButton.on('pointerover', () => {
+      this.skipButton?.setAlpha(1.0);
+    });
+    this.skipButton.on('pointerout', () => {
+      this.skipButton?.setAlpha(0.7);
+    });
+    this.skipButton.on('pointerdown', this.handleSkip, this);
+  }
+
+  private handleSkip(): void {
+    if (this.isTransitioningToNext) return;
+
+    this.hideSkipButton();
+
+    this.tweens.killAll();
+    this.time.removeAllEvents();
+
+    this.transitionToNext();
+  }
+
+  private hideSkipButton(): void {
+    if (this.skipButton) {
+      this.skipButton.disableInteractive();
+      this.skipButton.setVisible(false);
+    }
   }
 
   shutdown(): void {

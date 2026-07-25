@@ -30,6 +30,7 @@ export const GAME_CONSTANTS = {
   WEAPON_BASE_FIRE_RATE: 1000,
   WEAPON_RANGE: 384,                // 12 tiles × 32px (BUG-004: was 800 — too far)
   PROJECTILE_MAX_DISTANCE: 450,     // slightly more than range (BUG-004: was 1000)
+  PROJECTILE_DISPLAY_SIZE: 32,      // px — visual size of projectile sprite (flying & impact)
 
   // Combat
   CONTACT_DAMAGE_COOLDOWN: 1000,

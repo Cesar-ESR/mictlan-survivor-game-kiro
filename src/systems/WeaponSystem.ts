@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { findClosestEnemy, calculateProjectileVelocity } from './weapon-utils';
 import type { WeaponTarget } from './weapon-utils';
 import { Projectile } from '../entities/Projectile';
+import { PLAYER_SPRITES } from '../config/player-assets';
 
 /** Line-of-sight checker function signature (BUG-005). */
 export type LineOfSightChecker = (start: { x: number; y: number }, end: { x: number; y: number }) => boolean;
@@ -36,6 +37,8 @@ export class WeaponSystem {
   private fireTimer: number = 0;
   private projectilePool: Phaser.Physics.Arcade.Group;
   private losChecker: LineOfSightChecker | null = null;
+  /** Optional callback invoked whenever a projectile is fired. */
+  private onFireCallback: (() => void) | null = null;
 
   constructor(scene: Phaser.Scene, config: WeaponConfig) {
     this.fireRateMs = config.fireRateMs;
@@ -54,7 +57,7 @@ export class WeaponSystem {
 
     // Pre-create pool members
     for (let i = 0; i < poolSize; i++) {
-      const proj = new Projectile(scene, 0, 0, 'projectile');
+      const proj = new Projectile(scene, 0, 0, PLAYER_SPRITES.hitEffect.key);
       proj.setActive(false);
       proj.setVisible(false);
       if (proj.body) {
@@ -131,8 +134,14 @@ export class WeaponSystem {
   /**
    * Fires a projectile from playerPos toward target.
    * Gets an inactive projectile from the pool.
+   * Does not fire if calculated velocity is zero (target at same position).
    */
   private fireProjectile(from: { x: number; y: number }, target: WeaponTarget): void {
+    const { vx, vy } = calculateProjectileVelocity(from, target, this.projectileSpeed);
+
+    // Don't fire if direction cannot be determined (target at same position)
+    if (vx === 0 && vy === 0) return;
+
     const projectile = this.projectilePool.getFirstDead(false) as Projectile | null;
 
     if (!projectile) {
@@ -140,8 +149,12 @@ export class WeaponSystem {
       return;
     }
 
-    const { vx, vy } = calculateProjectileVelocity(from, target, this.projectileSpeed);
     projectile.activate(from.x, from.y, vx, vy, this.damage, this.projectileSpeed);
+
+    // Notify listener (e.g. player attack animation)
+    if (this.onFireCallback) {
+      this.onFireCallback();
+    }
   }
 
   /**
@@ -153,6 +166,8 @@ export class WeaponSystem {
 
     for (const projectile of children) {
       if (!projectile.active) continue;
+      // Skip projectiles in impact animation (they will recycle themselves)
+      if (projectile.isImpacting) continue;
 
       // Accumulate distance via speed * (deltaMs / 1000)
       const distThisFrame = projectile.speed * (deltaMs / 1000);
@@ -190,6 +205,14 @@ export class WeaponSystem {
    */
   setLineOfSightChecker(checker: LineOfSightChecker): void {
     this.losChecker = checker;
+  }
+
+  /**
+   * Sets a callback invoked each time the weapon fires a projectile.
+   * Used to trigger attack animation on the player without coupling systems.
+   */
+  setOnFireCallback(callback: () => void): void {
+    this.onFireCallback = callback;
   }
 
   /**

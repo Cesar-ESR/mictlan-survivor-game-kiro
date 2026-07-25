@@ -7,6 +7,7 @@
 
 import { PLAYER_SPRITES } from './player-assets';
 import type { PlayerSpriteConfig } from './player-assets';
+import { PROJECTILE_IMPACT_ANIM_KEY } from '../entities/Projectile';
 
 export interface PlayerAnimationConfig {
   /** Clave de la animación (e.g. 'mc_idle'). */
@@ -46,13 +47,13 @@ export function getPlayerAnimationConfigs(): PlayerAnimationConfig[] {
 
   return [
     // Idle: loop, uses main spriteKey texture
-    buildPlayerAnimConfig(p.idle, p.spriteKey, { frameRate: 6, repeat: -1 }),
+    buildPlayerAnimConfig(p.idle, p.spriteKey, { frameRate: 4, repeat: -1 }),
     // Walk: loop, uses mc_walk texture
     buildPlayerAnimConfig(p.walk, p.walk.key, { frameRate: 10, repeat: -1 }),
     // Attack: single play, uses mc_attack texture
     buildPlayerAnimConfig(p.attack, p.attack.key, { frameRate: 12, repeat: 0 }),
     // Death: single play, uses mc_death texture
-    buildPlayerAnimConfig(p.death, p.death.key, { frameRate: 8, repeat: 0 }),
+    buildPlayerAnimConfig(p.death, p.death.key, { frameRate: 5, repeat: 0 }),
   ];
 }
 
@@ -77,6 +78,20 @@ export function registerPlayerAnimations(anims: Phaser.Animations.AnimationManag
       }),
       frameRate: config.frameRate,
       repeat: config.repeat,
+    });
+  }
+
+  // Register projectile impact animation (frames 1-3 of hitEffect spritesheet)
+  if (!anims.exists(PROJECTILE_IMPACT_ANIM_KEY)) {
+    const hitEffect = PLAYER_SPRITES.hitEffect;
+    anims.create({
+      key: PROJECTILE_IMPACT_ANIM_KEY,
+      frames: anims.generateFrameNumbers(hitEffect.key, {
+        start: 1,
+        end: hitEffect.frameCount - 1,
+      }),
+      frameRate: 12,
+      repeat: 0,
     });
   }
 }

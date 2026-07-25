@@ -233,6 +233,11 @@ export class GameScene extends Phaser.Scene {
     };
     this.weaponSystem = new WeaponSystem(this, weaponConfig);
 
+    // Connect weapon fire to player attack animation
+    this.weaponSystem.setOnFireCallback(() => {
+      this.player.playAttack();
+    });
+
     // --- 9. OrbCollector (no player ref — GameScene handles XP flow) ---
     this.orbCollector = new OrbCollector(this);
 
@@ -337,6 +342,19 @@ export class GameScene extends Phaser.Scene {
   private onPlayerDefeated = (): void => {
     if (this.gameState !== 'playing') return;
     this.gameState = 'defeat';
+
+    // Stop player movement immediately
+    this.player.setVelocity(0, 0);
+
+    // Trigger death animation (hp is already 0, updateAnimation will start death)
+    this.player.updateAnimation(false);
+
+    // Wait for death animation to finish before transitioning
+    this.player.once('death-animation-complete', this.onDeathAnimationComplete, this);
+  };
+
+  /** Transitions to DefeatScene after death animation finishes. */
+  private onDeathAnimationComplete = (): void => {
     this.scene.stop('HUDScene');
     this.scene.start('DefeatScene', {
       survivalTime: this.gameStats.survivalTime,
@@ -392,13 +410,13 @@ export class GameScene extends Phaser.Scene {
 
   /**
    * Callback when a projectile collides with a map blocking layer (BUG-005).
-   * Recycles the projectile so it stops on impact.
+   * Plays impact animation, then recycles the projectile.
    */
   private onProjectileHitMap(
     projectile: Phaser.Types.Physics.Arcade.GameObjectWithBody | Phaser.Tilemaps.Tile,
   ): void {
-    if ('recycle' in projectile && (projectile as Phaser.GameObjects.GameObject).active) {
-      (projectile as Projectile).recycle();
+    if ('playImpact' in projectile && (projectile as Phaser.GameObjects.GameObject).active) {
+      (projectile as Projectile).playImpact();
     }
   }
 
@@ -412,6 +430,9 @@ export class GameScene extends Phaser.Scene {
     this.events.off('enemy-defeated', this.onEnemyDefeated, this);
     this.events.off('wave-changed', this.onWaveChanged, this);
     this.events.off('orb-collected', this.onOrbCollected, this);
+
+    // Remove death animation listener in case shutdown happens during dying state
+    this.player?.off('death-animation-complete', this.onDeathAnimationComplete, this);
 
     // Destroy colliders (BUG-001)
     for (const collider of this.colliders) {

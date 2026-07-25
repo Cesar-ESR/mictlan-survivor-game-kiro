@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
+import { Projectile } from '../entities/Projectile';
 import { Enemy } from '../entities/Enemy';
 import { GAME_CONSTANTS } from '../config/constants';
 import {
@@ -82,6 +83,8 @@ export class DamageSystem {
 
     for (const projectile of projectiles) {
       if (!projectile.active) continue;
+      // Skip projectiles in impact animation state (no longer deal damage)
+      if ((projectile as Projectile).isImpacting) continue;
 
       for (const enemy of enemies) {
         if (!enemy.active) continue;
@@ -101,12 +104,8 @@ export class DamageSystem {
         if (overlap) {
           enemy.takeDamage(this.weaponDamage);
 
-          // Deactivate projectile
-          projectile.setActive(false);
-          projectile.setVisible(false);
-          if (pBody) {
-            pBody.enable = false;
-          }
+          // Trigger impact animation (stops movement, disables collisions, then recycles)
+          (projectile as Projectile).playImpact();
 
           // Check if enemy is defeated
           if (enemy.hp <= 0) {
