@@ -16,6 +16,7 @@ interface DefeatData {
  */
 export class DefeatScene extends Phaser.Scene {
   private defeatData!: DefeatData;
+  private transitionInProgress = false;
 
   constructor() {
     super({ key: 'DefeatScene' });
@@ -23,6 +24,7 @@ export class DefeatScene extends Phaser.Scene {
 
   init(data: DefeatData): void {
     this.defeatData = data;
+    this.transitionInProgress = false;
   }
 
   create(): void {
@@ -80,6 +82,10 @@ export class DefeatScene extends Phaser.Scene {
     }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
 
     retryBtn.on('pointerdown', () => {
+      if (this.transitionInProgress) return;
+      this.transitionInProgress = true;
+      retryBtn.disableInteractive();
+      menuBtn.disableInteractive();
       this.scene.start('GameScene', { gameMode: this.defeatData.gameMode });
     });
 
@@ -93,6 +99,10 @@ export class DefeatScene extends Phaser.Scene {
     }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(2);
 
     menuBtn.on('pointerdown', () => {
+      if (this.transitionInProgress) return;
+      this.transitionInProgress = true;
+      retryBtn.disableInteractive();
+      menuBtn.disableInteractive();
       if (this.scene.isActive('HUDScene')) {
         this.scene.stop('HUDScene');
       }
