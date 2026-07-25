@@ -5,6 +5,7 @@ import type { MemoryUpgrade } from '../config/memory-upgrades';
 import type { MemoryLevelUpPayload } from '../systems/LevelUpCoordinator';
 import { GAME_FONT_FAMILY } from '../config/font-config';
 import { AudioManager } from '../managers/AudioManager';
+import { BlessingManager } from '../managers/BlessingManager';
 
 /**
  * HUDScene: Escena overlay lanzada en paralelo sobre GameScene.
@@ -27,6 +28,10 @@ export class HUDScene extends Phaser.Scene {
   private xpText!: Phaser.GameObjects.Text;
   private xpFillFullWidth = 0;
 
+  // Blessing medals
+  private primaryMedal: Phaser.GameObjects.Image | null = null;
+  private secondaryMedal: Phaser.GameObjects.Image | null = null;
+
   // Wave display
   private waveText!: Phaser.GameObjects.Text;
   private waveAnnouncement!: Phaser.GameObjects.Text;
@@ -46,6 +51,7 @@ export class HUDScene extends Phaser.Scene {
   create(): void {
     this.createHealthBar();
     this.createXPBar();
+    this.createBlessingMedals();
     this.createWaveDisplay();
     this.createTimerDisplay();
     this.createLevelUpPanel();
@@ -133,10 +139,40 @@ export class HUDScene extends Phaser.Scene {
     }
   }
 
+  // --- Blessing Medals ---
+
+  /**
+   * Creates medal images below the XP bar using the selection stored in BlessingManager.
+   * Fully data-driven: reads badge keys from the selection, no hardcoded blessing logic.
+   */
+  private createBlessingMedals(): void {
+    const selection = BlessingManager.getInstance().getSelection();
+    if (!selection) return;
+
+    const x = 10;
+    const y = 16 + this.healthFrame.height + 4 + this.xpFrame.height + 8;
+    const medalSize = 32;
+    const spacing = 8;
+
+    // Primary medal
+    this.primaryMedal = this.add.image(x + medalSize / 2, y + medalSize / 2, selection.primary.badge);
+    const pScale = medalSize / Math.max(this.primaryMedal.width, this.primaryMedal.height);
+    this.primaryMedal.setScale(pScale);
+
+    // Secondary medal
+    this.secondaryMedal = this.add.image(
+      x + medalSize + spacing + medalSize / 2,
+      y + medalSize / 2,
+      selection.secondary.badge,
+    );
+    const sScale = medalSize / Math.max(this.secondaryMedal.width, this.secondaryMedal.height);
+    this.secondaryMedal.setScale(sScale);
+  }
+
   // --- Wave Display (Subtask 19.3) ---
 
   private createWaveDisplay(): void {
-    this.waveText = this.add.text(16, 90, 'Oleada: 1', {
+    this.waveText = this.add.text(100, 100, 'Oleada: 1', {
       fontFamily: GAME_FONT_FAMILY,
       fontSize: '16px',
       color: '#ffff44',

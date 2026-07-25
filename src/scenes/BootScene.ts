@@ -67,6 +67,13 @@ export class BootScene extends Phaser.Scene {
     // Cargar assets del sistema de cinemáticas (fondos, splash arts, JSON)
     loadCinematicAssets(this.load);
 
+    // Cargar JSON y assets de bendiciones
+    this.load.json('blessings_data', 'src/assets/BendicionesText/BendicionesText.json');
+    this.load.image('OrgulloDelInframundo', 'src/assets/Assets bendiciones/OrgulloDelInframundo.png');
+    this.load.image('FuriaDelInframundo', 'src/assets/Assets bendiciones/FuriaDelInframundo.png');
+    this.load.image('EcoDeLosRecuerdos', 'src/assets/Assets bendiciones/EcoDeLosRecuerdos.png');
+    this.load.image('ConsueloDeLaMemoria', 'src/assets/Assets bendiciones/ConsueloDeLaMemoria.png');
+
     // Timeout de 3 segundos para detectar cargas estancadas
     this.time.delayedCall(3000, () => {
       if (!this.scene.isActive('GameScene')) {

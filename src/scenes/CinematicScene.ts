@@ -17,6 +17,7 @@ import type { CinematicSceneData } from '../cinematic/cinematic-types';
 import type { CinematicData } from '../cinematic/cinematic-types';
 import { CinematicPlayer } from '../cinematic/CinematicPlayer';
 import { GAME_FONT_FAMILY } from '../config/font-config';
+import { AudioManager } from '../managers/AudioManager';
 
 export class CinematicScene extends Phaser.Scene {
   private cinematicPlayer: CinematicPlayer | null = null;
@@ -103,6 +104,9 @@ export class CinematicScene extends Phaser.Scene {
       this.transitionToNext();
       return;
     }
+
+    // ─── Reproducir música de cinemática ────────────────────────────────────
+    AudioManager.getInstance(this).play('CINEMATIC');
 
     // ─── Instanciar CinematicPlayer ─────────────────────────────────────────
     this.cinematicPlayer = new CinematicPlayer(this, cinematicData);

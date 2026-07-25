@@ -104,8 +104,8 @@ export class MainMenuScene extends Phaser.Scene {
     AudioManager.getInstance(this).stopWithFadeOut(600, () => {
       const cinematicData: CinematicSceneData = {
         cinematicKey: 'cinematic_intro_campaign',
-        nextScene: 'GameScene',
-        nextSceneData: { gameMode },
+        nextScene: 'BlessingSelectionScene',
+        nextSceneData: { gameSceneData: { gameMode } },
       };
       this.scene.start('CinematicScene', cinematicData);
     });

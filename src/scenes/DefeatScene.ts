@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { GameModeConfig } from '../types/interfaces';
 import { GAME_FONT_FAMILY } from '../config/font-config';
+import { AudioManager } from '../managers/AudioManager';
 
 interface DefeatData {
   survivalTime: number;
@@ -27,6 +28,9 @@ export class DefeatScene extends Phaser.Scene {
   create(): void {
     const centerX = this.cameras.main.centerX;
     const centerY = this.cameras.main.centerY;
+
+    // Detener música de gameplay y reproducir música de derrota
+    AudioManager.getInstance(this).play('DEFEAT');
 
     // Título
     this.add.text(centerX, centerY - 100, 'DERROTA', {

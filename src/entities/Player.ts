@@ -18,6 +18,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   xpThreshold: number;
   speed: number;
 
+  /** Base stats before blessing modifiers. */
+  readonly baseMaxHp: number;
+  readonly baseSpeed: number;
+
   /** Current animation state for deduplication. */
   private currentAnimState: 'idle' | 'walk' | 'attack' | 'death' = 'idle';
 
@@ -37,6 +41,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.totalXp = 0;
     this.xpThreshold = GAME_CONSTANTS.XP_THRESHOLD_FORMULA(1);
     this.speed = GAME_CONSTANTS.PLAYER_BASE_SPEED;
+
+    // Store base stats for modifier calculations
+    this.baseMaxHp = GAME_CONSTANTS.PLAYER_BASE_HP;
+    this.baseSpeed = GAME_CONSTANTS.PLAYER_BASE_SPEED;
 
     // Add to scene and enable physics
     scene.add.existing(this);
@@ -156,6 +164,20 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       case 'walk': return PLAYER_SPRITES.walk.key;
       case 'attack': return PLAYER_SPRITES.attack.key;
       case 'death': return PLAYER_SPRITES.death.key;
+    }
+  }
+
+  /**
+   * Applies a percentage increase to max HP (blessing modifier).
+   * If the player is currently at full health, also increases current HP.
+   * Call once at game start — does not permanently alter base stats.
+   */
+  applyMaxHpModifier(percentIncrease: number): void {
+    const bonus = Math.floor(this.baseMaxHp * percentIncrease);
+    this.maxHp += bonus;
+    // If player is at full health, keep them at full
+    if (this.hp >= this.maxHp - bonus) {
+      this.hp = this.maxHp;
     }
   }
 

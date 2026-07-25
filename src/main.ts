@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { MainMenuScene } from './scenes/MainMenuScene';
 import { CinematicScene } from './scenes/CinematicScene';
+import { BlessingSelectionScene } from './scenes/BlessingSelectionScene';
 import { GameScene } from './scenes/GameScene';
 import { HUDScene } from './scenes/HUDScene';
 import { DefeatScene } from './scenes/DefeatScene';
@@ -36,7 +37,7 @@ function getScenes(): Phaser.Types.Scenes.SceneType[] {
     return [BorderCalibrationScene];
   }
   // Normal game (including debug=map and debug=enemies which use GameScene with debug overlays)
-  return [BootScene, MainMenuScene, CinematicScene, GameScene, HUDScene, DefeatScene, VictoryScene];
+  return [BootScene, MainMenuScene, CinematicScene, BlessingSelectionScene, GameScene, HUDScene, DefeatScene, VictoryScene];
 }
 
 /**
