@@ -137,8 +137,8 @@ describe('LevelUpCoordinator', () => {
   });
 
   it('emits 1 memory option when only 1 is available', () => {
-    memories[0].level = 5;
-    memories[1].level = 5;
+    memories[0].level = 6;
+    memories[1].level = 6;
     coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
     const events = emitter.emitted.filter((e) => e.event === 'level-up');
     expect(events).toHaveLength(1);
@@ -147,7 +147,7 @@ describe('LevelUpCoordinator', () => {
   });
 
   it('emits 2 memory options when 2 are available', () => {
-    memories[0].level = 5;
+    memories[0].level = 6;
     coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 3 });
     const payload = emitter.emitted.filter((e) => e.event === 'level-up')[0].args[0] as MemoryLevelUpPayload;
     expect(payload.memories).toHaveLength(2);
@@ -196,6 +196,8 @@ describe('LevelUpCoordinator', () => {
   it('calls resume once after valid selection', () => {
     coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
     emitter.trigger('upgrade-selected', { upgradeId: 'memory-war' });
+    // Guerra has narrative content, so resume happens after fragment-closed
+    emitter.trigger('memory-fragment-closed');
     expect(pauseCtrl.resumeCount).toBe(1);
   });
 

@@ -769,7 +769,7 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
 
   - [x] 26.3 Implementar progresión por niveles
     - Nivel inicial 0.
-    - Nivel máximo 5.
+    - Nivel máximo 6.
     - Incrementar después de una aplicación exitosa.
     - Excluir Recuerdos maximizados.
     - No abrir panel cuando todos estén al máximo.
@@ -809,3 +809,63 @@ Plan incremental para implementar el núcleo de mecánicas survivor de "Mictlán
     - Ejecutar suite completa.
     - Ejecutar build.
     - Validar manualmente los tres Recuerdos.
+
+
+- [x] 27. Progresión narrativa de Recuerdos (CHANGE-002)
+  - [x] 27.1 Crear modelo de datos narrativos
+    - Crear `src/config/memory-narratives.ts`.
+    - Definir `MemoryFragment`, `MemoryNarrative`, `MemoryFragmentPayload`.
+    - Definir `UnlockedMemoryFragments` y funciones de estado.
+    - Incluir datos narrativos de Guerra (6 fragmentos).
+    - Familia y Hogar con fragmentos vacíos.
+    - _Requirements: 12.1, 12.5, 12.6_
+
+  - [x] 27.2 Extender maxLevel a 6
+    - Actualizar `MEMORY_UPGRADE_CONFIGS` de maxLevel 5 a 6.
+    - Actualizar todos los tests que referenciaban maxLevel 5.
+    - _Requirements: 11.5, 12.1_
+
+  - [x] 27.3 Integrar flujo narrativo en LevelUpCoordinator
+    - Agregar estado `showing-fragment` a la máquina de estados.
+    - Tras aplicar efecto y subir nivel, verificar narrativa.
+    - Si hay contenido: emitir `memory-fragment-show`, permanecer pausado.
+    - Si no hay contenido: reanudar inmediatamente.
+    - Escuchar `memory-fragment-closed` para reanudar.
+    - Eliminar patrón try/finally, manejar resume explícitamente.
+    - _Requirements: 12.3, 12.4, 12.7_
+
+  - [x] 27.4 Implementar MemoryFragmentPanel en HUDScene
+    - Panel con overlay oscuro, título, contador, texto y botón Continuar.
+    - Protección contra doble clic (fragmentPanelActive guard).
+    - Emitir `memory-fragment-closed` al cerrar.
+    - _Requirements: 12.2, 12.8_
+
+  - [x]* 27.5 Escribir tests de CHANGE-002
+    - 26 unit tests para modelo de datos, unlock state y flujo coordinador.
+    - 4 property tests (Props 41–44).
+    - Validar textos narrativos exactos con caracteres UTF-8.
+    - _Requirements: 12.1–12.8_
+
+  - [ ] 27.6 Checkpoint de progresión narrativa
+    - TypeScript compila sin errores.
+    - 902 tests pasan (incluye 30 nuevos).
+    - Build de Vite exitoso.
+    - Validar manualmente: seleccionar Guerra muestra fragmento.
+    - Validar manualmente: seleccionar Familia/Hogar NO muestra fragmento.
+
+  - [x] 27.7 Integrar narrativa de Familia — Voces junto al fuego
+    - Agregar 6 fragmentos narrativos a memory-family.
+    - Título: Recuerdo II — Voces junto al fuego.
+    - Preservar textos exactos con puntuación y acentos.
+    - Actualizar tests de CHANGE-002 para reflejar contenido de Familia.
+    - Crear tests específicos de Familia.
+    - _Requirements: 12.1, 12.6_
+
+  - [x] 27.8 Integrar narrativa de Hogar — El camino a casa
+    - Agregar 6 fragmentos narrativos a memory-home.
+    - Título: Recuerdo III — El camino a casa.
+    - Preservar textos exactos con puntuación y acentos.
+    - Actualizar tests de CHANGE-002 para reflejar contenido de Hogar.
+    - Crear tests específicos de Hogar.
+    - Los tres Recuerdos tienen narrativa completa.
+    - _Requirements: 12.1, 12.6_

@@ -1,8 +1,17 @@
 import type { UpgradeContext, UpgradeSelectedPayload } from '../types/interfaces';
 import type { MemoryUpgrade, MemoryId } from '../config/memory-upgrades';
 import { applyMemoryUpgrade, getAvailableMemories } from '../config/memory-upgrades';
+import {
+  getMemoryFragment,
+  getMemoryNarrative,
+  hasNarrativeContent,
+  unlockFragment,
+  createInitialUnlockedFragments,
+  type UnlockedMemoryFragments,
+  type MemoryFragmentPayload,
+} from '../config/memory-narratives';
 
-/** Minimal interface for pause control — real PauseSystem (Task 18) will implement this */
+/** Minimal interface for pause control */
 export interface PauseController {
   readonly isPaused: boolean;
   pause(): void;
@@ -39,17 +48,20 @@ export interface MemoryLevelUpPayload {
 /** Internal state machine */
 type LevelUpFlowState =
   | { status: 'idle' }
-  | { status: 'choosing'; level: number; memories: readonly MemoryUpgrade[] };
+  | { status: 'choosing'; level: number; memories: readonly MemoryUpgrade[] }
+  | { status: 'showing-fragment' };
 
 export class LevelUpCoordinator {
   private state: LevelUpFlowState = { status: 'idle' };
   private pausedByLevelUp = false;
   private upgradeSelectedHandler: ((payload: UpgradeSelectedPayload) => void) | null = null;
+  private fragmentClosedHandler: (() => void) | null = null;
   private readonly pauseController: PauseController;
   private readonly eventEmitter: LevelUpEventEmitter;
   private readonly player: { hp: number; maxHp: number; speed: number };
   private readonly weaponSystem: WeaponSystemUpgradeAPI;
   private memories: MemoryUpgrade[];
+  private unlockedFragments: UnlockedMemoryFragments;
 
   constructor(
     memories: MemoryUpgrade[],
@@ -63,13 +75,15 @@ export class LevelUpCoordinator {
     this.eventEmitter = eventEmitter;
     this.player = player;
     this.weaponSystem = weaponSystem;
+    this.unlockedFragments = createInitialUnlockedFragments();
     this.upgradeSelectedHandler = (payload) => this.handleUpgradeSelected(payload.upgradeId);
     this.eventEmitter.on('upgrade-selected', this.upgradeSelectedHandler as (...args: unknown[]) => void);
+    this.fragmentClosedHandler = () => this.handleFragmentClosed();
+    this.eventEmitter.on('memory-fragment-closed', this.fragmentClosedHandler as (...args: unknown[]) => void);
   }
 
   /**
    * Process the result from XPSystem.addXP().
-   * Called by GameScene/OrbCollector after XP is added.
    * Uses memory-based progression instead of random upgrade pool.
    */
   processLevelUp(result: { leveledUp: boolean; showPanel: boolean; newLevel: number }): void {
@@ -114,17 +128,60 @@ export class LevelUpCoordinator {
       // Increment level only on success
       memoryRef.level++;
     } catch (err) {
-      // Error: do NOT increment level, do NOT modify availability
+      // Error: do NOT increment level, do NOT unlock fragment
       console.error('[LevelUpCoordinator] Error applying memory upgrade:', err);
-    } finally {
-      // Close session
+      // Clean up and resume
       this.state = { status: 'idle' };
-
-      // Resume only if we paused — always resume even on error
       if (this.pausedByLevelUp) {
         this.pauseController.resume();
         this.pausedByLevelUp = false;
       }
+      return;
+    }
+
+    // Check for narrative content at the new level
+    const newLevel = memoryRef.level;
+    const memoryId = memoryRef.id;
+
+    if (hasNarrativeContent(memoryId)) {
+      const fragment = getMemoryFragment(memoryId, newLevel);
+      if (fragment) {
+        // Unlock the fragment
+        unlockFragment(this.unlockedFragments, memoryId, newLevel);
+
+        // Enter showing-fragment state (stay paused)
+        this.state = { status: 'showing-fragment' };
+
+        // Build payload and emit
+        const narrative = getMemoryNarrative(memoryId);
+        const payload: MemoryFragmentPayload = {
+          memoryId,
+          title: narrative.title,
+          fragmentNumber: newLevel,
+          totalFragments: 6,
+          text: fragment.text,
+        };
+        this.eventEmitter.emit('memory-fragment-show', payload);
+        return; // Stay paused, wait for 'memory-fragment-closed'
+      }
+    }
+
+    // No narrative content — resume immediately
+    this.state = { status: 'idle' };
+    if (this.pausedByLevelUp) {
+      this.pauseController.resume();
+      this.pausedByLevelUp = false;
+    }
+  }
+
+  /** Handle fragment panel closed */
+  private handleFragmentClosed(): void {
+    if (this.state.status !== 'showing-fragment') return;
+
+    this.state = { status: 'idle' };
+    if (this.pausedByLevelUp) {
+      this.pauseController.resume();
+      this.pausedByLevelUp = false;
     }
   }
 
@@ -143,11 +200,20 @@ export class LevelUpCoordinator {
     return this.memories.find((m) => m.id === id);
   }
 
-  /** Cleanup: remove listener, reset state */
+  /** Get unlocked fragments state (for testing) */
+  getUnlockedFragments(): UnlockedMemoryFragments {
+    return this.unlockedFragments;
+  }
+
+  /** Cleanup: remove listeners, reset state */
   destroy(): void {
     if (this.upgradeSelectedHandler) {
       this.eventEmitter.off('upgrade-selected', this.upgradeSelectedHandler as (...args: unknown[]) => void);
       this.upgradeSelectedHandler = null;
+    }
+    if (this.fragmentClosedHandler) {
+      this.eventEmitter.off('memory-fragment-closed', this.fragmentClosedHandler as (...args: unknown[]) => void);
+      this.fragmentClosedHandler = null;
     }
     if (this.pausedByLevelUp) {
       this.pauseController.resume();

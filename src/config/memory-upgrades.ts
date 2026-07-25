@@ -30,7 +30,7 @@ const MEMORY_UPGRADE_CONFIGS: ReadonlyArray<Omit<MemoryUpgrade, 'level'>> = [
     name: 'Recuerdo de la Guerra',
     narrative: 'El eco de antiguas batallas fortalece sus ataques.',
     effectText: 'Aumenta el daño del arma en 8.',
-    maxLevel: 5,
+    maxLevel: 6,
     effect: { type: 'weapon-damage', amount: 8 },
   },
   {
@@ -38,7 +38,7 @@ const MEMORY_UPGRADE_CONFIGS: ReadonlyArray<Omit<MemoryUpgrade, 'level'>> = [
     name: 'Recuerdo de la Familia',
     narrative: 'El amor de quienes dejó atrás fortalece su corazón.',
     effectText: 'Aumenta la vida máxima en 20 y recupera 20 de vida.',
-    maxLevel: 5,
+    maxLevel: 6,
     effect: { type: 'max-hp', amount: 20, healAmount: 20 },
   },
   {
@@ -46,7 +46,7 @@ const MEMORY_UPGRADE_CONFIGS: ReadonlyArray<Omit<MemoryUpgrade, 'level'>> = [
     name: 'Recuerdo del Hogar',
     narrative: 'El deseo de regresar acelera su voluntad.',
     effectText: 'Reduce el intervalo de disparo en 100 ms.',
-    maxLevel: 5,
+    maxLevel: 6,
     effect: { type: 'fire-rate', reductionMs: 100, minimumMs: 250 },
   },
 ];

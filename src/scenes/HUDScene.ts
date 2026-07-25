@@ -3,6 +3,7 @@ import { calculateHealthFill, calculateXPFill, formatTimerMMSS } from '../system
 import type { WaveChangedPayload } from '../types/interfaces';
 import type { MemoryUpgrade } from '../config/memory-upgrades';
 import type { MemoryLevelUpPayload } from '../systems/LevelUpCoordinator';
+import type { MemoryFragmentPayload } from '../config/memory-narratives';
 import { GAME_FONT_FAMILY } from '../config/font-config';
 import { AudioManager } from '../managers/AudioManager';
 
@@ -39,6 +40,10 @@ export class HUDScene extends Phaser.Scene {
   private levelUpContainer!: Phaser.GameObjects.Container;
   private levelUpOverlay!: Phaser.GameObjects.Rectangle;
 
+  // Memory fragment panel
+  private memoryFragmentContainer!: Phaser.GameObjects.Container;
+  private fragmentPanelActive = false;
+
   constructor() {
     super({ key: 'HUDScene' });
   }
@@ -49,6 +54,7 @@ export class HUDScene extends Phaser.Scene {
     this.createWaveDisplay();
     this.createTimerDisplay();
     this.createLevelUpPanel();
+    this.createMemoryFragmentPanel();
     this.registerEventListeners();
   }
 
@@ -329,6 +335,105 @@ export class HUDScene extends Phaser.Scene {
     this.levelUpContainer.setVisible(false);
   }
 
+  // --- Memory Fragment Panel ---
+
+  private createMemoryFragmentPanel(): void {
+    this.memoryFragmentContainer = this.add.container(0, 0);
+    this.memoryFragmentContainer.setVisible(false);
+    this.memoryFragmentContainer.setDepth(1001);
+  }
+
+  private showMemoryFragmentPanel(payload: MemoryFragmentPayload): void {
+    this.memoryFragmentContainer.removeAll(true);
+    this.fragmentPanelActive = true;
+
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // Dark overlay
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.75);
+    this.memoryFragmentContainer.add(overlay);
+
+    // Panel background
+    const panelW = 520;
+    const panelH = 280;
+    const panelBg = this.add.rectangle(width / 2, height / 2, panelW, panelH, 0x1a1a2e);
+    panelBg.setStrokeStyle(2, 0x8888cc);
+    this.memoryFragmentContainer.add(panelBg);
+
+    // Title
+    const titleText = this.add.text(width / 2, height / 2 - 100, payload.title, {
+      fontFamily: GAME_FONT_FAMILY,
+      fontSize: '20px',
+      color: '#ffdd88',
+      fontStyle: 'bold',
+    });
+    titleText.setOrigin(0.5);
+    this.memoryFragmentContainer.add(titleText);
+
+    // Fragment counter
+    const counterText = this.add.text(width / 2, height / 2 - 72, `Fragmento ${payload.fragmentNumber} de ${payload.totalFragments}`, {
+      fontFamily: GAME_FONT_FAMILY,
+      fontSize: '13px',
+      color: '#aaaacc',
+    });
+    counterText.setOrigin(0.5);
+    this.memoryFragmentContainer.add(counterText);
+
+    // Fragment text
+    const fragText = this.add.text(width / 2, height / 2 - 10, payload.text, {
+      fontFamily: GAME_FONT_FAMILY,
+      fontSize: '15px',
+      color: '#ffffff',
+      wordWrap: { width: panelW - 60 },
+      align: 'center',
+      lineSpacing: 6,
+    });
+    fragText.setOrigin(0.5);
+    this.memoryFragmentContainer.add(fragText);
+
+    // "Continuar" button
+    const btnW = 140;
+    const btnH = 36;
+    const btnY = height / 2 + 100;
+    const btnBg = this.add.rectangle(width / 2, btnY, btnW, btnH, 0x334466);
+    btnBg.setStrokeStyle(1, 0x6699cc);
+    btnBg.setInteractive({ useHandCursor: true });
+    this.memoryFragmentContainer.add(btnBg);
+
+    const btnText = this.add.text(width / 2, btnY, 'Continuar', {
+      fontFamily: GAME_FONT_FAMILY,
+      fontSize: '14px',
+      color: '#ffffff',
+      fontStyle: 'bold',
+    });
+    btnText.setOrigin(0.5);
+    this.memoryFragmentContainer.add(btnText);
+
+    // Hover effect
+    btnBg.on('pointerover', () => {
+      btnBg.setFillStyle(0x446688);
+    });
+    btnBg.on('pointerout', () => {
+      btnBg.setFillStyle(0x334466);
+    });
+
+    // Click — single press only
+    btnBg.on('pointerdown', () => {
+      if (!this.fragmentPanelActive) return;
+      this.fragmentPanelActive = false;
+      this.hideMemoryFragmentPanel();
+      const gameScene = this.scene.get('GameScene');
+      gameScene.events.emit('memory-fragment-closed');
+    });
+
+    this.memoryFragmentContainer.setVisible(true);
+  }
+
+  private hideMemoryFragmentPanel(): void {
+    this.memoryFragmentContainer.setVisible(false);
+  }
+
   // --- Event Listeners ---
 
   private _hpHandler = (hp: number, maxHp: number) => this.updateHealthBar(hp, maxHp);
@@ -338,6 +443,12 @@ export class HUDScene extends Phaser.Scene {
   private _levelUpHandler = (payload: MemoryLevelUpPayload) => {
     if (payload && payload.memories.length > 0) {
       this.showLevelUpPanel(payload.memories as MemoryUpgrade[]);
+    }
+  };
+  private _fragmentShowHandler = (payload: MemoryFragmentPayload) => {
+    if (payload) {
+      this.hideLevelUpPanel();
+      this.showMemoryFragmentPanel(payload);
     }
   };
   private _timeHandler = (elapsedSeconds: number) => { this.elapsedSeconds = elapsedSeconds; };
@@ -350,6 +461,7 @@ export class HUDScene extends Phaser.Scene {
     gameScene.events.on('xp-changed', this._xpHandler);
     gameScene.events.on('wave-changed', this._waveHandler);
     gameScene.events.on('level-up', this._levelUpHandler);
+    gameScene.events.on('memory-fragment-show', this._fragmentShowHandler);
     gameScene.events.on('time-updated', this._timeHandler);
   }
 
@@ -361,6 +473,7 @@ export class HUDScene extends Phaser.Scene {
       gameScene.events.off('xp-changed', this._xpHandler);
       gameScene.events.off('wave-changed', this._waveHandler);
       gameScene.events.off('level-up', this._levelUpHandler);
+      gameScene.events.off('memory-fragment-show', this._fragmentShowHandler);
       gameScene.events.off('time-updated', this._timeHandler);
     }
 
@@ -374,6 +487,12 @@ export class HUDScene extends Phaser.Scene {
     if (this.levelUpContainer) {
       this.levelUpContainer.removeAll(true);
       this.levelUpContainer.setVisible(false);
+    }
+
+    // Clean up memory fragment panel
+    if (this.memoryFragmentContainer) {
+      this.memoryFragmentContainer.removeAll(true);
+      this.memoryFragmentContainer.setVisible(false);
     }
   }
 }

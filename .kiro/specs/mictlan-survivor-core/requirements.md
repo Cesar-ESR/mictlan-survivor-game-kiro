@@ -268,7 +268,7 @@ WHEN el jugador seleccione Recuerdo del Hogar, THE WeaponSystem SHALL reducir el
 
 ##### 11.5 Progresión
 
-EACH Recuerdo SHALL comenzar en nivel 0; SHALL tener un máximo de 5 niveles; SHALL incrementar un nivel después de aplicar correctamente su efecto; puede seleccionarse nuevamente mientras su nivel sea menor que 5; SHALL NOT superar el nivel máximo.
+EACH Recuerdo SHALL comenzar en nivel 0; SHALL tener un máximo de 6 niveles; SHALL incrementar un nivel después de aplicar correctamente su efecto; puede seleccionarse nuevamente mientras su nivel sea menor que 6; SHALL NOT superar el nivel máximo.
 
 ##### 11.6 Opciones disponibles
 
@@ -289,3 +289,46 @@ WHEN se inicie una partida nueva o se reintente, THE XPSystem SHALL restaurar lo
 ##### 11.10 Presentación
 
 EACH tarjeta de Recuerdo SHALL mostrar: nombre, texto narrativo, efecto, nivel actual, siguiente nivel. Los textos SHALL NOT desbordar las tarjetas.
+
+
+---
+
+### Requirement 12: Progresión narrativa de Recuerdos
+
+**User Story:** Como jugador, quiero que cada nivel de un Recuerdo me revele un fragmento de la historia del guerrero jaguar, para sentir una conexión emocional con su viaje por el Mictlán.
+
+#### Acceptance Criteria
+
+##### 12.1 Fragmentos por Recuerdo
+
+EACH Recuerdo SHALL tener 6 fragmentos narrativos, uno por cada nivel (1–6). Un fragmento se desbloquea inmediatamente después de subir el nivel correspondiente.
+
+##### 12.2 Panel de fragmento
+
+WHEN se desbloquea un fragmento con contenido narrativo, THE HUDScene SHALL mostrar un panel con: título del Recuerdo, indicador "Fragmento X de 6", texto del fragmento y botón "Continuar".
+
+##### 12.3 Flujo de pausa extendida
+
+WHILE el panel de fragmento está visible, THE Game_Loop SHALL permanecer pausado. WHEN el jugador presiona "Continuar", THE Game_Loop SHALL reanudar.
+
+##### 12.4 Contenido narrativo parcial
+
+IF un Recuerdo no tiene contenido narrativo definido (fragmentos vacíos), THEN THE LevelUpCoordinator SHALL omitir el panel de fragmento y reanudar inmediatamente tras aplicar el efecto.
+
+##### 12.5 Narrativa de Guerra
+
+THE Recuerdo de la Guerra SHALL contener 6 fragmentos completos que narran los ecos de una batalla pasada del guerrero jaguar.
+
+##### 12.6 Narrativas de Familia y Hogar
+
+THE Recuerdo de la Familia SHALL contener 6 fragmentos completos que narran los recuerdos familiares del guerrero jaguar junto al fuego.
+
+THE Recuerdo del Hogar SHALL contener 6 fragmentos completos que narran el regreso del guerrero jaguar hacia su hogar guiado por su xoloitzcuintle.
+
+##### 12.7 Estado de fragmentos desbloqueados
+
+THE LevelUpCoordinator SHALL mantener un registro de fragmentos desbloqueados por partida; un fragmento solo puede desbloquearse una vez por nivel; el estado se reinicia con cada partida nueva.
+
+##### 12.8 Protección contra doble clic
+
+THE panel de fragmento SHALL ignorar clicks adicionales en "Continuar" después del primer click; SHALL emitir `memory-fragment-closed` exactamente una vez por panel mostrado.

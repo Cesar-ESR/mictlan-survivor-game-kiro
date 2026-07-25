@@ -399,7 +399,11 @@ describe('PauseSystem', () => {
     expect(physics.pauseCount).toBe(1);
     expect(pauseSystem.isPaused).toBe(true);
 
-    emitter.trigger('upgrade-selected', { upgradeId: 'memory-war' });
+    emitter.trigger('upgrade-selected', { upgradeId: 'memory-family' });
+
+    // Familia now has narrative content, so the flow enters showing-fragment state.
+    // Close the fragment panel to complete the resume flow.
+    emitter.trigger('memory-fragment-closed');
 
     expect(physics.resumeCount).toBe(1);
     expect(pauseSystem.isPaused).toBe(false);

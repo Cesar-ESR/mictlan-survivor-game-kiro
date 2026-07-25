@@ -94,9 +94,9 @@ describe('CHANGE-001: Memory Progression System', () => {
       memories.forEach((m) => expect(m.level).toBe(0));
     });
 
-    it('6. max level is 5', () => {
+    it('6. max level is 6', () => {
       const memories = createInitialMemories();
-      memories.forEach((m) => expect(m.maxLevel).toBe(5));
+      memories.forEach((m) => expect(m.maxLevel).toBe(6));
     });
   });
 
@@ -249,7 +249,7 @@ describe('CHANGE-001: Memory Progression System', () => {
       coord.destroy();
     });
 
-    it('16. cannot exceed max level 5', () => {
+    it('16. cannot exceed max level 6', () => {
       const memories = createInitialMemories();
       const weapon = createFakeWeaponSystem();
       const player = { hp: 100, maxHp: 100, speed: 200 };
@@ -265,18 +265,18 @@ describe('CHANGE-001: Memory Progression System', () => {
       };
       const pause = { isPaused: false, pause() { this.isPaused = true; }, resume() { this.isPaused = false; } };
       const coord = new LevelUpCoordinator(memories, pause, emitter, player, weapon);
-      // Level up war 5 times
-      for (let i = 0; i < 5; i++) {
+      // Level up war 6 times
+      for (let i = 0; i < 6; i++) {
         coord.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 + i });
         const fns = listeners.get('upgrade-selected') || [];
         fns.forEach((fn) => fn({ upgradeId: 'memory-war' }));
       }
-      expect(memories[0].level).toBe(5);
-      // Try 6th time — war should be excluded from available
-      coord.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 7 });
+      expect(memories[0].level).toBe(6);
+      // Try 7th time — war should be excluded from available
+      coord.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 8 });
       const fns = listeners.get('upgrade-selected') || [];
       fns.forEach((fn) => fn({ upgradeId: 'memory-war' }));
-      expect(memories[0].level).toBe(5); // still 5
+      expect(memories[0].level).toBe(6); // still 6
       coord.destroy();
     });
   });
@@ -284,7 +284,7 @@ describe('CHANGE-001: Memory Progression System', () => {
   describe('Availability', () => {
     it('17. maxed memory is excluded from available', () => {
       const memories = createInitialMemories();
-      memories[0].level = 5;
+      memories[0].level = 6;
       const available = getAvailableMemories(memories);
       expect(available).toHaveLength(2);
       expect(available.find((m) => m.id === 'memory-war')).toBeUndefined();
@@ -292,8 +292,8 @@ describe('CHANGE-001: Memory Progression System', () => {
 
     it('18. available matches non-maximized branches', () => {
       const memories = createInitialMemories();
-      memories[0].level = 5;
-      memories[2].level = 5;
+      memories[0].level = 6;
+      memories[2].level = 6;
       const available = getAvailableMemories(memories);
       expect(available).toHaveLength(1);
       expect(available[0].id).toBe('memory-family');
@@ -301,7 +301,7 @@ describe('CHANGE-001: Memory Progression System', () => {
 
     it('19. all maxed → coordinator does not pause', () => {
       const memories = createInitialMemories();
-      memories.forEach((m) => { m.level = 5; });
+      memories.forEach((m) => { m.level = 6; });
       const weapon = createFakeWeaponSystem();
       const player = { hp: 100, maxHp: 100, speed: 200 };
       const emitter = { emit: () => true, on: () => {}, off: () => {} };
@@ -547,9 +547,9 @@ describe('CHANGE-001: Memory Progression System', () => {
     it('available list contains exactly memories with level < maxLevel', () => {
       fc.assert(
         fc.property(
-          fc.integer({ min: 0, max: 5 }),
-          fc.integer({ min: 0, max: 5 }),
-          fc.integer({ min: 0, max: 5 }),
+          fc.integer({ min: 0, max: 6 }),
+          fc.integer({ min: 0, max: 6 }),
+          fc.integer({ min: 0, max: 6 }),
           (warLevel, famLevel, homeLevel) => {
             const memories = createInitialMemories();
             memories[0].level = warLevel;
@@ -558,7 +558,7 @@ describe('CHANGE-001: Memory Progression System', () => {
 
             const available = getAvailableMemories(memories);
 
-            const expectedCount = [warLevel, famLevel, homeLevel].filter((l) => l < 5).length;
+            const expectedCount = [warLevel, famLevel, homeLevel].filter((l) => l < 6).length;
             expect(available).toHaveLength(expectedCount);
 
             available.forEach((m) => {
