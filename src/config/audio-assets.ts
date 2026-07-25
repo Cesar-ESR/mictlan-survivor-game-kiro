@@ -38,21 +38,9 @@ export const MUSIC_TRACKS = {
     volume: 0.5,
     loop: true,
   },
-  GAMEPLAY_A: {
-    key: 'music_gameplay_a',
-    path: 'src/assets/Music/Temple_of_the_Obsidian_Call.mp3',
-    volume: 0.4,
-    loop: true,
-  },
-  GAMEPLAY_B: {
-    key: 'music_gameplay_b',
-    path: 'src/assets/Music/Temple_of_the_Obsidian_Call.mp3',
-    volume: 0.4,
-    loop: true,
-  },
-  GAMEPLAY_C: {
-    key: 'music_gameplay_c',
-    path: 'src/assets/Music/Temple_of_the_Obsidian_Call.mp3',
+  GAMEPLAY: {
+    key: 'music_gameplay',
+    path: 'src/assets/Music/Beneath_the_Jaguar_Path.mp3',
     volume: 0.4,
     loop: true,
   },
@@ -70,9 +58,15 @@ export const MUSIC_TRACKS = {
   },
   DEFEAT: {
     key: 'music_defeat',
-    path: 'src/assets/Music/Temple_of_the_Obsidian_Call.mp3',
+    path: 'src/assets/Music/Beneath_the_Obsidian_Altar.mp3',
     volume: 0.5,
     loop: false,
+  },
+  CINEMATIC: {
+    key: 'music_cinematic',
+    path: 'src/assets/Music/The_Jaguar_s_Vigil.mp3',
+    volume: 0.45,
+    loop: true,
   },
 } as const satisfies Record<string, AudioTrackConfig>;
 

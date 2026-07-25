@@ -27,6 +27,8 @@ import type { MemoryUpgrade } from '../config/memory-upgrades';
 import type { GameStats } from '../types/game-stats';
 import type { GameModeConfig, WaveChangedPayload } from '../types/interfaces';
 import { resolveGameMode } from './game-mode-utils';
+import { AudioManager } from '../managers/AudioManager';
+import { BlessingManager } from '../managers/BlessingManager';
 
 /** Data passed to GameScene from MainMenuScene or DefeatScene/VictoryScene retry. */
 interface GameSceneData {
@@ -171,6 +173,9 @@ export class GameScene extends Phaser.Scene {
     // Configure camera
     this.cameras.main.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
 
+    // Reproducir música de gameplay (detiene cualquier pista anterior automáticamente)
+    AudioManager.getInstance(this).play('GAMEPLAY');
+
     if (this.isDebugMode) {
       this.setupDebugControls(result);
       // Start camera centered on safe zone
@@ -259,6 +264,9 @@ export class GameScene extends Phaser.Scene {
       this.weaponSystem,
     );
 
+    // --- 11b. Apply initial blessing passive modifiers (once) ---
+    this.applyBlessingModifiers();
+
     // --- 12. Reset gameStats ---
     this.gameState = 'playing';
     this.gameStats = { survivalTime: 0, enemiesDefeated: 0, maxWave: 1 };
@@ -337,6 +345,30 @@ export class GameScene extends Phaser.Scene {
     this.events.on('enemy-defeated', this.onEnemyDefeated, this);
     this.events.on('wave-changed', this.onWaveChanged, this);
     this.events.on('orb-collected', this.onOrbCollected, this);
+  }
+
+  /**
+   * Reads the blessing selection from BlessingManager and applies
+   * initial passive modifiers once at game start.
+   *
+   * - "orgullo_del_inframundo": +15% damage.
+   * - "eco_de_los_recuerdos": +15% max HP (and current HP if at full).
+   */
+  private applyBlessingModifiers(): void {
+    const selection = BlessingManager.getInstance().getSelection();
+    if (!selection) return;
+
+    const blessingId = selection.primary.id;
+
+    if (blessingId === 'orgullo_del_inframundo') {
+      // +15% damage applied to weapon system
+      const baseDamage = GAME_CONSTANTS.WEAPON_BASE_DAMAGE;
+      const bonus = Math.floor(baseDamage * 0.15);
+      this.weaponSystem.increaseDamage(bonus);
+    } else if (blessingId === 'eco_de_los_recuerdos') {
+      // +15% max HP (current HP follows if player is at full)
+      this.player.applyMaxHpModifier(0.15);
+    }
   }
 
   private onPlayerDefeated = (): void => {
