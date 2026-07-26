@@ -1,11 +1,13 @@
 # mictlan-survivor-game-kiro
 Survivor-like 2D inspirado en el Mictlán, desarrollado con Phaser 3, TypeScript y Vite.
 Mictlán Survivor is a browser-based roguelite inspired by Aztec mythology. Players descend through the different realms of Mictlán while defeating enemies, collecting memories, and unlocking blessings that shape each run.
+
 - Instalación
 npm install
+npm run dev
+
 **Controls**
  **W A S D — Move** 
-npm run dev
 <img width="1685" height="1265" alt="image" src="https://github.com/user-attachments/assets/3bdf1556-a895-441f-8d92-9f3def741eac" />
 *La muerte no es el final, sino el primer paso del viaje.*
 <img width="1679" height="1273" alt="image" src="https://github.com/user-attachments/assets/06371717-85fe-418f-8dc0-988d5bf39fce" />
