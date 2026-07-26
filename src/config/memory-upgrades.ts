@@ -1,4 +1,5 @@
 import type { UpgradeContext } from '../types/interfaces';
+import { GAME_CONSTANTS } from './constants';
 
 // --- Memory Upgrade Types ---
 
@@ -29,17 +30,17 @@ const MEMORY_UPGRADE_CONFIGS: ReadonlyArray<Omit<MemoryUpgrade, 'level'>> = [
     id: 'memory-war',
     name: 'Recuerdo de la Guerra',
     narrative: 'El eco de antiguas batallas fortalece sus ataques.',
-    effectText: 'Aumenta el daño del arma en 8.',
+    effectText: 'Aumenta el daño del arma en 12.',
     maxLevel: 6,
-    effect: { type: 'weapon-damage', amount: 8 },
+    effect: { type: 'weapon-damage', amount: 12 },
   },
   {
     id: 'memory-family',
     name: 'Recuerdo de la Familia',
     narrative: 'El amor de quienes dejó atrás fortalece su corazón.',
-    effectText: 'Aumenta la vida máxima en 20 y recupera 20 de vida.',
+    effectText: 'Aumenta la vida máxima en 30 y recupera 30 de vida.',
     maxLevel: 6,
-    effect: { type: 'max-hp', amount: 20, healAmount: 20 },
+    effect: { type: 'max-hp', amount: 30, healAmount: 30 },
   },
   {
     id: 'memory-home',
@@ -47,7 +48,7 @@ const MEMORY_UPGRADE_CONFIGS: ReadonlyArray<Omit<MemoryUpgrade, 'level'>> = [
     narrative: 'El deseo de regresar acelera su voluntad.',
     effectText: 'Reduce el intervalo de disparo en 100 ms.',
     maxLevel: 6,
-    effect: { type: 'fire-rate', reductionMs: 100, minimumMs: 250 },
+    effect: { type: 'fire-rate', reductionMs: 117, minimumMs: 250 },
   },
 ];
 
@@ -93,4 +94,7 @@ export function applyMemoryUpgrade(memory: MemoryUpgrade, context: UpgradeContex
       throw new Error(`Unknown memory effect type: ${(_exhaustive as { type: string }).type}`);
     }
   }
+
+  // Hidden speed bonus: every memory upgrade grants a small movement speed increase
+  context.player.increaseSpeed(GAME_CONSTANTS.MEMORY_UPGRADE_SPEED_BONUS);
 }

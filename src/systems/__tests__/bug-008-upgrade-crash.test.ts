@@ -15,7 +15,7 @@ import type { UpgradeContext } from '../../types/interfaces';
 
 function createFakeUpgradeContext(): UpgradeContext {
   return {
-    player: { hp: 100, maxHp: 100, speed: 200 },
+    player: { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} },
     weaponSystem: {
       getDamage: () => 10,
       increaseDamage(amount: number) { (this as { _damage?: number })._damage = (((this as { _damage?: number })._damage) ?? 10) + amount; },
@@ -48,7 +48,7 @@ function createMutableUpgradeContext(): UpgradeContext & {
   let maxDistance = 450;
 
   const ctx = {
-    player: { hp: 100, maxHp: 100, speed: 200 },
+    player: { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} },
     weaponSystem: {
       getDamage: () => damage,
       increaseDamage: (amount: number) => { damage += amount; },
@@ -235,7 +235,7 @@ describe('BUG-008: Selecting an upgrade does not crash', () => {
 
       // Create memories with a patched weaponSystem that throws
       const memories = createInitialMemories();
-      const fakePlayer = { hp: 100, maxHp: 100, speed: 200 };
+      const fakePlayer = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
       const throwingWeapon = {
         getDamage: () => 10,
         increaseDamage: () => { throw new Error('simulated crash'); },

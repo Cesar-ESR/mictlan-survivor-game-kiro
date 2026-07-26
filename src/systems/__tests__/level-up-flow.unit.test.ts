@@ -98,7 +98,7 @@ describe('LevelUpCoordinator', () => {
   let emitter: ReturnType<typeof createFakeEventEmitter>;
   let coordinator: LevelUpCoordinator;
   let fakeWeapon: WeaponSystemUpgradeAPI;
-  const fakePlayer = { hp: 100, maxHp: 100, speed: 200 };
+  const fakePlayer = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
 
   beforeEach(() => {
     memories = createInitialMemories();

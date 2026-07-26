@@ -58,7 +58,7 @@ export class LevelUpCoordinator {
   private fragmentClosedHandler: (() => void) | null = null;
   private readonly pauseController: PauseController;
   private readonly eventEmitter: LevelUpEventEmitter;
-  private readonly player: { hp: number; maxHp: number; speed: number };
+  private readonly player: { hp: number; maxHp: number; speed: number; increaseSpeed(percent: number): void };
   private readonly weaponSystem: WeaponSystemUpgradeAPI;
   private memories: MemoryUpgrade[];
   private unlockedFragments: UnlockedMemoryFragments;
@@ -67,7 +67,7 @@ export class LevelUpCoordinator {
     memories: MemoryUpgrade[],
     pauseController: PauseController,
     eventEmitter: LevelUpEventEmitter,
-    player: { hp: number; maxHp: number; speed: number },
+    player: { hp: number; maxHp: number; speed: number; increaseSpeed(percent: number): void },
     weaponSystem: WeaponSystemUpgradeAPI,
   ) {
     this.memories = memories;

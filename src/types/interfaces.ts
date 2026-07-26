@@ -111,6 +111,7 @@ export interface UpgradeContext {
     hp: number;
     maxHp: number;
     speed: number;
+    increaseSpeed(percent: number): void;
   };
   weaponSystem: {
     getDamage(): number;

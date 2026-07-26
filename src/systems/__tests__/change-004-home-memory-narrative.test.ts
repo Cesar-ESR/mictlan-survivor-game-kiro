@@ -174,7 +174,7 @@ describe('CHANGE-004: Hogar Narrative — El camino a casa', () => {
     let emitter: ReturnType<typeof createFakeEventEmitter>;
     let coordinator: LevelUpCoordinator;
     let fakeWeapon: ReturnType<typeof createFakeWeaponSystem>;
-    const fakePlayer = { hp: 100, maxHp: 100, speed: 200 };
+    const fakePlayer = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
 
     beforeEach(() => {
       memories = createInitialMemories();

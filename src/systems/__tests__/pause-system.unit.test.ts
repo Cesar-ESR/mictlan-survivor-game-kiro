@@ -375,7 +375,7 @@ describe('PauseSystem', () => {
   it('LevelUpCoordinator accepts PauseSystem as PauseController', () => {
     const memories = createInitialMemories();
     const emitter = createFakeEventEmitter();
-    const player = { hp: 100, maxHp: 100, speed: 200 };
+    const player = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
 
     const coordinator = new LevelUpCoordinator(memories, pauseSystem, emitter, player, createFakeWeaponSystem());
     coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
@@ -391,7 +391,7 @@ describe('PauseSystem', () => {
 
     const memories = createInitialMemories();
     const emitter = createFakeEventEmitter();
-    const player = { hp: 100, maxHp: 100, speed: 200 };
+    const player = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
 
     const coordinator = new LevelUpCoordinator(memories, pauseSystem, emitter, player, createFakeWeaponSystem());
     coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
@@ -415,7 +415,7 @@ describe('PauseSystem', () => {
     const memories = createInitialMemories();
     memories.forEach((m) => { m.level = m.maxLevel; });
     const emitter = createFakeEventEmitter();
-    const player = { hp: 100, maxHp: 100, speed: 200 };
+    const player = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
 
     const coordinator = new LevelUpCoordinator(memories, pauseSystem, emitter, player, createFakeWeaponSystem());
     coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
@@ -428,7 +428,7 @@ describe('PauseSystem', () => {
   it('level 20 does not pause when showPanel is false', () => {
     const memories = createInitialMemories();
     const emitter = createFakeEventEmitter();
-    const player = { hp: 100, maxHp: 100, speed: 200 };
+    const player = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
 
     const coordinator = new LevelUpCoordinator(memories, pauseSystem, emitter, player, createFakeWeaponSystem());
     coordinator.processLevelUp({ leveledUp: true, showPanel: false, newLevel: 20 });
