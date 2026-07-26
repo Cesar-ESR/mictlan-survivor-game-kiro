@@ -261,7 +261,7 @@ describe('CHANGE-004: Hogar Narrative — El camino a casa', () => {
       emitter.trigger('upgrade-selected', { upgradeId: 'memory-home' });
       emitter.trigger('upgrade-selected', { upgradeId: 'memory-home' });
       expect(memories[2].level).toBe(1);
-      expect(fakeWeapon.getFireRateValue()).toBe(900); // applied once
+      expect(fakeWeapon.getFireRateValue()).toBe(883); // applied once
     });
 
     it('18. level 6 leaves Hogar maximized', () => {
@@ -360,8 +360,8 @@ describe('CHANGE-004: Hogar Narrative — El camino a casa', () => {
         emitter.trigger('memory-fragment-closed');
       }
       expect(memories[2].level).toBe(6);
-      // Fire rate reduced 6 times: 1000 - 6*100 = 400, but minimum is 250
-      expect(fakeWeapon.getFireRateValue()).toBe(400);
+      // Fire rate reduced 6 times: 1000 - 6*117 = 298, minimum is 250 so stays 298
+      expect(fakeWeapon.getFireRateValue()).toBe(298);
     });
   });
 });

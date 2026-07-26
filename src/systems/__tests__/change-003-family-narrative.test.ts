@@ -390,8 +390,8 @@ describe('CHANGE-003: Familia Narrative — Voces junto al fuego', () => {
       expect(memories[0].id).toBe('memory-war');
       expect(memories[1].id).toBe('memory-family');
       expect(memories[2].id).toBe('memory-home');
-      // Familia effect: max-hp +20, heal +20
-      expect(memories[1].effect).toEqual({ type: 'max-hp', amount: 20, healAmount: 20 });
+      // Familia effect: max-hp +40, heal +50
+      expect(memories[1].effect).toEqual({ type: 'max-hp', amount: 40, healAmount: 50 });
     });
 
     it('25. CHANGE-002 continues functioning (Guerra narrative works)', () => {

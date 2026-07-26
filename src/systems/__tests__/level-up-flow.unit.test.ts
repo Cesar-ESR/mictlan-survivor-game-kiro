@@ -177,7 +177,7 @@ describe('LevelUpCoordinator', () => {
   it('applies memory effect on valid selection', () => {
     coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
     emitter.trigger('upgrade-selected', { upgradeId: 'memory-war' });
-    expect(fakeWeapon.getDamage()).toBe(18);
+    expect(fakeWeapon.getDamage()).toBe(35);
   });
 
   it('increments memory level on valid selection', () => {
@@ -189,7 +189,7 @@ describe('LevelUpCoordinator', () => {
   it('applies effect before incrementing level', () => {
     coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
     emitter.trigger('upgrade-selected', { upgradeId: 'memory-war' });
-    expect(fakeWeapon.getDamage()).toBe(18);
+    expect(fakeWeapon.getDamage()).toBe(35);
     expect(memories[0].level).toBe(1);
   });
 
@@ -218,7 +218,7 @@ describe('LevelUpCoordinator', () => {
     coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
     emitter.trigger('upgrade-selected', { upgradeId: 'memory-war' });
     emitter.trigger('upgrade-selected', { upgradeId: 'memory-family' });
-    expect(fakeWeapon.getDamage()).toBe(18);
+    expect(fakeWeapon.getDamage()).toBe(35);
     expect(memories[0].level).toBe(1);
     expect(memories[1].level).toBe(0);
   });
@@ -273,6 +273,7 @@ describe('LevelUpCoordinator', () => {
       hp: 100,
       maxHp: 100,
       speed: 200,
+      increaseSpeed() {},
       addXP: () => {
         addXPCalled = true;
         return { leveledUp: false, newLevel: 1, excessXp: 0, reachedMaxLevel: false };

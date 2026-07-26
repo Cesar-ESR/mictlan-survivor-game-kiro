@@ -54,9 +54,9 @@ describe('Movement Property Tests', () => {
           const magnitude = Math.sqrt(dir.x * dir.x + dir.y * dir.y);
           if (magnitude > 0) {
             expect(magnitude).toBeCloseTo(1, 10);
-            // Speed after multiplication = 200
+            // Speed after multiplication = PLAYER_BASE_SPEED
             const speed = magnitude * GAME_CONSTANTS.PLAYER_BASE_SPEED;
-            expect(speed).toBeCloseTo(200, 10);
+            expect(speed).toBeCloseTo(GAME_CONSTANTS.PLAYER_BASE_SPEED, 10);
           }
         }),
         { numRuns: 200 }

@@ -10,8 +10,8 @@ import type { WeaponTarget } from '../weapon-utils';
 describe('BUG-004: Weapon range regression', () => {
   const RANGE = GAME_CONSTANTS.WEAPON_RANGE;
 
-  it('WEAPON_RANGE is 384 (12 tiles × 32px)', () => {
-    expect(GAME_CONSTANTS.WEAPON_RANGE).toBe(384);
+  it('WEAPON_RANGE is 404 (BUG-004 adjusted)', () => {
+    expect(GAME_CONSTANTS.WEAPON_RANGE).toBe(404);
   });
 
   it('PROJECTILE_MAX_DISTANCE is 450 (slightly more than range)', () => {
@@ -22,7 +22,7 @@ describe('BUG-004: Weapon range regression', () => {
     expect(GAME_CONSTANTS.PROJECTILE_MAX_DISTANCE).toBeGreaterThan(GAME_CONSTANTS.WEAPON_RANGE);
   });
 
-  it('enemy at exactly 384px is selectable', () => {
+  it('enemy at exactly WEAPON_RANGE is selectable', () => {
     const playerPos = { x: 100, y: 100 };
     const enemy: WeaponTarget = {
       x: playerPos.x + RANGE,
@@ -35,10 +35,10 @@ describe('BUG-004: Weapon range regression', () => {
     expect(result).toBe(enemy);
   });
 
-  it('enemy at 385px is NOT selectable', () => {
+  it('enemy at WEAPON_RANGE + 1 is NOT selectable', () => {
     const playerPos = { x: 100, y: 100 };
     const enemy: WeaponTarget = {
-      x: playerPos.x + 385,
+      x: playerPos.x + RANGE + 1,
       y: playerPos.y,
       active: true,
       hp: 10,

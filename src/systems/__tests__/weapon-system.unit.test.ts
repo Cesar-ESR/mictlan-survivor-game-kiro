@@ -24,12 +24,12 @@ describe('WeaponSystem Unit Tests', () => {
       expect(fireTimer).toBe(0);
     });
 
-    it('2. Before 1000ms no firing', () => {
+    it('2. Before FIRE_RATE ms no firing', () => {
       let fireTimer = 0;
       let fired = false;
 
-      // Accumulate 999ms
-      fireTimer += 999;
+      // Accumulate FIRE_RATE - 1 ms
+      fireTimer += FIRE_RATE - 1;
       if (fireTimer >= FIRE_RATE) {
         fired = true;
       }
@@ -37,12 +37,12 @@ describe('WeaponSystem Unit Tests', () => {
       expect(fired).toBe(false);
     });
 
-    it('3. At 1000ms attempts to fire', () => {
+    it('3. At FIRE_RATE ms attempts to fire', () => {
       let fireTimer = 0;
       let fired = false;
 
-      // Accumulate exactly 1000ms
-      fireTimer += 1000;
+      // Accumulate exactly FIRE_RATE ms
+      fireTimer += FIRE_RATE;
       if (fireTimer >= FIRE_RATE) {
         fireTimer -= FIRE_RATE;
         fired = true;
@@ -56,8 +56,8 @@ describe('WeaponSystem Unit Tests', () => {
       let fireTimer = 0;
       let firedCount = 0;
 
-      // Accumulate 1200ms (fire once, preserve 200ms)
-      fireTimer += 1200;
+      // Accumulate FIRE_RATE + 200 ms (fire once, preserve 200ms)
+      fireTimer += FIRE_RATE + 200;
       if (fireTimer >= FIRE_RATE) {
         fireTimer -= FIRE_RATE;
         firedCount++;

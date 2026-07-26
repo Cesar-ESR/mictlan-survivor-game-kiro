@@ -133,7 +133,7 @@ describe('Preflight Contracts', () => {
       const selectedPayload: UpgradeSelectedPayload = { upgradeId: 'memory-war' };
       upgradeHandler!(selectedPayload);
 
-      expect(weaponDamage).toBe(18); // 10 + 8
+      expect(weaponDamage).toBe(35); // 10 + 25
       expect(memories[0].level).toBe(1);
     });
   });

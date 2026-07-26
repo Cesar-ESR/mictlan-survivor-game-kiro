@@ -101,27 +101,27 @@ describe('CHANGE-001: Memory Progression System', () => {
   });
 
   describe('Effects', () => {
-    it('7. Guerra increases damage by 8', () => {
+    it('7. Guerra increases damage by 25', () => {
       const ctx = createMutableContext();
       const memories = createInitialMemories();
       applyMemoryUpgrade(memories[0], ctx);
-      expect(ctx.getDamage()).toBe(18);
+      expect(ctx.getDamage()).toBe(35);
     });
 
-    it('8. Familia increases maxHp by 20', () => {
+    it('8. Familia increases maxHp by 40', () => {
       const ctx = createMutableContext();
       const memories = createInitialMemories();
       applyMemoryUpgrade(memories[1], ctx);
-      expect(ctx.player.maxHp).toBe(120);
+      expect(ctx.player.maxHp).toBe(140);
     });
 
-    it('9. Familia heals 20 without exceeding maxHp', () => {
+    it('9. Familia heals 50 without exceeding maxHp', () => {
       const ctx = createMutableContext();
       ctx.player.hp = 50;
       const memories = createInitialMemories();
       applyMemoryUpgrade(memories[1], ctx);
-      expect(ctx.player.hp).toBe(70); // 50 + 20 = 70 <= 120
-      expect(ctx.player.maxHp).toBe(120);
+      expect(ctx.player.hp).toBe(100); // 50 + 50 = 100 <= 140
+      expect(ctx.player.maxHp).toBe(140);
     });
 
     it('9b. Familia heal does not exceed maxHp when hp is near max', () => {
@@ -129,14 +129,14 @@ describe('CHANGE-001: Memory Progression System', () => {
       ctx.player.hp = 95;
       const memories = createInitialMemories();
       applyMemoryUpgrade(memories[1], ctx);
-      expect(ctx.player.hp).toBe(115); // 95 + 20 = 115 <= 120
+      expect(ctx.player.hp).toBe(140); // 95 + 50 = 145, capped at maxHp 140
     });
 
-    it('10. Hogar reduces fireRate by 100', () => {
+    it('10. Hogar reduces fireRate by 117', () => {
       const ctx = createMutableContext();
       const memories = createInitialMemories();
       applyMemoryUpgrade(memories[2], ctx);
-      expect(ctx.getFireRate()).toBe(900);
+      expect(ctx.getFireRate()).toBe(883);
     });
 
     it('11. Hogar respects minimum of 250', () => {
@@ -489,19 +489,19 @@ describe('CHANGE-001: Memory Progression System', () => {
 
             switch (memoryId) {
               case 'memory-war':
-                expect(ctx.getDamage()).toBe(dmgBefore + 8);
+                expect(ctx.getDamage()).toBe(dmgBefore + 25);
                 expect(ctx.player.maxHp).toBe(hpBefore);
                 expect(ctx.getFireRate()).toBe(frBefore);
                 break;
               case 'memory-family':
                 expect(ctx.getDamage()).toBe(dmgBefore);
-                expect(ctx.player.maxHp).toBe(hpBefore + 20);
+                expect(ctx.player.maxHp).toBe(hpBefore + 40);
                 expect(ctx.getFireRate()).toBe(frBefore);
                 break;
               case 'memory-home':
                 expect(ctx.getDamage()).toBe(dmgBefore);
                 expect(ctx.player.maxHp).toBe(hpBefore);
-                expect(ctx.getFireRate()).toBe(Math.max(frBefore - 100, 250));
+                expect(ctx.getFireRate()).toBe(Math.max(frBefore - 117, 250));
                 break;
             }
           },
