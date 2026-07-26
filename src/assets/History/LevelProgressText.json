@@ -3,12 +3,12 @@
     {
       "id": 1,
       "isIntroduction": true,
-      "triggerLevel": 1,
+      "triggerLevel": 2,
       "realm": {
         "order": 9,
         "title": "NOVENO NIVEL",
-        "name": "Chiconahuapan",
-        "background": "realm_chiconahuapan"
+        "name": "Chicunamictlán",
+        "background": "realm_chicunamictlan"
       },
       "guide": {
         "name": "Xólotl",
@@ -25,19 +25,18 @@
         }
       ],
       "culture": {
-        "title": "Chiconahuapan",
-        "description": "Chiconahuapan era considerado el lugar más profundo del Mictlán. Desde aquí comenzaba el largo recorrido que las almas debían emprender para atravesar el inframundo."
+        "title": "Chicunamictlán",
+        "description": "Chicunamictlán era la morada de Mictlantecuhtli y Mictecacíhuatl, los señores del Mictlán. Desde este territorio comenzaban las pruebas que las almas debían superar para abandonar el inframundo."
       }
     },
     {
       "id": 2,
-      "isIntroduction": false,
-      "triggerLevel": 2,
+      "triggerLevel": 4,
       "realm": {
         "order": 8,
         "title": "OCTAVO NIVEL",
-        "name": "Apanohuayan",
-        "background": "realm_apanohuayan"
+        "name": "Izmictlán Apochcalolca",
+        "background": "realm_izmictlan_apochcalolca"
       },
       "guide": {
         "name": "Xólotl",
@@ -46,170 +45,24 @@
       "dialog": [
         {
           "speaker": "xolotl",
-          "text": "Hemos llegado a Apanohuayan."
+          "text": "Has llegado a Izmictlán Apochcalolca."
         },
         {
           "speaker": "xolotl",
-          "text": "Ninguna alma podía continuar sin cruzar este gran río."
+          "text": "La región de la oscuridad y la niebla."
         }
       ],
       "culture": {
-        "title": "Apanohuayan",
-        "description": "Las almas debían cruzar un gran río con la ayuda de un xoloitzcuintle, símbolo de la lealtad y del acompañamiento hacia el más allá."
+        "title": "Izmictlán Apochcalolca",
+        "description": "Una región envuelta en oscuridad y niebla donde el humo no encontraba salida. Era una de las últimas pruebas antes de abandonar el Mictlán."
       }
     },
     {
       "id": 3,
-      "isIntroduction": false,
-      "triggerLevel": 3,
+      "triggerLevel": 6,
       "realm": {
         "order": 7,
         "title": "SÉPTIMO NIVEL",
-        "name": "Tepectli Monamictlán",
-        "background": "realm_tepectli_monamictlan"
-      },
-      "guide": {
-        "name": "Xólotl",
-        "portrait": "xolotl"
-      },
-      "dialog": [
-        {
-          "speaker": "xolotl",
-          "text": "Estas son las montañas que chocan entre sí."
-        },
-        {
-          "speaker": "xolotl",
-          "text": "Solo cuando se separaban era posible atravesarlas."
-        }
-      ],
-      "culture": {
-        "title": "Tepectli Monamictlán",
-        "description": "Dos enormes montañas chocaban constantemente. Solo las almas que encontraban el momento preciso podían continuar su recorrido."
-      }
-    },
-    {
-      "id": 4,
-      "isIntroduction": false,
-      "triggerLevel": 4,
-      "realm": {
-        "order": 6,
-        "title": "SEXTO NIVEL",
-        "name": "Iztepetl",
-        "background": "realm_iztepetl"
-      },
-      "guide": {
-        "name": "Xólotl",
-        "portrait": "xolotl"
-      },
-      "dialog": [
-        {
-          "speaker": "xolotl",
-          "text": "Nos encontramos en Iztepetl."
-        },
-        {
-          "speaker": "xolotl",
-          "text": "La montaña de obsidiana."
-        }
-      ],
-      "culture": {
-        "title": "Iztepetl",
-        "description": "Una enorme montaña cubierta de afiladas rocas de obsidiana representaba una de las pruebas más difíciles del recorrido por el Mictlán."
-      }
-    },
-    {
-      "id": 5,
-      "isIntroduction": false,
-      "triggerLevel": 5,
-      "realm": {
-        "order": 5,
-        "title": "QUINTO NIVEL",
-        "name": "Itzehecayan",
-        "background": "realm_itzehecayan"
-      },
-      "guide": {
-        "name": "Xólotl",
-        "portrait": "xolotl"
-      },
-      "dialog": [
-        {
-          "speaker": "xolotl",
-          "text": "Este es Itzehecayan."
-        },
-        {
-          "speaker": "xolotl",
-          "text": "El lugar donde soplan los vientos de obsidiana."
-        }
-      ],
-      "culture": {
-        "title": "Itzehecayan",
-        "description": "Fuertes vientos cargados con fragmentos de obsidiana azotaban a las almas mientras continuaban su viaje por el inframundo."
-      }
-    },
-    {
-      "id": 6,
-      "isIntroduction": false,
-      "triggerLevel": 6,
-      "realm": {
-        "order": 4,
-        "title": "CUARTO NIVEL",
-        "name": "Paniecatacoyan",
-        "background": "realm_paniecatacoyan"
-      },
-      "guide": {
-        "name": "Xólotl",
-        "portrait": "xolotl"
-      },
-      "dialog": [
-        {
-          "speaker": "xolotl",
-          "text": "Hemos llegado a Paniecatacoyan."
-        },
-        {
-          "speaker": "xolotl",
-          "text": "Aquí las almas vagaban sin encontrar un lugar donde descansar."
-        }
-      ],
-      "culture": {
-        "title": "Paniecatacoyan",
-        "description": "Las almas atravesaban una región donde flotaban sin apoyo alguno, representando la incertidumbre del viaje por el Mictlán."
-      }
-    },
-    {
-      "id": 7,
-      "isIntroduction": false,
-      "triggerLevel": 7,
-      "realm": {
-        "order": 3,
-        "title": "TERCER NIVEL",
-        "name": "Timiminaloayan",
-        "background": "realm_timiminaloayan"
-      },
-      "guide": {
-        "name": "Xólotl",
-        "portrait": "xolotl"
-      },
-      "dialog": [
-        {
-          "speaker": "xolotl",
-          "text": "Este es Timiminaloayan."
-        },
-        {
-          "speaker": "xolotl",
-          "text": "El sendero donde vuelan las flechas."
-        }
-      ],
-      "culture": {
-        "title": "Timiminaloayan",
-        "description": "Las almas debían cruzar un sendero donde flechas invisibles atravesaban constantemente el aire, poniendo a prueba su determinación."
-      }
-    },
-    {
-      "id": 8,
-      "isIntroduction": false,
-      "triggerLevel": 8,
-      "realm": {
-        "order": 2,
-        "title": "SEGUNDO NIVEL",
         "name": "Teocoyohuehualoyan",
         "background": "realm_teocoyohuehualoyan"
       },
@@ -229,18 +82,17 @@
       ],
       "culture": {
         "title": "Teocoyohuehualoyan",
-        "description": "Los jaguares simbolizaban la fuerza y representaban una de las últimas pruebas del recorrido por el Mictlán."
+        "description": "En este lugar habitaban jaguares que devoraban el corazón de las almas, representando una de las pruebas más severas del recorrido por el Mictlán."
       }
     },
     {
-      "id": 9,
-      "isIntroduction": false,
-      "triggerLevel": 9,
+      "id": 4,
+      "triggerLevel": 8,
       "realm": {
-        "order": 1,
-        "title": "PRIMER NIVEL",
-        "name": "Chicunamictlán",
-        "background": "realm_chicunamictlan"
+        "order": 6,
+        "title": "SEXTO NIVEL",
+        "name": "Timiminaloayan",
+        "background": "realm_timiminaloayan"
       },
       "guide": {
         "name": "Xólotl",
@@ -249,16 +101,156 @@
       "dialog": [
         {
           "speaker": "xolotl",
-          "text": "Hemos llegado a Chicunamictlán."
+          "text": "Has llegado a Timiminaloayan."
         },
         {
           "speaker": "xolotl",
-          "text": "El primer nivel del Mictlán."
+          "text": "El lugar de las flechas invisibles."
         }
       ],
       "culture": {
-        "title": "Chicunamictlán",
-        "description": "Tras superar las pruebas del inframundo, las almas alcanzaban el primer nivel del Mictlán. Desde aquí concluía su recorrido por este reino antes de seguir el destino que les correspondía."
+        "title": "Timiminaloayan",
+        "description": "Las almas debían cruzar un sendero donde flechas invisibles atravesaban constantemente el aire, poniendo a prueba su determinación."
+      }
+    },
+    {
+      "id": 5,
+      "triggerLevel": 10,
+      "realm": {
+        "order": 5,
+        "title": "QUINTO NIVEL",
+        "name": "Paniecatacoyan",
+        "background": "realm_paniecatacoyan"
+      },
+      "guide": {
+        "name": "Xólotl",
+        "portrait": "xolotl"
+      },
+      "dialog": [
+        {
+          "speaker": "xolotl",
+          "text": "Has llegado a Paniecatacoyan."
+        },
+        {
+          "speaker": "xolotl",
+          "text": "El lugar donde las almas flotan."
+        }
+      ],
+      "culture": {
+        "title": "Paniecatacoyan",
+        "description": "En esta región las almas avanzaban sin apoyo alguno, como si flotaran, simbolizando la incertidumbre y la pérdida de toda referencia durante el recorrido."
+      }
+    },
+    {
+      "id": 6,
+      "triggerLevel": 12,
+      "realm": {
+        "order": 4,
+        "title": "CUARTO NIVEL",
+        "name": "Itzehecayan",
+        "background": "realm_itzehecayan"
+      },
+      "guide": {
+        "name": "Xólotl",
+        "portrait": "xolotl"
+      },
+      "dialog": [
+        {
+          "speaker": "xolotl",
+          "text": "Has llegado a Itzehecayan."
+        },
+        {
+          "speaker": "xolotl",
+          "text": "El lugar del viento de obsidiana."
+        }
+      ],
+      "culture": {
+        "title": "Itzehecayan",
+        "description": "Fuertes vientos cargados con fragmentos de obsidiana azotaban a las almas mientras continuaban su viaje por el Mictlán."
+      }
+    },
+    {
+      "id": 7,
+      "triggerLevel": 14,
+      "realm": {
+        "order": 3,
+        "title": "TERCER NIVEL",
+        "name": "Iztepetl",
+        "background": "realm_iztepetl"
+      },
+      "guide": {
+        "name": "Xólotl",
+        "portrait": "xolotl"
+      },
+      "dialog": [
+        {
+          "speaker": "xolotl",
+          "text": "Has llegado a Iztepetl."
+        },
+        {
+          "speaker": "xolotl",
+          "text": "La montaña de obsidiana."
+        }
+      ],
+      "culture": {
+        "title": "Iztepetl",
+        "description": "Una gran montaña cubierta de afiladas rocas de obsidiana representaba una de las pruebas más difíciles del recorrido."
+      }
+    },
+    {
+      "id": 8,
+      "triggerLevel": 16,
+      "realm": {
+        "order": 2,
+        "title": "SEGUNDO NIVEL",
+        "name": "Tepectli Monamictlán",
+        "background": "realm_tepectli_monamictlan"
+      },
+      "guide": {
+        "name": "Xólotl",
+        "portrait": "xolotl"
+      },
+      "dialog": [
+        {
+          "speaker": "xolotl",
+          "text": "Has llegado a Tepectli Monamictlán."
+        },
+        {
+          "speaker": "xolotl",
+          "text": "El lugar donde chocan los cerros."
+        }
+      ],
+      "culture": {
+        "title": "Tepectli Monamictlán",
+        "description": "Dos enormes montañas chocaban continuamente. Las almas debían encontrar el momento preciso para atravesarlas sin ser aplastadas."
+      }
+    },
+    {
+      "id": 9,
+      "triggerLevel": 18,
+      "realm": {
+        "order": 1,
+        "title": "PRIMER NIVEL",
+        "name": "Itzcuintlán",
+        "background": "realm_itzcuintlan"
+      },
+      "guide": {
+        "name": "Xólotl",
+        "portrait": "xolotl"
+      },
+      "dialog": [
+        {
+          "speaker": "xolotl",
+          "text": "Has llegado a Itzcuintlán."
+        },
+        {
+          "speaker": "xolotl",
+          "text": "El lugar del perro."
+        }
+      ],
+      "culture": {
+        "title": "Itzcuintlán",
+        "description": "En el primer nivel del Mictlán, las almas debían cruzar un gran río con la ayuda de un xoloitzcuintle. Solo quienes habían tratado bien a estos animales en vida podían recibir su ayuda para abandonar el inframundo."
       }
     }
   ]
