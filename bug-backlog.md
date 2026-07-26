@@ -699,65 +699,177 @@ GameScene.hudReadyHandler:
 
 ## BUG-010 — OrbCollector usa una Scene inválida al generar XPOrb
 
-**Estado:** ✅ Corregido  
+**Estado:** ✅ Corregido (V3 — plain array, no Phaser Group)  
 **Fecha:** 2025-07-XX  
 **Severidad:** Crítica (gameplay-breaking crash)
 
 ### Descripción
 
-Al derrotar un enemigo, OrbCollector lanzaba `TypeError: Cannot read properties of undefined (reading 'add')` al intentar crear un XPOrb.
+Al matar un enemigo después de un Retry, OrbCollector lanzaba `TypeError: Cannot read properties of undefined (reading 'add')` dentro de `Phaser.GameObjects.Group.add`. La primera partida funcionaba; el error solo ocurría post-retry y congelaba la partida.
 
-### Causa Raíz
+### Historial de correcciones
 
-El constructor de OrbCollector registraba un **lambda anónimo** como listener del evento `'enemy-defeated'`:
-```typescript
-this.scene.events.on('enemy-defeated', (data) => { this.spawnOrb(...); });
-```
+- **V1** — Stored handler + isDestroyed guard. Necesario pero insuficiente.
+- **V2** — `orbPool.clear(true, true)` instead of `destroy(true)`. Reducía pero no eliminaba el problema.
+- **V3** — Eliminación completa del Phaser Group. Resuelve la causa raíz.
 
-Problemas:
-1. El lambda anónimo no puede eliminarse con `off()` por referencia
-2. `destroy()` hacía `this.scene.events.off('enemy-defeated')` sin callback — esto eliminaba TODOS los listeners de ese evento (incluyendo los de otros sistemas)
-3. En ciclos retry, si el OrbCollector anterior no se destruía limpiamente, su lambda persistía con `this.scene` apuntando a una escena destruida donde `scene.physics` era `undefined`
-4. Al dispararse `enemy-defeated`, el lambda intentaba `new XPOrb(this.scene, ...)` → XPOrb constructor: `scene.add.existing(this)` → `undefined.add` → TypeError
+### Causa Raíz Real
 
-### Corrección
+`Phaser.GameObjects.Group.add()` internamente accede a `this.scene.sys.displayList` o propiedades similares del sistema de escena. Después de un ciclo de reinicio (scene.start → shutdown → create), el Group retenía una referencia interna al objeto `sys` de la escena anterior, que estaba en estado inválido/undefined. Al llamar `group.add(orb)`, la propiedad interna del Group causaba el TypeError.
 
-1. **`src/systems/OrbCollector.ts`** — Handler reemplazado por arrow function almacenada como propiedad de clase:
-   ```typescript
-   private readonly enemyDefeatedHandler = (data: EnemyDefeatedPayload): void => {
-     if (this.isDestroyed) return;
-     this.spawnOrb(...);
-   };
-   ```
-   - `destroy()` ahora es idempotente y elimina solo su propio handler por referencia
-   - Guard `isDestroyed` previene ejecución post-destroy
-   - `spawnOrb()` y `update()` también tienen guard
-   - Otros listeners de `'enemy-defeated'` no se ven afectados
+XPOrb ya se añadía a sí mismo a la escena via `scene.add.existing(this)` y `scene.physics.add.existing(this)` en su constructor. El uso de `Group.add()` era **redundante** para la gestión de escena — solo servía para iterar los orbes.
+
+### Corrección (V3)
+
+Reemplazar `Phaser.GameObjects.Group` por un array TypeScript `XPOrb[]`:
+- `spawnOrb` → `this.orbs.push(orb)` (XPOrb se añade a la escena solo)
+- `update` → itera `this.orbs` directamente
+- `destroy` → destruye cada orbe activo, vacía el array
+- Sin coupling con `scene.sys` internal managers
 
 ### Archivos Modificados
 
-- `src/systems/OrbCollector.ts`
+- `src/systems/OrbCollector.ts` — Group eliminado, `orbs: XPOrb[]` array
+- `src/systems/__tests__/bug-010-orb-collector-lifecycle.test.ts` — 32 tests (8 nuevos V3)
 
-### Archivos Creados
+### Tests de Regresión (V3)
 
-- `src/systems/__tests__/bug-010-orb-collector-lifecycle.test.ts` (24 tests)
-
-### Tests de Regresión
-
-- Handler registra exactamente un listener por construcción
-- Payload (x, y, xpReward, xpOrbVariant) se forwarda correctamente
-- Arrow function preserva `this` context
-- `destroy()` elimina solo su propio listener (otros sobreviven)
-- Evento post-destroy no genera orbes
-- `destroy()` es idempotente
-- Tres ciclos retry no acumulan listeners
-- Handler stale no crashea cuando se invoca directamente
-- Múltiples OrbCollectors en misma scene son independientes
-- No TypeError por `undefined.add`
+- No se crea Phaser Group (no `scene.add.group()`)
+- spawnOrb usa array interno (no Group.add)
+- destroy limpia array y destruye orbes activos
+- Cinco ciclos de retry no corrompen `scene.add`/`scene.physics.add`
+- Nuevo OrbCollector tras destroy tiene array fresco sin interferencia
+- `scene.add` permanece disponible después del cleanup
+- XPOrb se autoañade a la escena (no necesita Group)
 
 ### Notas
 
-- No se modificaron enemigos, daño, XP, oleadas, balance, mapa, Recuerdos ni combate
-- No se usó optional chaining como corrección principal
-- La corrección es compatible con BUG-009 (handshake hud-ready)
-- El guard `isDestroyed` es una segunda línea de defensa; la correcta eliminación del listener por referencia es la corrección primaria
+- No se usó optional chaining, any, @ts-ignore ni setTimeout
+- No se modificaron enemigos, XP, oleadas, balance, Recuerdos ni mapa
+- Las correcciones V1 (stored handler) y V2 (no destroy) permanecen integradas en V3
+
+
+---
+
+## BUG-011 — XPOrb y experiencia duplicados
+
+**Estado:** ✅ Corregido  
+**Fecha:** 2025-07-XX  
+**Severidad:** Media (balance-breaking)
+
+### Descripción
+
+Al derrotar un enemigo aparecían dos XPOrbs. Un orbe con xpValue=5 entregaba 10 XP después de Retry. El valor se duplicaba entre partidas indicando acumulación de listeners o procesamiento doble.
+
+### Causas Raíz (3 factores combinados)
+
+1. **XPOrb sin flag `collected`**: El mismo orbe podía recogerse dos veces en el mismo frame — una vez en la comprobación inicial de proximidad y otra después de que la atracción lo moviera dentro del radio de recolección.
+
+2. **OrbCollector.collectOrb con doble entrega de XP**: El método emitía `'orb-collected'` (que GameScene routeaba a XPSystem.addXP) Y además llamaba directamente `this.player.addXP(value)`. Ambas rutas entregaban XP.
+
+3. **GameScene.registerGameListeners() acumulaba listeners en Retry**: En Phaser, `scene.start()` reutiliza la misma instancia de Scene. Si `shutdown()` no eliminaba perfectamente los listeners (timing edge case), `registerGameListeners()` los añadía de nuevo sin verificar duplicados, acumulando handlers de `'orb-collected'`.
+
+### Corrección
+
+1. **`src/entities/XPOrb.ts`** — Añadido campo `collected = false`. Se establece a `true` al inicio de `collectOrb()` antes de emitir eventos.
+
+2. **`src/systems/OrbCollector.ts`** — Guard `if (orb.collected) return` en `collectOrb()`. Loop `update()` verifica `!orb.active || orb.collected` antes de procesar. Eliminada la llamada directa `this.player.addXP(value)` — solo emite el evento.
+
+3. **`src/scenes/GameScene.ts`** — `registerGameListeners()` ahora ejecuta `events.off(...)` para cada handler ANTES de `events.on(...)`, haciéndola idempotente.
+
+### Archivos Modificados
+
+- `src/entities/XPOrb.ts` — campo `collected`
+- `src/systems/OrbCollector.ts` — guards + eliminación de ruta dual
+- `src/scenes/GameScene.ts` — off-before-on idempotente
+
+### Archivos Creados
+
+- `src/systems/__tests__/bug-011-xp-duplication.test.ts` (16 tests)
+
+### Tests de Regresión
+
+- collected flag previene doble recolección en mismo frame
+- Doble overlap: addXP llamado una vez
+- xpValue=5 entrega exactamente 5 XP
+- Después de retry xpValue=5 sigue entregando 5
+- 5 ciclos de retry no acumulan listeners
+- registerGameListeners es idempotente
+- Una muerte produce un orbe, un orbe entrega XP una vez
+- Enemy defeatEmitted guard funciona
+
+### Notas
+
+- No se modificaron valores de XP, balance, enemigos, oleadas, Recuerdos ni mapa
+- No se usó optional chaining ni se dividió el XP artificialmente
+- La corrección es compatible con BUG-009 (handshake) y BUG-010 (plain array)
+
+
+---
+
+## BUG-012 — XPOrb recogido permanece visible
+
+**Estado:** ✅ Corregido (V4 — visual differentiation from decoration tiles)  
+**Fecha:** 2025-07-XX  
+**Severidad:** Media (visual)
+
+### Descripción
+
+Después de recoger un XPOrb, un sprite azul permanecía visible en el mapa. XP se entregaba correctamente una sola vez pero el visual no desaparecía.
+
+### V1 (insuficiente)
+
+Añadió `deactivate()` que mataba el tween y llamaba `setActive(false)` + `setVisible(false)` + `body.enable = false`. Esto no era suficiente porque en Phaser 4, un sprite que permanece en el display list (via `scene.add.existing`) puede seguir renderizándose bajo ciertas condiciones aunque `visible=false`.
+
+### Causa Raíz Real (V2)
+
+`setVisible(false)` en Phaser 4 sobre un `Physics.Arcade.Sprite` que fue añadido al display list via `scene.add.existing(this)` no siempre previene el renderizado. El sprite permanece en `scene.children.list`. La única forma confiable de eliminarlo del pipeline de render es **destruir el GameObject** con `destroy()`, que lo remueve del display list, update list y physics world.
+
+### Corrección (V2)
+
+`OrbCollector.deactivateOrb()` ahora llama `orb.destroy()` y lo remueve del array de tracking (`splice`). Dado que no hay pooling (se usa array plain desde BUG-010 V3), la destrucción es segura y definitiva.
+
+Cambios adicionales:
+- `update()` itera un snapshot (`[...this.orbs]`) para manejar modificación durante iteración
+- `removeExpiredOrbs()` itera hacia atrás para splice seguro
+- `destroy()` destruye TODOS los orbes (sin check de `active`)
+
+### V4 — Diferenciación visual (confusión con tiles de decoración)
+
+**Problema residual:** El "cristal azul" que el usuario reportaba como persistente tras la recolección NO era el XPOrb (que sí se destruye correctamente). Era un tile de decoración estático del tileset `Mictlan_decoration.png` (frames 0–51) que visualmente se asemeja al sprite del XPOrb (`Exp_Common.png`). Cuando un enemigo muere cerca de una decoración, el usuario confunde el tile permanente con el orbe ya recogido.
+
+**Solución V4:** Hacer que los XPOrbs sean visualmente inconfundibles respecto a cualquier decoración estática:
+
+1. **Tint distintivo** (`0xaaffee` — cyan/mint claro): Los XPOrbs ahora tienen un color diferente al palette crudo del tileset de decoraciones. Ninguna decoración tiene este tint.
+
+2. **Pulso de alpha** (oscila entre 1.0 y 0.6, 400ms/ciclo): Los XPOrbs "pulsan" visualmente. Las decoraciones son completamente estáticas. Esta es la señal inequívoca de que un objeto es un orbe interactivo vs un tile del mapa.
+
+3. **Cleanup en destroy/deactivate**: El pulseTween se destruye junto con el floatTween en ambos métodos, garantizando limpieza completa.
+
+### Archivos Modificados
+
+- `src/entities/XPOrb.ts` — pulseTween + setTint en constructor, cleanup en deactivate/destroy
+- `src/config/xp-orb-assets.ts` — XP_ORB_PULSE_CONFIG (alphaMin, duration, ease, tint)
+- `src/entities/__tests__/bug-012-xp-orb-visual-cleanup.test.ts` — 40 tests (13 nuevos V4)
+
+### Tests de Regresión (V4)
+
+- XPOrb tiene pulseTween no-null tras construcción
+- XPOrb tiene tint 0xaaffee (distinto de decoraciones)
+- XP_ORB_PULSE_CONFIG.alphaMin es 0.6 (siempre visible)
+- XP_ORB_PULSE_CONFIG.duration es 400ms (pulso rápido perceptible)
+- destroy() mata pulseTween (null + destroyed flag)
+- deactivate() mata pulseTween
+- deactivate→destroy no duplica destrucción de pulseTween
+- Orbes independientes tienen pulseTweens independientes
+- collectOrb limpia pulseTween
+- Tint es distinto de 0xffffff (blanco/sin tint)
+- End-to-end V4: tint + pulseTween presentes, ambos limpiados en recolección
+
+### Notas
+
+- No se usó alpha extremadamente bajo (0.6 mínimo — siempre visible y notorio)
+- No se modificaron XP values, balance, enemigos, oleadas, Recuerdos ni mapa
+- No se excluyeron frames de decoración (no se puede determinar programáticamente cuáles son "cristales")
+- Compatible con BUG-010 V3 (plain array) y BUG-011 (collected flag)
+- La diferenciación visual es definitiva: ningún tile estático del mapa pulsará ni tendrá tint cyan

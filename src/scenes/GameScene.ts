@@ -350,8 +350,17 @@ export class GameScene extends Phaser.Scene {
   /**
    * Registers event listeners for stats tracking, defeat, victory, and XP flow.
    * Called once per generateMap(). Listeners are removed in shutdown().
+   * BUG-011: Removes existing listeners first to prevent accumulation on retry.
    */
   private registerGameListeners(): void {
+    // Remove any existing listeners first (BUG-011: prevents accumulation on retry)
+    this.events.off('player-defeated', this.onPlayerDefeated, this);
+    this.events.off('victory', this.onVictory, this);
+    this.events.off('enemy-defeated', this.onEnemyDefeated, this);
+    this.events.off('wave-changed', this.onWaveChanged, this);
+    this.events.off('orb-collected', this.onOrbCollected, this);
+
+    // Register fresh
     this.events.on('player-defeated', this.onPlayerDefeated, this);
     this.events.on('victory', this.onVictory, this);
     this.events.on('enemy-defeated', this.onEnemyDefeated, this);

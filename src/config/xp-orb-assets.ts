@@ -43,6 +43,30 @@ export const XP_ORB_FLOAT_CONFIG: XPOrbFloatConfig = {
 };
 
 /**
+ * BUG-012 V4: Configuración del pulso alpha y tint distintivo para XPOrbs.
+ * El pulso + tint diferencian visualmente a los orbes de las decoraciones
+ * estáticas del mapa que pueden parecer similares (cristales azules del tileset).
+ *
+ * - alphaMin: valor mínimo de alpha durante el pulso (nunca invisible, siempre notorio)
+ * - duration: ms de medio ciclo (bajar o subir alpha)
+ * - ease: curva de easing
+ * - tint: color aplicado al sprite para separarlo del palette de decoraciones
+ */
+export interface XPOrbPulseConfig {
+  alphaMin: number;
+  duration: number;
+  ease: string;
+  tint: number;
+}
+
+export const XP_ORB_PULSE_CONFIG: XPOrbPulseConfig = {
+  alphaMin: 0.6,
+  duration: 400,
+  ease: 'Sine.easeInOut',
+  tint: 0xaaffee,
+};
+
+/**
  * Registro de todas las variantes de orbes de experiencia.
  * Cada entrada define un tipo visual distinto de orbe.
  */
