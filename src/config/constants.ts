@@ -4,9 +4,12 @@
  */
 export const GAME_CONSTANTS = {
   // Player
-  PLAYER_BASE_SPEED: 200,
+  PLAYER_BASE_SPEED: 220,
   PLAYER_BASE_HP: 100,
   MAX_LEVEL: 20,
+
+  /** Hidden speed bonus applied after every memory upgrade (percentage of base speed). */
+  MEMORY_UPGRADE_SPEED_BONUS: 0.05,
 
   // Map
   MAP_WIDTH: 3200,
@@ -26,9 +29,9 @@ export const GAME_CONSTANTS = {
   SPAWN_MAX_DISTANCE_FROM_EDGE: 300,
 
   // Weapon
-  WEAPON_BASE_DAMAGE: 10,
-  WEAPON_BASE_FIRE_RATE: 1000,
-  WEAPON_RANGE: 384,                // 12 tiles × 32px (BUG-004: was 800 — too far)
+  WEAPON_BASE_DAMAGE: 30,
+  WEAPON_BASE_FIRE_RATE: 800,
+  WEAPON_RANGE: 404,                // 12 tiles × 32px (BUG-004: was 800 — too far)
   PROJECTILE_MAX_DISTANCE: 450,     // slightly more than range (BUG-004: was 1000)
   PROJECTILE_DISPLAY_SIZE: 32,      // px — visual size of projectile sprite (flying & impact)
 
@@ -48,9 +51,9 @@ export const GAME_CONSTANTS = {
   SPAWN_INTERVAL_DECAY: 0.9,
   MIN_SPAWN_INTERVAL: 0.5,
   HP_SCALING_BASE: 1.15,
-  MAX_HP_MULTIPLIER: 5,
+  MAX_HP_MULTIPLIER: 4.5,
   SPEED_SCALING_BASE: 1.05,
-  MAX_SPEED_MULTIPLIER: 2,
+  MAX_SPEED_MULTIPLIER: 1.7,
 
   // Calavera Llameante
   EXPLOSION_RADIUS: 100,

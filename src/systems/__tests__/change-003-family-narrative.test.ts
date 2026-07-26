@@ -105,7 +105,7 @@ function createCoordinator() {
   const pauseCtrl = createFakePauseController();
   const emitter = createFakeEventEmitter();
   const fakeWeapon = createFakeWeaponSystem();
-  const fakePlayer = { hp: 100, maxHp: 100, speed: 200 };
+  const fakePlayer = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
   const coordinator = new LevelUpCoordinator(memories, pauseCtrl, emitter, fakePlayer, fakeWeapon);
   return { memories, pauseCtrl, emitter, fakeWeapon, fakePlayer, coordinator };
 }
@@ -205,7 +205,7 @@ describe('CHANGE-003: Familia Narrative — Voces junto al fuego', () => {
       const memories = createInitialMemories();
       const pauseCtrl = createFakePauseController();
       const emitter = createFakeEventEmitter();
-      const fakePlayer = { hp: 100, maxHp: 100, speed: 200 };
+      const fakePlayer = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
       // Create a weapon system that throws on increaseDamage
       const brokenWeapon: WeaponSystemUpgradeAPI = {
         getDamage: () => 10,

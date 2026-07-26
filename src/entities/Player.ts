@@ -33,7 +33,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
     super(scene, x, y, texture);
-    this.setDisplaySize(96, 96);
+    this.setDisplaySize(64, 64);
     this.hp = GAME_CONSTANTS.PLAYER_BASE_HP;
     this.maxHp = GAME_CONSTANTS.PLAYER_BASE_HP;
     this.level = 1;
@@ -179,6 +179,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.hp >= this.maxHp - bonus) {
       this.hp = this.maxHp;
     }
+  }
+
+  /**
+   * Increases movement speed by a percentage of base speed.
+   * Additive — each call stacks with previous increases.
+   */
+  increaseSpeed(percent: number): void {
+    const bonus = Math.floor(this.baseSpeed * percent);
+    this.speed += bonus;
   }
 
   /**

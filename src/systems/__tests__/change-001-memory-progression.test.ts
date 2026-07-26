@@ -18,7 +18,7 @@ function createMutableContext(): UpgradeContext & {
   let damage = 10;
   let fireRateMs = 1000;
   const ctx: UpgradeContext & { getDamage(): number; getFireRate(): number } = {
-    player: { hp: 100, maxHp: 100, speed: 200 },
+    player: { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} },
     weaponSystem: {
       getDamage: () => damage,
       increaseDamage: (amount: number) => { damage += amount; },
@@ -180,7 +180,7 @@ describe('CHANGE-001: Memory Progression System', () => {
     it('13. selecting increments level once', () => {
       const memories = createInitialMemories();
       const weapon = createFakeWeaponSystem();
-      const player = { hp: 100, maxHp: 100, speed: 200 };
+      const player = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
       const listeners = new Map<string, ((...args: unknown[]) => void)[]>();
       const emitter = {
         emit: () => true,
@@ -203,7 +203,7 @@ describe('CHANGE-001: Memory Progression System', () => {
     it('14. double click does not increment twice', () => {
       const memories = createInitialMemories();
       const weapon = createFakeWeaponSystem();
-      const player = { hp: 100, maxHp: 100, speed: 200 };
+      const player = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
       const listeners = new Map<string, ((...args: unknown[]) => void)[]>();
       const emitter = {
         emit: () => true,
@@ -227,7 +227,7 @@ describe('CHANGE-001: Memory Progression System', () => {
     it('15. can select same memory multiple times across sessions', () => {
       const memories = createInitialMemories();
       const weapon = createFakeWeaponSystem();
-      const player = { hp: 100, maxHp: 100, speed: 200 };
+      const player = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
       const listeners = new Map<string, ((...args: unknown[]) => void)[]>();
       const emitter = {
         emit: () => true,
@@ -252,7 +252,7 @@ describe('CHANGE-001: Memory Progression System', () => {
     it('16. cannot exceed max level 6', () => {
       const memories = createInitialMemories();
       const weapon = createFakeWeaponSystem();
-      const player = { hp: 100, maxHp: 100, speed: 200 };
+      const player = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
       const listeners = new Map<string, ((...args: unknown[]) => void)[]>();
       const emitter = {
         emit: () => true,
@@ -303,7 +303,7 @@ describe('CHANGE-001: Memory Progression System', () => {
       const memories = createInitialMemories();
       memories.forEach((m) => { m.level = 6; });
       const weapon = createFakeWeaponSystem();
-      const player = { hp: 100, maxHp: 100, speed: 200 };
+      const player = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
       const emitter = { emit: () => true, on: () => {}, off: () => {} };
       const pause = { isPaused: false, pause() { this.isPaused = true; }, resume() { this.isPaused = false; } };
       const coord = new LevelUpCoordinator(memories, pause, emitter, player, weapon);
@@ -328,7 +328,7 @@ describe('CHANGE-001: Memory Progression System', () => {
         getMaxDistance: () => 450,
         increaseMaxDistance: () => {},
       };
-      const player = { hp: 100, maxHp: 100, speed: 200 };
+      const player = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
       const listeners = new Map<string, ((...args: unknown[]) => void)[]>();
       const emitter = {
         emit: () => true,
@@ -362,7 +362,7 @@ describe('CHANGE-001: Memory Progression System', () => {
         getMaxDistance: () => 450,
         increaseMaxDistance: () => {},
       };
-      const player = { hp: 100, maxHp: 100, speed: 200 };
+      const player = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
       const listeners = new Map<string, ((...args: unknown[]) => void)[]>();
       const emitter = {
         emit: () => true,
@@ -439,7 +439,7 @@ describe('CHANGE-001: Memory Progression System', () => {
           (selections) => {
             const memories = createInitialMemories();
             const weapon = createFakeWeaponSystem();
-            const player = { hp: 100, maxHp: 100, speed: 200 };
+            const player = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
             const listeners = new Map<string, ((...args: unknown[]) => void)[]>();
             const emitter = {
               emit: () => true,

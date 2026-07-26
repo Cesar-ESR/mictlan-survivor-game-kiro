@@ -226,7 +226,7 @@ describe('CHANGE-002: Memory Narrative Progression', () => {
     let emitter: ReturnType<typeof createFakeEventEmitter>;
     let coordinator: LevelUpCoordinator;
     let fakeWeapon: ReturnType<typeof createFakeWeaponSystem>;
-    const fakePlayer = { hp: 100, maxHp: 100, speed: 200 };
+    const fakePlayer = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
 
     beforeEach(() => {
       memories = createInitialMemories();
@@ -372,7 +372,7 @@ describe('CHANGE-002: Memory Narrative Progression', () => {
             const pauseCtrl = createFakePauseController();
             const emitter = createFakeEventEmitter();
             const weapon = createFakeWeaponSystem();
-            const player = { hp: 100, maxHp: 100, speed: 200 };
+            const player = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
             const coord = new LevelUpCoordinator(memories, pauseCtrl, emitter, player, weapon);
 
             coord.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
@@ -406,7 +406,7 @@ describe('CHANGE-002: Memory Narrative Progression', () => {
             const pauseCtrl = createFakePauseController();
             const emitter = createFakeEventEmitter();
             const weapon = createFakeWeaponSystem();
-            const player = { hp: 100, maxHp: 100, speed: 200 };
+            const player = { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} };
             const coord = new LevelUpCoordinator(memories, pauseCtrl, emitter, player, weapon);
 
             // Level up Guerra multiple times

@@ -155,7 +155,7 @@ describe('XPSystem Unit Tests', () => {
       const xpSystem = new XPSystem([upgrade]);
 
       const fakeContext = {
-        player: { hp: 100, maxHp: 100, speed: 200 },
+        player: { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} },
         weaponSystem: {
           getDamage: () => 10,
           increaseDamage: () => {},

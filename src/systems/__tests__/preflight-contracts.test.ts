@@ -84,7 +84,7 @@ describe('Preflight Contracts', () => {
         getMaxDistance: () => 450, increaseMaxDistance: () => {},
       };
 
-      const coordinator = new LevelUpCoordinator(memories, pauseController, eventEmitter, { hp: 100, maxHp: 100, speed: 200 }, fakeWeapon);
+      const coordinator = new LevelUpCoordinator(memories, pauseController, eventEmitter, { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} }, fakeWeapon);
       coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
 
       expect(emittedPayloads).toHaveLength(1);
@@ -126,7 +126,7 @@ describe('Preflight Contracts', () => {
         getMaxDistance: () => 450, increaseMaxDistance: () => {},
       };
 
-      const coordinator = new LevelUpCoordinator(memories, pauseController, eventEmitter, { hp: 100, maxHp: 100, speed: 200 }, fakeWeapon2);
+      const coordinator = new LevelUpCoordinator(memories, pauseController, eventEmitter, { hp: 100, maxHp: 100, speed: 200, increaseSpeed() {} }, fakeWeapon2);
       coordinator.processLevelUp({ leveledUp: true, showPanel: true, newLevel: 2 });
 
       // Simulate HUDScene emitting upgrade-selected with typed payload
