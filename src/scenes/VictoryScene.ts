@@ -31,31 +31,36 @@ export class VictoryScene extends Phaser.Scene {
   create(): void {
     const centerX = this.cameras.main.centerX;
     const centerY = this.cameras.main.centerY;
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
 
-    this.add.text(centerX, centerY - 140, '¡VICTORIA!', {
-      fontSize: '48px',
+    // Background image
+    const bg = this.add.image(centerX, centerY, 'victory-background');
+    bg.setDisplaySize(width, height);
+
+    this.add.text(centerX, centerY - 160, 'El viaje ha terminado', {
+      fontSize: '36px',
       color: '#ffdd00',
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    const minutes = Math.floor(this.victoryData.totalTime / 60);
-    const seconds = Math.floor(this.victoryData.totalTime % 60);
-    const timeStr = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
-
-    const stats = [
-      'Tiempo total: ' + timeStr,
-      'Oleada máxima: ' + this.victoryData.maxWave,
-      'Enemigos derrotados: ' + this.victoryData.enemiesDefeated,
-      'XP total: ' + this.victoryData.totalXp,
-      'Nivel alcanzado: ' + this.victoryData.levelReached,
+    const message = [
+      'Has logrado abandonar el Mictlán.',
+      '',
+      'Este proyecto es un homenaje a la riqueza cultural de México',
+      'y está inspirado en la cosmovisión mexica. Nuestro propósito',
+      'es despertar la curiosidad por conocer y preservar el legado',
+      'de nuestros pueblos originarios.',
+      '',
+      'Gracias por recorrer este camino.',
     ];
 
-    stats.forEach((stat, index) => {
-      this.add.text(centerX, centerY - 60 + index * 36, stat, {
-        fontSize: '22px',
-        color: '#ffffff',
-      }).setOrigin(0.5);
-    });
+    this.add.text(centerX, centerY - 40, message.join('\n'), {
+      fontSize: '18px',
+      color: '#ffffff',
+      align: 'center',
+      lineSpacing: 6,
+    }).setOrigin(0.5);
 
     // Botón reintentar (jugar de nuevo con mismo modo)
     const retryBtn = this.add.text(centerX, centerY + 140, '[ Jugar de nuevo ]', {

@@ -30,6 +30,11 @@ export class CinematicScene extends Phaser.Scene {
   }
 
   init(data: CinematicSceneData): void {
+    // Reset transient state to prevent stale values from prior scene reuse (BUG-014)
+    this.isTransitioningToNext = false;
+    this.cinematicPlayer = null;
+    this.skipButton = null;
+
     this.sceneData = data;
   }
 
@@ -124,6 +129,11 @@ export class CinematicScene extends Phaser.Scene {
 
     // ─── Escuchar evento de finalización ────────────────────────────────────
     this.events.on('cinematic-complete', this.transitionToNext, this);
+
+    // ─── Register shutdown cleanup on Phaser's lifecycle event (BUG-014) ────
+    // Phaser does NOT call scene.shutdown() automatically.
+    // It only emits the 'shutdown' event. Using 'once' prevents accumulation.
+    this.events.once('shutdown', this.shutdown, this);
   }
 
   private onAdvance = (): void => {
@@ -194,8 +204,24 @@ export class CinematicScene extends Phaser.Scene {
   }
 
   shutdown(): void {
+    // Clean up CinematicPlayer
     this.cinematicPlayer?.destroy();
     this.cinematicPlayer = null;
+
+    // Remove event listeners
     this.events.off('cinematic-complete', this.transitionToNext, this);
+
+    // Remove input listeners to prevent accumulation (BUG-014)
+    this.input.off('pointerdown', this.onAdvance, this);
+    if (this.input.keyboard) {
+      this.input.keyboard.off('keydown-SPACE', this.onAdvance, this);
+      this.input.keyboard.off('keydown-ENTER', this.onAdvance, this);
+    }
+
+    // Clear skip button reference
+    this.skipButton = null;
+
+    // Defensive reset of guard flag (BUG-014)
+    this.isTransitioningToNext = false;
   }
 }
