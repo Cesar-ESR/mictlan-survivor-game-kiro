@@ -7,6 +7,35 @@ import { LogicalMapGenerator } from '../map/LogicalMapGenerator';
 import type { LogicalMapGenerationResult } from '../map/LogicalMapGenerator';
 import { PhaserMapLayerBuilder } from '../map/PhaserMapLayerBuilder';
 import type { MapLayers } from '../map/PhaserMapLayerBuilder';
+import { Player } from '../entities/Player';
+import { PlayerManager } from '../systems/PlayerManager';
+import { EnemyRegistry } from '../systems/EnemyRegistry';
+import { SpawnManager } from '../systems/SpawnManager';
+import { WaveManager } from '../systems/WaveManager';
+import { WeaponSystem } from '../systems/WeaponSystem';
+import type { WeaponConfig } from '../systems/WeaponSystem';
+import { hasLineOfSight } from '../systems/line-of-sight';
+import { DamageSystem } from '../systems/DamageSystem';
+import { OrbCollector } from '../systems/OrbCollector';
+import { XPSystem } from '../systems/XPSystem';
+import { LevelUpCoordinator } from '../systems/LevelUpCoordinator';
+import { PauseSystem } from '../systems/PauseSystem';
+import { registerEnemyTypes } from '../entities/enemies';
+import { Projectile } from '../entities/Projectile';
+import { createInitialMemories } from '../config/memory-upgrades';
+import type { MemoryUpgrade } from '../config/memory-upgrades';
+import type { GameStats } from '../types/game-stats';
+import type { GameModeConfig, WaveChangedPayload } from '../types/interfaces';
+import { resolveGameMode } from './game-mode-utils';
+import { AudioManager } from '../managers/AudioManager';
+import { BlessingManager } from '../managers/BlessingManager';
+import { RealmTransitionDataLoader } from '../realm-transition/RealmTransitionDataLoader';
+
+/** Data passed to GameScene from MainMenuScene or DefeatScene/VictoryScene retry. */
+interface GameSceneData {
+  gameMode?: GameModeConfig;
+}
+
 
 const { MAP_WIDTH, MAP_HEIGHT } = GAME_CONSTANTS;
 
@@ -18,6 +47,8 @@ const SAFE_ZONE_CENTER_Y = 50 * 32;
  * GameScene: Escena principal del juego.
  * Genera el mapa procedural usando LogicalMapGenerator, construye las 6 capas
  * de Phaser Tilemap via PhaserMapLayerBuilder, configura world bounds y colisiones.
+ * Wires all gameplay systems: PlayerManager, WaveManager, SpawnManager,
+ * WeaponSystem, DamageSystem, OrbCollector, XPSystem, LevelUpCoordinator, PauseSystem.
  *
  * When ?debug=map is active:
  * - WASD/arrows move camera
@@ -28,16 +59,60 @@ const SAFE_ZONE_CENTER_Y = 50 * 32;
  * - Overlay text shows generation info
  * - Camera starts centered at safe zone center
  *
- * Requirements: 1.1, 1.3, 1.5, 2.5, 10.1, 10.2, 10.11, 10.12
+ * Requirements: 1.1, 1.2, 1.3, 1.5, 2.5, 4.2, 4.4, 5.4, 5.5, 6.4, 6.5, 8.3, 10.1, 10.2, 10.6, 10.11, 10.12
  */
 export class GameScene extends Phaser.Scene {
-  private isPaused = false;
   private _mapLayers: MapLayers | null = null;
   private isDebugMode = false;
+  private isEnemyDebugMode = false;
   private currentSeed: string = '';
   private debugOverlayText: Phaser.GameObjects.Text | null = null;
+  private enemyDebugText: Phaser.GameObjects.Text | null = null;
   private debugCursorKeys: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
   private debugWASD: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key } | null = null;
+
+  // Core entities
+  private player!: Player;
+  private playerManager!: PlayerManager;
+
+  // Enemy systems
+  private enemyRegistry!: EnemyRegistry;
+  private spawnManager!: SpawnManager;
+  private waveManager!: WaveManager;
+
+  // Combat systems
+  private weaponSystem!: WeaponSystem;
+  private damageSystem!: DamageSystem;
+
+  // XP/Orb systems
+  private orbCollector!: OrbCollector;
+  private xpSystem!: XPSystem;
+
+  // Level-up and pause
+  private levelUpCoordinator!: LevelUpCoordinator;
+  private pauseSystem!: PauseSystem;
+  private memories!: MemoryUpgrade[];
+
+  // Realm transition
+  private realmTransitionDataLoader!: RealmTransitionDataLoader;
+  private realmTransitionSafetyTimeout: Phaser.Time.TimerEvent | null = null;
+
+  // Collider references for cleanup (BUG-001)
+  private colliders: Phaser.Physics.Arcade.Collider[] = [];
+
+  // Logical grid reference for walkability checks (BUG-001)
+  private logicalGrid: import('../map/MapCell').LogicalMapGrid | null = null;
+
+  // HUD-ready handshake (BUG-009 V2)
+  private runId: string = '';
+  private initialWaveStateEmitted = false;
+
+  // Game mode
+  private gameModeConfig: GameModeConfig = { mode: 'campaign', finalWave: 10 };
+
+  // Game state
+  private gameState: 'playing' | 'victory' | 'defeat' = 'playing';
+  private gameStats: GameStats = { survivalTime: 0, enemiesDefeated: 0, maxWave: 1 };
 
   /** Access generated map layers (null if generation failed). */
   get mapLayers(): MapLayers | null {
@@ -48,11 +123,18 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'GameScene' });
   }
 
+  init(data: GameSceneData): void {
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryMode = urlParams.get('mode');
+    this.gameModeConfig = resolveGameMode(data, queryMode);
+  }
+
   create(): void {
     // Get seed from URL or generate one
     const urlParams = new URLSearchParams(window.location.search);
     this.currentSeed = urlParams.get('seed') || `mictlan-${Date.now()}`;
     this.isDebugMode = this.registry.get('debugMode') === 'map';
+    this.isEnemyDebugMode = this.registry.get('debugMode') === 'enemies';
 
     this.generateMap(this.currentSeed);
   }
@@ -81,17 +163,15 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    // Store grid reference for walkability checks (BUG-001)
+    this.logicalGrid = result.grid;
+
     // Build Phaser tilemap layers from the logical grid
     const builder = new PhaserMapLayerBuilder();
     this._mapLayers = builder.build(this, result.grid);
 
     // Configure physics world bounds
     this.physics.world.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
-
-    // Launch HUD as overlay scene
-    if (!this.scene.isActive('HUDScene')) {
-      this.scene.launch('HUDScene');
-    }
 
     // Store generation info for potential debug overlay
     this.registry.set('mapSeed', seed);
@@ -102,6 +182,9 @@ export class GameScene extends Phaser.Scene {
     // Configure camera
     this.cameras.main.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
 
+    // Reproducir música de gameplay (detiene cualquier pista anterior automáticamente)
+    AudioManager.getInstance(this).play('GAMEPLAY');
+
     if (this.isDebugMode) {
       this.setupDebugControls(result);
       // Start camera centered on safe zone
@@ -109,10 +192,367 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.scrollY = SAFE_ZONE_CENTER_Y - this.cameras.main.height / 2;
     }
 
-    // TODO: Instanciar Player en centro del mapa (Task 5)
-    // TODO: Configurar cámara para seguir al Player (Task 6)
-    // TODO: Configurar player/enemies colliders con walls/obstacles layers (Task 5+)
-    // TODO: Instanciar sistemas (SpawnManager, WaveManager, etc.) (Task 23)
+    // --- 1. Create Player + PlayerManager ---
+    this.player = new Player(this, SAFE_ZONE_CENTER_X, SAFE_ZONE_CENTER_Y, 'hero');
+    this.player.setDepth(GAME_CONSTANTS.ENTITY_DEPTH_PLAYER);
+    this.player.setCollideWorldBounds(true);
+    this.playerManager = new PlayerManager(this.player, this);
+
+    // --- 2. EnemyRegistry + registerEnemyTypes ---
+    this.enemyRegistry = new EnemyRegistry();
+    registerEnemyTypes(this.enemyRegistry);
+
+    // --- 3. SpawnManager ---
+    this.spawnManager = new SpawnManager(this, this.enemyRegistry);
+
+    // Provide walkability checker to prevent spawning in blocking liquids (BUG-001)
+    if (this.logicalGrid) {
+      const grid = this.logicalGrid;
+      const gridHeight = grid.length;
+      const gridWidth = gridHeight > 0 ? grid[0].length : 0;
+      this.spawnManager.setWalkabilityChecker((x, y) => {
+        const col = Math.floor(x / 32);
+        const row = Math.floor(y / 32);
+        if (row < 0 || row >= gridHeight || col < 0 || col >= gridWidth) return false;
+        return grid[row][col].walkable;
+      });
+    }
+
+    // --- 4. Use stored GameModeConfig (resolved in init) ---
+
+    // --- 5. WaveManager ---
+    this.waveManager = new WaveManager(this.gameModeConfig, this.spawnManager, this.events);
+
+    // --- 6. PauseSystem ---
+    this.pauseSystem = new PauseSystem();
+    this.pauseSystem.setPhysicsController({
+      pause: () => this.physics.world.pause(),
+      resume: () => this.physics.world.resume(),
+    });
+
+    // --- 7. XPSystem ---
+    this.xpSystem = new XPSystem();
+
+    // --- 7b. Memory Upgrades (CHANGE-001) ---
+    this.memories = createInitialMemories();
+
+    // --- 8. WeaponSystem ---
+    const weaponConfig: WeaponConfig = {
+      fireRateMs: GAME_CONSTANTS.WEAPON_BASE_FIRE_RATE,
+      range: GAME_CONSTANTS.WEAPON_RANGE,
+      projectileSpeed: 600,
+      maxDistance: GAME_CONSTANTS.PROJECTILE_MAX_DISTANCE,
+      damage: GAME_CONSTANTS.WEAPON_BASE_DAMAGE,
+      poolSize: 30,
+    };
+    this.weaponSystem = new WeaponSystem(this, weaponConfig);
+
+    // Connect weapon fire to player attack animation
+    this.weaponSystem.setOnFireCallback(() => {
+      this.player.playAttack();
+    });
+
+    // --- 9. OrbCollector (no player ref — GameScene handles XP flow) ---
+    this.orbCollector = new OrbCollector(this);
+
+    // --- 10. DamageSystem ---
+    this.damageSystem = new DamageSystem(
+      this,
+      this.player,
+      this.weaponSystem.getProjectilePool(),
+      this.spawnManager.getEnemyPool(),
+      GAME_CONSTANTS.WEAPON_BASE_DAMAGE,
+    );
+
+    // --- 11. LevelUpCoordinator ---
+    this.levelUpCoordinator = new LevelUpCoordinator(
+      this.memories,
+      this.pauseSystem,
+      this.events,
+      this.player,
+      this.weaponSystem,
+    );
+
+    // --- 11b. Apply initial blessing passive modifiers (once) ---
+    this.applyBlessingModifiers();
+
+    // --- 11c. RealmTransitionDataLoader ---
+    this.realmTransitionDataLoader = new RealmTransitionDataLoader(this.cache);
+
+    // --- 12. Reset gameStats ---
+    this.gameState = 'playing';
+    this.gameStats = { survivalTime: 0, enemiesDefeated: 0, maxWave: 1 };
+
+    // --- 13. Configure colliders ---
+    // Destroy previous colliders if regenerating
+    for (const collider of this.colliders) {
+      collider.destroy();
+    }
+    this.colliders = [];
+
+    if (this._mapLayers) {
+      // Player collides with walls and obstacles
+      this.colliders.push(this.physics.add.collider(this.player, this._mapLayers.walls));
+      this.colliders.push(this.physics.add.collider(this.player, this._mapLayers.obstacles));
+
+      // Player collides with blocking liquids (BUG-001)
+      this.colliders.push(this.physics.add.collider(this.player, this._mapLayers.liquids));
+
+      // Enemy group collides with walls and obstacles
+      this.colliders.push(this.physics.add.collider(this.spawnManager.getEnemyPool(), this._mapLayers.walls));
+      this.colliders.push(this.physics.add.collider(this.spawnManager.getEnemyPool(), this._mapLayers.obstacles));
+
+      // Enemy group collides with blocking liquids (BUG-001)
+      this.colliders.push(this.physics.add.collider(this.spawnManager.getEnemyPool(), this._mapLayers.liquids));
+
+      // Projectiles collide with blocking layers (BUG-005)
+      const projPool = this.weaponSystem.getProjectilePool();
+      const projHitCb = this.onProjectileHitMap as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback;
+      this.colliders.push(this.physics.add.collider(projPool, this._mapLayers.walls, projHitCb, undefined, this));
+      this.colliders.push(this.physics.add.collider(projPool, this._mapLayers.obstacles, projHitCb, undefined, this));
+      this.colliders.push(this.physics.add.collider(projPool, this._mapLayers.liquids, projHitCb, undefined, this));
+    }
+
+    // Provide line-of-sight checker to WeaponSystem (BUG-005)
+    if (this.logicalGrid) {
+      const grid = this.logicalGrid;
+      const gridHeight = grid.length;
+      const gridWidth = gridHeight > 0 ? grid[0].length : 0;
+
+      this.weaponSystem.setLineOfSightChecker((start, end) => {
+        return hasLineOfSight(start, end, 32, (col, row) => {
+          if (row < 0 || row >= gridHeight || col < 0 || col >= gridWidth) return true;
+          const cell = grid[row][col];
+          return cell.wall !== null || cell.obstacle !== null || cell.liquid !== null;
+        });
+      });
+    }
+
+    // --- 14. Register game listeners ---
+    this.registerGameListeners();
+
+    // --- 14b. Connect shutdown cleanup to Phaser's lifecycle event (BUG-013 fix) ---
+    // Phaser does NOT call scene.shutdown() as a method override.
+    // It only emits the 'shutdown' event. We must register our cleanup explicitly.
+    // Using 'once' ensures no accumulation — it self-removes after firing.
+    this.events.once('shutdown', this.shutdown, this);
+
+    // --- 15. Launch HUDScene with handshake (BUG-009 V2) ---
+    this.runId = `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    this.initialWaveStateEmitted = false;
+
+    // Register hud-ready listener BEFORE launching (ensures we catch it)
+    this.events.off('hud-ready', this.hudReadyHandler, this);
+    this.events.on('hud-ready', this.hudReadyHandler, this);
+
+    if (this.scene.isActive('HUDScene')) {
+      this.scene.stop('HUDScene');
+    }
+    this.scene.launch('HUDScene', { runId: this.runId });
+
+    // Camera follows player, stops at map edges (native Phaser behavior with setBounds)
+    if (!this.isDebugMode) {
+      this.cameras.main.startFollow(this.player);
+    }
+
+    // Setup enemy debug overlay if ?debug=enemies
+    if (this.isEnemyDebugMode) {
+      this.setupEnemyDebugOverlay();
+    }
+  }
+
+  /**
+   * Registers event listeners for stats tracking, defeat, victory, and XP flow.
+   * Called once per generateMap(). Listeners are removed in shutdown().
+   * BUG-011: Removes existing listeners first to prevent accumulation on retry.
+   */
+  private registerGameListeners(): void {
+    // Remove any existing listeners first (BUG-011: prevents accumulation on retry)
+    this.events.off('player-defeated', this.onPlayerDefeated, this);
+    this.events.off('victory', this.onVictory, this);
+    this.events.off('enemy-defeated', this.onEnemyDefeated, this);
+    this.events.off('wave-changed', this.onWaveChanged, this);
+    this.events.off('orb-collected', this.onOrbCollected, this);
+
+    // Register fresh
+    this.events.on('player-defeated', this.onPlayerDefeated, this);
+    this.events.on('victory', this.onVictory, this);
+    this.events.on('enemy-defeated', this.onEnemyDefeated, this);
+    this.events.on('wave-changed', this.onWaveChanged, this);
+    this.events.on('orb-collected', this.onOrbCollected, this);
+  }
+
+  /** Handles HUDScene signaling it's fully ready (BUG-009 V2) */
+  private hudReadyHandler = (payload: { runId: string }): void => {
+    if (payload.runId !== this.runId) return;
+    if (this.initialWaveStateEmitted) return;
+    this.initialWaveStateEmitted = true;
+    this.events.off('hud-ready', this.hudReadyHandler, this);
+    this.waveManager.emitInitialState();
+  };
+
+  /**
+   * Reads the blessing selection from BlessingManager and applies
+   * initial passive modifiers once at game start.
+   *
+   * - "orgullo_del_inframundo": +15% damage.
+   * - "eco_de_los_recuerdos": +15% max HP (and current HP if at full).
+   */
+  private applyBlessingModifiers(): void {
+    const selection = BlessingManager.getInstance().getSelection();
+    if (!selection) return;
+
+    const blessingId = selection.primary.id;
+
+    if (blessingId === 'orgullo_del_inframundo') {
+      // +15% damage applied to weapon system
+      const baseDamage = GAME_CONSTANTS.WEAPON_BASE_DAMAGE;
+      const bonus = Math.floor(baseDamage * 0.15);
+      this.weaponSystem.increaseDamage(bonus);
+    } else if (blessingId === 'eco_de_los_recuerdos') {
+      // +15% max HP (current HP follows if player is at full)
+      this.player.applyMaxHpModifier(0.15);
+    }
+  }
+
+  private onPlayerDefeated = (): void => {
+    if (this.gameState !== 'playing') return;
+    this.gameState = 'defeat';
+
+    // Stop player movement immediately
+    this.player.setVelocity(0, 0);
+
+    // Trigger death animation (hp is already 0, updateAnimation will start death)
+    this.player.updateAnimation(false);
+
+    // Wait for death animation to finish before transitioning
+    this.player.once('death-animation-complete', this.onDeathAnimationComplete, this);
+  };
+
+  /** Transitions to DefeatScene after death animation finishes. */
+  private onDeathAnimationComplete = (): void => {
+    this.scene.stop('HUDScene');
+    this.scene.start('DefeatScene', {
+      survivalTime: this.gameStats.survivalTime,
+      totalXp: this.player.totalXp,
+      gameMode: this.gameModeConfig,
+    });
+  };
+
+  private onVictory = (): void => {
+    if (this.gameState !== 'playing') return;
+    this.gameState = 'victory';
+    this.scene.stop('HUDScene');
+    this.scene.start('VictoryScene', {
+      totalTime: this.gameStats.survivalTime,
+      maxWave: this.gameStats.maxWave,
+      enemiesDefeated: this.gameStats.enemiesDefeated,
+      totalXp: this.player.totalXp,
+      levelReached: this.player.level,
+      gameMode: this.gameModeConfig,
+    });
+  };
+
+  private onEnemyDefeated = (): void => {
+    this.gameStats.enemiesDefeated++;
+  };
+
+  private onWaveChanged = (payload: WaveChangedPayload): void => {
+    this.gameStats.maxWave = Math.max(this.gameStats.maxWave, payload.wave);
+  };
+
+  /**
+   * Handles orb collection: routes XP through XPSystem and LevelUpCoordinator.
+   * Emits 'xp-changed' to HUD with player state, and 'hp-changed' after upgrades.
+   * If the new level has a realm transition configured, pauses and launches
+   * RealmTransitionScene before proceeding with level-up.
+   */
+  private onOrbCollected = (data: { value: number }): void => {
+    // Process XP through XPSystem (which calls player.addXP internally)
+    const result = this.xpSystem.addXP(this.player, data.value);
+
+    // Emit XP state to HUD
+    this.events.emit(
+      'xp-changed',
+      this.player.levelXp,
+      this.player.xpThreshold,
+      this.player.level,
+      result.reachedMaxLevel,
+    );
+
+    // If leveled up, check for realm transition before handing off to LevelUpCoordinator
+    if (result.leveledUp && result.showPanel) {
+      const transition = this.realmTransitionDataLoader.getTransitionForLevel(result.newLevel);
+      if (transition) {
+        this.pauseSystem.pause();
+        this.scene.launch('RealmTransitionScene', { transition, levelUpResult: result });
+        this.realmTransitionSafetyTimeout = this.time.delayedCall(15000, () => {
+          this.pauseSystem.resume();
+          this.levelUpCoordinator.processLevelUp(result);
+        });
+        this.events.once('realm-transition-complete', () => {
+          this.realmTransitionSafetyTimeout?.destroy();
+          this.realmTransitionSafetyTimeout = null;
+          this.pauseSystem.resume();
+          this.levelUpCoordinator.processLevelUp(result);
+        });
+      } else {
+        this.levelUpCoordinator.processLevelUp(result);
+      }
+    }
+  };
+
+  /**
+   * Callback when a projectile collides with a map blocking layer (BUG-005).
+   * Plays impact animation, then recycles the projectile.
+   */
+  private onProjectileHitMap(
+    projectile: Phaser.Types.Physics.Arcade.GameObjectWithBody | Phaser.Tilemaps.Tile,
+  ): void {
+    if ('playImpact' in projectile && (projectile as Phaser.GameObjects.GameObject).active) {
+      (projectile as Projectile).playImpact();
+    }
+  }
+
+  /**
+   * Shutdown: removes all event listeners registered by this scene.
+   * Called via Phaser's 'shutdown' event (registered in create via BUG-013 fix).
+   */
+  shutdown(): void {
+    this.events.off('player-defeated', this.onPlayerDefeated, this);
+    this.events.off('victory', this.onVictory, this);
+    this.events.off('enemy-defeated', this.onEnemyDefeated, this);
+    this.events.off('wave-changed', this.onWaveChanged, this);
+    this.events.off('orb-collected', this.onOrbCollected, this);
+    this.events.off('hud-ready', this.hudReadyHandler, this);
+
+    // Clean up realm transition listener and safety timeout
+    this.events.off('realm-transition-complete');
+    this.realmTransitionSafetyTimeout?.destroy();
+    this.realmTransitionSafetyTimeout = null;
+
+    // Remove death animation listener in case shutdown happens during dying state
+    this.player?.off('death-animation-complete', this.onDeathAnimationComplete, this);
+
+    // Destroy colliders (BUG-001)
+    for (const collider of this.colliders) {
+      collider.destroy();
+    }
+    this.colliders = [];
+
+    // Clear grid reference
+    this.logicalGrid = null;
+
+    // Destroy systems with cleanup methods
+    this.levelUpCoordinator?.destroy();
+    this.pauseSystem?.destroy();
+    this.weaponSystem?.destroy();
+    this.orbCollector?.destroy();
+
+    // Stop HUD (BUG-009: ensure HUD is always stopped during shutdown)
+    if (this.scene.isActive('HUDScene')) {
+      this.scene.stop('HUDScene');
+    }
   }
 
   private setupDebugControls(result: Extract<LogicalMapGenerationResult, { success: true }>): void {
@@ -137,7 +577,6 @@ export class GameScene extends Phaser.Scene {
       backgroundColor: '#000000aa',
       padding: { x: 6, y: 4 },
     }).setScrollFactor(0).setDepth(1000);
-
     // Input keys
     if (this.input.keyboard) {
       this.debugCursorKeys = this.input.keyboard.createCursorKeys();
@@ -168,7 +607,13 @@ export class GameScene extends Phaser.Scene {
       // Keys 1-6: toggle layer visibility
       this.input.keyboard.on('keydown-ONE', () => { this._mapLayers?.ground.setVisible(!this._mapLayers.ground.visible); });
       this.input.keyboard.on('keydown-TWO', () => { this._mapLayers?.liquids.setVisible(!this._mapLayers.liquids.visible); });
-      this.input.keyboard.on('keydown-THREE', () => { this._mapLayers?.borders.setVisible(!this._mapLayers.borders.visible); });
+      this.input.keyboard.on('keydown-THREE', () => {
+        if (this._mapLayers) {
+          const vis = !this._mapLayers.bordersPrimary.visible;
+          this._mapLayers.bordersPrimary.setVisible(vis);
+          this._mapLayers.bordersSecondary.setVisible(vis);
+        }
+      });
       this.input.keyboard.on('keydown-FOUR', () => { this._mapLayers?.decorations.setVisible(!this._mapLayers.decorations.visible); });
       this.input.keyboard.on('keydown-FIVE', () => { this._mapLayers?.walls.setVisible(!this._mapLayers.walls.visible); });
       this.input.keyboard.on('keydown-SIX', () => { this._mapLayers?.obstacles.setVisible(!this._mapLayers.obstacles.visible); });
@@ -176,8 +621,16 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(_time: number, _delta: number): void {
-    if (this.isPaused) {
-      return;
+    // --- End state guard ---
+    if (this.gameState !== 'playing') return;
+
+    // --- Pause guard ---
+    if (this.pauseSystem.isPaused) return;
+
+    // --- Debug camera movement (no gameplay updates in debug mode) ---
+    // Accumulate survival time (when not paused and not in debug mode)
+    if (!this.isDebugMode) {
+      this.gameStats.survivalTime += _delta / 1000;
     }
 
     // Debug camera movement
@@ -195,10 +648,92 @@ export class GameScene extends Phaser.Scene {
       if (this.debugCursorKeys.down.isDown || this.debugWASD.S.isDown) {
         this.cameras.main.scrollY += speed;
       }
+      return; // No gameplay updates in debug mode
     }
 
-    // TODO: Delegar actualización a sistemas en orden (Task 23):
-    // PlayerManager → WaveManager → SpawnManager → Enemies → WeaponSystem → DamageSystem → OrbCollector
+    const delta = _delta;
+    const playerPos = { x: this.player.x, y: this.player.y };
+
+    // --- System update order (as per design) ---
+
+    // 1. PlayerManager: input → velocity
+    this.playerManager.update(delta);
+
+    // 2. WaveManager: wave timer, transitions, config changes
+    this.waveManager.update(delta);
+
+    // 3. SpawnManager: spawn timer, despawn distant enemies
+    this.spawnManager.update(delta, playerPos, this.cameras.main);
+
+    // 4. Update active enemies (move toward player)
+    const enemyChildren = this.spawnManager.getEnemyPool().getChildren();
+    const activeEnemies: { x: number; y: number; active: boolean; hp: number }[] = [];
+    for (const child of enemyChildren) {
+      if (child.active) {
+        const enemy = child as unknown as { x: number; y: number; hp: number; active: boolean; update(delta: number, playerPos: { x: number; y: number }): void };
+        enemy.update(delta, playerPos);
+        activeEnemies.push({ x: enemy.x, y: enemy.y, active: enemy.active, hp: enemy.hp });
+      }
+    }
+
+    // 5. WeaponSystem: auto-fire toward closest enemy, update projectile distances
+    this.weaponSystem.update(delta, playerPos, activeEnemies);
+
+    // 6. DamageSystem: projectile-enemy collisions
+    this.damageSystem.checkProjectileEnemyCollisions();
+
+    // 7. DamageSystem: enemy-player contact damage
+    this.damageSystem.checkEnemyPlayerCollisions(delta);
+
+    // 8. OrbCollector: attract, collect, expire orbs
+    this.orbCollector.update(delta, playerPos);
+
+    // 9. Accumulate survival time and emit to HUD
+    this.gameStats.survivalTime += delta / 1000;
+    this.events.emit('time-updated', this.gameStats.survivalTime);
+
+    // 10. Update enemy debug overlay
+    if (this.isEnemyDebugMode && this.enemyDebugText) {
+      this.updateEnemyDebugOverlay();
+    }
+  }
+
+  /**
+   * Enemy debug overlay: shows spawn state when ?debug=enemies
+   */
+  private setupEnemyDebugOverlay(): void {
+    this.enemyDebugText = this.add.text(8, 8, '', {
+      fontSize: '12px',
+      color: '#ffcc00',
+      backgroundColor: '#000000cc',
+      padding: { x: 6, y: 4 },
+    }).setScrollFactor(0).setDepth(2000);
+
+    // Key F: force spawn one enemy immediately for diagnostics
+    if (this.input.keyboard) {
+      this.input.keyboard.on('keydown-F', () => {
+        // Force a spawn by temporarily setting interval to 0 and calling update
+        const playerPos = { x: this.player.x, y: this.player.y };
+        this.spawnManager.update(99999, playerPos, this.cameras.main);
+      });
+    }
+  }
+
+  private updateEnemyDebugOverlay(): void {
+    if (!this.enemyDebugText) return;
+    const activeCount = this.spawnManager.getActiveEnemyCount();
+    const wave = this.waveManager.getCurrentWave();
+    const state = this.waveManager.getState();
+    const info = [
+      `[Enemy Debug] ?debug=enemies`,
+      `Wave: ${wave} (${state})`,
+      `Active Enemies: ${activeCount}`,
+      `Registry Types: ${this.enemyRegistry.getRegisteredTypes().join(', ')}`,
+      `Player: (${Math.round(this.player.x)}, ${Math.round(this.player.y)})`,
+      ``,
+      `Press F to force-spawn`,
+    ].join('\n');
+    this.enemyDebugText.setText(info);
   }
 
   /**

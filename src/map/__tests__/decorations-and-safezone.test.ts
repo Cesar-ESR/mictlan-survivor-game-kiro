@@ -407,16 +407,15 @@ describe('SafeZoneCleaner', () => {
     }
   });
 
-  it('18. Safe zone: no blocking liquids after clear', () => {
+  it('18. Safe zone: no liquids after clear', () => {
     const { grid, config } = runFullPipeline('sz-no-blocking-liquids');
 
     for (let row = 0; row < config.heightInTiles; row++) {
       for (let col = 0; col < config.widthInTiles; col++) {
         const cell = grid[row][col];
         if (cell.inSafeZone) {
-          if (cell.liquidConfig !== null) {
-            expect(cell.liquidConfig.behavior).not.toBe('blocking');
-          }
+          expect(cell.liquid).toBeNull();
+          expect(cell.liquidConfig).toBeNull();
         }
       }
     }
@@ -496,12 +495,13 @@ describe('SafeZoneCleaner', () => {
         if (!cell.inSafeZone) continue;
 
         // Compute expected mask manually
+        // Compute expected mask manually (matches computeNeighborTransitionMask: liquid OR wall)
         let expectedMask = 0;
         for (const [dr, dc, bit] of CARDINAL) {
           const nr = row + dr;
           const nc = col + dc;
           if (nr >= 0 && nr < config.heightInTiles && nc >= 0 && nc < config.widthInTiles) {
-            if (grid[nr][nc].liquid !== null) {
+            if (grid[nr][nc].liquid !== null || grid[nr][nc].wall !== null) {
               expectedMask |= bit;
             }
           }

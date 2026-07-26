@@ -10,7 +10,11 @@
 
 import type { TileReference } from './TileCatalog';
 
-/** Comportamiento de un líquido en la celda. */
+/**
+ * Comportamiento de un líquido en la celda.
+ * @deprecated 'walkable' is no longer produced. All liquids are blocking.
+ * Kept for type compatibility. Only 'blocking' and 'damaging' are used.
+ */
 export type LiquidBehavior = 'walkable' | 'blocking' | 'damaging';
 
 /** Configuración de líquido para una celda. */
@@ -53,6 +57,12 @@ export interface MapCell {
    * null si la celda no tiene wall/cliff/obstacle.
    */
   structureMask: number | null;
+  /** Rotation for liquid tile in degrees (0, 90, 180, 270). Used by template-based liquids. */
+  liquidRotation?: 0 | 90 | 180 | 270;
+  /** Horizontal flip for liquid tile. Used by template-based liquids. */
+  liquidFlipX?: boolean;
+  /** Vertical flip for liquid tile. Used by template-based liquids. */
+  liquidFlipY?: boolean;
   /** true si está dentro del radio seguro del punto de spawn. */
   inSafeZone: boolean;
 }

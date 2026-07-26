@@ -40,12 +40,15 @@ export interface LiquidGenerationConfig {
   densityTolerance: number;
 }
 
+/**
+ * All liquid cells are non-walkable and collidable because the Player has no swimming mechanic.
+ * Water, Lava, and Spectral liquids all block movement.
+ */
 export const DEFAULT_LIQUID_CONFIG: LiquidGenerationConfig = {
   minRegionSize: 4,
   maxRegionSize: 40,
   behaviorWeights: [
-    { behavior: 'walkable', weight: 7 },
-    { behavior: 'blocking', weight: 3 },
+    { behavior: 'blocking', weight: 1 },
   ],
   liquidType: 'water',
   densityTolerance: 0.02,
@@ -125,6 +128,12 @@ export function generateLiquidRegions(
 
     // Select a liquid family using weighted pick
     const family = pickLiquidFamily(rng);
+
+    // Skip template-region families in seed-and-grow generation
+    if (family.centerFrame === null) {
+      continue;
+    }
+
     const regionLiquidConfig: LiquidConfig = {
       type: family.family,
       behavior,
@@ -153,9 +162,8 @@ export function generateLiquidRegions(
       const cell = grid[row][col];
       cell.liquid = liquidTile;
       cell.liquidConfig = regionLiquidConfig;
-      if (behavior === 'blocking') {
-        cell.walkable = false;
-      }
+      // All liquids are blocking — no swimming mechanic
+      cell.walkable = false;
       // Ground is preserved — not removed
     }
 

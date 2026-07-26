@@ -35,6 +35,7 @@ import { SeededRandom } from './SeededRandom';
 import { TileCatalog } from './TileCatalog';
 import { generateGround, markSafeZone } from './GroundGenerator';
 import { generateLiquidRegions } from './LiquidRegionGenerator';
+import { generateSpectralRegions } from './SpectralRegionGenerator';
 import { computeAllBorderMasks } from './BorderTopology';
 import { generateWallsAndCliffs } from './StructureGenerator';
 import { generateObstacles } from './ObstacleGenerator';
@@ -210,6 +211,11 @@ export class LogicalMapGenerator {
 
     if (budget()) return null;
 
+    // 4b. Generate spectral template regions (after water/lava, before structures)
+    generateSpectralRegions(grid, config, rng);
+
+    if (budget()) return null;
+
     // 5. Compute border masks
     computeAllBorderMasks(grid);
 
@@ -229,7 +235,10 @@ export class LogicalMapGenerator {
     if (budget()) return null;
 
     // 9. Clear safe zone (unified — removes walls, obstacles, blocking liquids, decorations)
+    // clearSafeZone internally calls recomputeBorderMasks + computeAllStructureMasks
     clearSafeZone(grid);
+
+    if (budget()) return null;
 
     return grid;
   }

@@ -86,6 +86,64 @@ export function computeNeighborLiquidMask(
 }
 
 /**
+ * Calcula la máscara de vecinos muros/acantilados para una celda.
+ * Solo considera vecinos que tienen cell.wall !== null.
+ *
+ * @returns Máscara binaria [0, 15]
+ */
+export function computeNeighborWallMask(
+  grid: LogicalMapGrid,
+  row: number,
+  col: number,
+): number {
+  const height = grid.length;
+  const width = grid[0].length;
+  let mask = 0;
+
+  for (const [dr, dc, bit] of CARDINAL_BITS) {
+    const nr = row + dr;
+    const nc = col + dc;
+    if (nr >= 0 && nr < height && nc >= 0 && nc < width) {
+      if (grid[nr][nc].wall !== null) {
+        mask |= bit;
+      }
+    }
+  }
+
+  return mask;
+}
+
+/**
+ * Calcula la máscara combinada de vecinos que generan transición visual.
+ * Incluye tanto vecinos líquidos como vecinos muro/acantilado.
+ * Un bit se activa si el vecino tiene liquid !== null O wall !== null.
+ *
+ * @returns Máscara binaria [0, 15]
+ */
+export function computeNeighborTransitionMask(
+  grid: LogicalMapGrid,
+  row: number,
+  col: number,
+): number {
+  const height = grid.length;
+  const width = grid[0].length;
+  let mask = 0;
+
+  for (const [dr, dc, bit] of CARDINAL_BITS) {
+    const nr = row + dr;
+    const nc = col + dc;
+    if (nr >= 0 && nr < height && nc >= 0 && nc < width) {
+      const neighbor = grid[nr][nc];
+      if (neighbor.liquid !== null || neighbor.wall !== null) {
+        mask |= bit;
+      }
+    }
+  }
+
+  return mask;
+}
+
+/**
  * Clasifica una máscara en un BorderKind.
  */
 export function classifyBorderMask(mask: number): BorderKind {
@@ -128,15 +186,16 @@ export function computeBorderTopology(
 }
 
 /**
- * Computes and assigns borderMask to all non-liquid cells that border a liquid region.
+ * Computes and assigns borderMask to all cells that border a liquid or wall region.
  *
  * A cell gets a borderMask if:
  * - It does NOT have a liquid itself (it's the "dry" side of the border)
- * - It has at least one cardinal neighbor with liquid
+ * - It does NOT have a wall itself (it's the "open" side of the border)
+ * - It has at least one cardinal neighbor with liquid OR wall
  *
- * Cells that ARE liquid get borderMask = null (they are centers, not borders).
+ * Cells that ARE liquid or wall get borderMask = null (they are not borders).
  *
- * @param grid Cuadrícula lógica ya con líquidos generados.
+ * @param grid Cuadrícula lógica ya con líquidos y muros generados.
  */
 export function computeAllBorderMasks(grid: LogicalMapGrid): void {
   const height = grid.length;
@@ -146,13 +205,13 @@ export function computeAllBorderMasks(grid: LogicalMapGrid): void {
     for (let col = 0; col < width; col++) {
       const cell = grid[row][col];
 
-      if (cell.liquid !== null) {
-        // Liquid cells are not borders themselves
+      if (cell.liquid !== null || cell.wall !== null) {
+        // Liquid/wall cells are not borders themselves
         cell.borderMask = null;
         continue;
       }
 
-      const mask = computeNeighborLiquidMask(grid, row, col);
+      const mask = computeNeighborTransitionMask(grid, row, col);
       cell.borderMask = mask > 0 ? mask : null;
     }
   }

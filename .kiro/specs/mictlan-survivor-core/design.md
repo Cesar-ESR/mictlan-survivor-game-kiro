@@ -1695,3 +1695,195 @@ src/
 | NFR-Perf | Object Pooling, Game Loop | — |
 | NFR-DeltaTime | Todos los sistemas | Prop 26 |
 | NFR-Maintain | Estructura modular de sistemas | — |
+
+
+---
+
+# Memory Upgrade System
+
+## Data Model
+
+```typescript
+export type MemoryId =
+  | 'memory-war'
+  | 'memory-family'
+  | 'memory-home';
+
+export type MemoryEffect =
+  | { type: 'weapon-damage'; amount: number }
+  | { type: 'max-hp'; amount: number; healAmount: number }
+  | { type: 'fire-rate'; reductionMs: number; minimumMs: number };
+
+export interface MemoryUpgrade {
+  id: MemoryId;
+  name: string;
+  narrative: string;
+  effectText: string;
+  level: number;
+  maxLevel: number;
+  effect: MemoryEffect;
+}
+```
+
+## Architecture
+
+- **UpgradeContext** continúa conteniendo `Player` y `WeaponSystem`.
+- Los efectos se aplican mediante una función exhaustiva: `applyMemoryUpgrade(memory, context)`.
+- No se utilizan closures que accedan a propiedades inexistentes.
+- El estado de los Recuerdos pertenece a una partida.
+- La configuración base debe clonarse al crear GameScene.
+- Las constantes globales no deben mutarse.
+- **LevelUpCoordinator** valida la selección.
+- **HUDScene** solo presenta opciones y emite `upgradeId`.
+- **XPSystem** administra disponibilidad y niveles.
+- **WeaponSystem** sigue siendo la fuente de `damage` y `fireRateMs`.
+- **Player** sigue siendo la fuente de `hp` y `maxHp`.
+
+## Flow
+
+```
+XPSystem.addXP
+  → LevelUpCoordinator consulta Recuerdos disponibles
+  → PauseSystem.pause
+  → LevelUpPayload
+  → LevelUpPanel
+  → UpgradeSelectedPayload
+  → validación
+  → applyMemoryUpgrade
+  → incremento de nivel
+  → actualización de eventos
+  → PauseSystem.resume
+```
+
+## Error Priority
+
+En caso de error:
+
+1. No incrementar nivel.
+2. No modificar disponibilidad.
+3. Limpiar selección.
+4. Reanudar mediante `finally`.
+5. Registrar el error.
+
+## Memory Configuration
+
+| Memory | id | effect.type | amount / params | maxLevel |
+|--------|-----|-------------|-----------------|----------|
+| Recuerdo de la Guerra | `memory-war` | `weapon-damage` | `amount: 8` | 6 |
+| Recuerdo de la Familia | `memory-family` | `max-hp` | `amount: 20, healAmount: 20` | 6 |
+| Recuerdo del Hogar | `memory-home` | `fire-rate` | `reductionMs: 100, minimumMs: 250` | 6 |
+
+## Traceability (Requirement 11)
+
+| Req | Component | Property |
+|-----|-----------|----------|
+| 11.1 | MemoryUpgrade config, LevelUpPanel | Prop 37 |
+| 11.2 | applyMemoryUpgrade (weapon-damage) | Prop 38 |
+| 11.3 | applyMemoryUpgrade (max-hp) | Prop 38 |
+| 11.4 | applyMemoryUpgrade (fire-rate) | Prop 38 |
+| 11.5 | XPSystem (memory level tracking) | Prop 37 |
+| 11.6 | LevelUpCoordinator (getAvailableMemories) | Prop 40 |
+| 11.7 | LevelUpCoordinator (skip if none available) | Prop 40 |
+| 11.8 | LevelUpCoordinator (validation, try/finally) | Prop 38 |
+| 11.9 | createInitialMemories factory, GameScene | Prop 39 |
+| 11.10 | HUDScene (LevelUpPanel card rendering) | — |
+
+
+## Narrative Memory System (CHANGE-002)
+
+### Overview
+
+Each Recuerdo (memory upgrade) now has an associated narrative arc of 6 fragments. When a player levels up a memory that has narrative content, a fragment panel is shown between the upgrade selection and game resume. This creates an emotional connection with the guerrero jaguar's story.
+
+### State Machine Extension
+
+The LevelUpCoordinator's state machine is extended with a third state:
+
+```
+idle → choosing → showing-fragment → idle
+                 ↘ idle (no narrative content)
+```
+
+- **choosing**: Player is selecting a memory from the level-up panel
+- **showing-fragment**: A narrative fragment is displayed, game stays paused
+- **idle**: Normal gameplay, game is active
+
+### Data Model
+
+```typescript
+interface MemoryFragment {
+  level: number;   // 1-6
+  text: string;    // narrative text in Spanish
+}
+
+interface MemoryNarrative {
+  title: string;
+  fragments: readonly MemoryFragment[];
+}
+
+interface MemoryFragmentPayload {
+  memoryId: MemoryId;
+  title: string;
+  fragmentNumber: number;
+  totalFragments: 6;
+  text: string;
+}
+
+type UnlockedMemoryFragments = Record<MemoryId, readonly number[]>;
+```
+
+### Fragment Unlock Flow
+
+1. Player selects a memory in the level-up panel
+2. `applyMemoryUpgrade()` applies the stat effect
+3. `memory.level++` increments the level
+4. If `hasNarrativeContent(memoryId)` AND `getMemoryFragment(memoryId, newLevel)` is non-null:
+   - Unlock the fragment in state
+   - Enter `showing-fragment` state
+   - Emit `memory-fragment-show` with payload
+   - Stay paused
+5. HUDScene shows MemoryFragmentPanel
+6. Player clicks "Continuar"
+7. HUDScene emits `memory-fragment-closed` on GameScene events
+8. Coordinator transitions to idle, resumes game
+
+If no narrative content exists (Familia, Hogar currently), step 4 is skipped and the game resumes immediately.
+
+### Narrative Content
+
+| Memory | Fragments | Status |
+|--------|-----------|--------|
+| Guerra (memory-war) | 6/6 complete | Active |
+| Familia (memory-family) | 6/6 complete | Active |
+| Hogar (memory-home) | 6/6 complete | Active |
+
+When narrative content is added to Familia/Hogar (non-empty fragments array), the system will automatically display it without code changes.
+
+All three memories now have complete narrative content.
+
+### Events
+
+| Event | Producer | Consumer | Payload |
+|-------|----------|----------|---------|
+| `memory-fragment-show` | LevelUpCoordinator | HUDScene | MemoryFragmentPayload |
+| `memory-fragment-closed` | HUDScene (button click) | LevelUpCoordinator | (none) |
+
+### Correctness Properties (CHANGE-002)
+
+- **Property 41**: `getMemoryFragment` returns non-null only for levels 1-6 when narrative has content
+- **Property 42**: Unlocking the same fragment twice never creates duplicates
+- **Property 43**: Fragment panel shows only when `hasNarrativeContent` is true and fragment exists
+- **Property 44**: `memory-fragment-closed` always transitions from showing-fragment to idle and resumes
+
+### Traceability (Requirement 12)
+
+| Req | Component | Property |
+|-----|-----------|----------|
+| 12.1 | MemoryNarrative, unlockFragment | Prop 41 |
+| 12.2 | HUDScene (MemoryFragmentPanel) | — |
+| 12.3 | LevelUpCoordinator (showing-fragment state) | Prop 44 |
+| 12.4 | hasNarrativeContent gate | Prop 43 |
+| 12.5 | WAR_NARRATIVE data | Prop 41 |
+| 12.6 | FAMILY_NARRATIVE, HOME_NARRATIVE (empty) | Prop 43 |
+| 12.7 | UnlockedMemoryFragments, createInitialUnlockedFragments | Prop 42 |
+| 12.8 | HUDScene (fragmentPanelActive guard) | — |
