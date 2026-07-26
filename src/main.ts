@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+ import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { MainMenuScene } from './scenes/MainMenuScene';
 import { CinematicScene } from './scenes/CinematicScene';
@@ -49,10 +49,16 @@ const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   width: 1024,
   height: 768,
-  parent: 'app',
+  parent: 'game-container',
   pixelArt: true,
   antialias: false,
   roundPixels: true,
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_VERTICALLY,
+    width: 1024,
+    height: 768,
+  },
   physics: {
     default: 'arcade',
     arcade: {
