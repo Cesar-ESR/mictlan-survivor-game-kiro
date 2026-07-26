@@ -29,6 +29,7 @@ import type { GameModeConfig, WaveChangedPayload } from '../types/interfaces';
 import { resolveGameMode } from './game-mode-utils';
 import { AudioManager } from '../managers/AudioManager';
 import { BlessingManager } from '../managers/BlessingManager';
+import { RealmTransitionDataLoader } from '../realm-transition/RealmTransitionDataLoader';
 
 /** Data passed to GameScene from MainMenuScene or DefeatScene/VictoryScene retry. */
 interface GameSceneData {
@@ -91,6 +92,10 @@ export class GameScene extends Phaser.Scene {
   private levelUpCoordinator!: LevelUpCoordinator;
   private pauseSystem!: PauseSystem;
   private memories!: MemoryUpgrade[];
+
+  // Realm transition
+  private realmTransitionDataLoader!: RealmTransitionDataLoader;
+  private realmTransitionSafetyTimeout: Phaser.Time.TimerEvent | null = null;
 
   // Collider references for cleanup (BUG-001)
   private colliders: Phaser.Physics.Arcade.Collider[] = [];
@@ -271,6 +276,9 @@ export class GameScene extends Phaser.Scene {
     // --- 11b. Apply initial blessing passive modifiers (once) ---
     this.applyBlessingModifiers();
 
+    // --- 11c. RealmTransitionDataLoader ---
+    this.realmTransitionDataLoader = new RealmTransitionDataLoader(this.cache);
+
     // --- 12. Reset gameStats ---
     this.gameState = 'playing';
     this.gameStats = { survivalTime: 0, enemiesDefeated: 0, maxWave: 1 };
@@ -450,6 +458,8 @@ export class GameScene extends Phaser.Scene {
   /**
    * Handles orb collection: routes XP through XPSystem and LevelUpCoordinator.
    * Emits 'xp-changed' to HUD with player state, and 'hp-changed' after upgrades.
+   * If the new level has a realm transition configured, pauses and launches
+   * RealmTransitionScene before proceeding with level-up.
    */
   private onOrbCollected = (data: { value: number }): void => {
     // Process XP through XPSystem (which calls player.addXP internally)
@@ -464,9 +474,25 @@ export class GameScene extends Phaser.Scene {
       result.reachedMaxLevel,
     );
 
-    // If leveled up, hand off to LevelUpCoordinator
+    // If leveled up, check for realm transition before handing off to LevelUpCoordinator
     if (result.leveledUp && result.showPanel) {
-      this.levelUpCoordinator.processLevelUp(result);
+      const transition = this.realmTransitionDataLoader.getTransitionForLevel(result.newLevel);
+      if (transition) {
+        this.pauseSystem.pause();
+        this.scene.launch('RealmTransitionScene', { transition, levelUpResult: result });
+        this.realmTransitionSafetyTimeout = this.time.delayedCall(15000, () => {
+          this.pauseSystem.resume();
+          this.levelUpCoordinator.processLevelUp(result);
+        });
+        this.events.once('realm-transition-complete', () => {
+          this.realmTransitionSafetyTimeout?.destroy();
+          this.realmTransitionSafetyTimeout = null;
+          this.pauseSystem.resume();
+          this.levelUpCoordinator.processLevelUp(result);
+        });
+      } else {
+        this.levelUpCoordinator.processLevelUp(result);
+      }
     }
   };
 
@@ -493,6 +519,11 @@ export class GameScene extends Phaser.Scene {
     this.events.off('wave-changed', this.onWaveChanged, this);
     this.events.off('orb-collected', this.onOrbCollected, this);
     this.events.off('hud-ready', this.hudReadyHandler, this);
+
+    // Clean up realm transition listener and safety timeout
+    this.events.off('realm-transition-complete');
+    this.realmTransitionSafetyTimeout?.destroy();
+    this.realmTransitionSafetyTimeout = null;
 
     // Remove death animation listener in case shutdown happens during dying state
     this.player?.off('death-animation-complete', this.onDeathAnimationComplete, this);

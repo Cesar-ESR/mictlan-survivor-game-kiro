@@ -10,6 +10,7 @@ import { VictoryScene } from './scenes/VictoryScene';
 import { TileDebugScene } from './scenes/TileDebugScene';
 import { MappingsDebugScene } from './scenes/MappingsDebugScene';
 import { BorderCalibrationScene } from './scenes/BorderCalibrationScene';
+import { RealmTransitionScene } from './realm-transition/RealmTransitionScene';
 
 /**
  * Determina el modo de debug desde la URL.
@@ -37,7 +38,7 @@ function getScenes(): Phaser.Types.Scenes.SceneType[] {
     return [BorderCalibrationScene];
   }
   // Normal game (including debug=map and debug=enemies which use GameScene with debug overlays)
-  return [BootScene, MainMenuScene, CinematicScene, BlessingSelectionScene, GameScene, HUDScene, DefeatScene, VictoryScene];
+  return [BootScene, MainMenuScene, CinematicScene, BlessingSelectionScene, GameScene, HUDScene, DefeatScene, VictoryScene, RealmTransitionScene];
 }
 
 /**

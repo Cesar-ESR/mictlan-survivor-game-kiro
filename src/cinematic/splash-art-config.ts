@@ -63,6 +63,13 @@ const SPLASH_ART_CONFIGS: Record<string, SplashArtDisplayConfig> = {
     originX: 0.5,
     originY: 0.5,
   },
+  xolotl: {
+    displayHeightRatio: 0.6,
+    offsetX: 0,
+    offsetY: 20,
+    originX: 0.5,
+    originY: 0.5,
+  },
   Gobernante1: {
     displayHeightRatio: 0.75,
     offsetX: 0,
