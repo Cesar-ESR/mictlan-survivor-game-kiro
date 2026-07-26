@@ -41,9 +41,19 @@ export class RealmTransitionScene extends Phaser.Scene {
   }
 
   init(data: RealmTransitionSceneData): void {
+    // Reset all transient state to prevent stale values from prior scene reuse
     this.transition = data?.transition ?? null;
     this.state = 'dialog';
     this.hasCompleted = false;
+    this.cinematicPlayer = null;
+    this.culturePanel = null;
+    this.dialogBox = null;
+    this.nameText = null;
+    this.dialogText = null;
+    this.realmTitleText = null;
+    this.realmNameText = null;
+    this.continueIndicator = null;
+    this.skipButton = null;
   }
 
   create(): void {
@@ -166,6 +176,11 @@ export class RealmTransitionScene extends Phaser.Scene {
 
       // ─── Listen for cinematic completion → transition to culture ─────────────
       this.events.on('cinematic-complete', this.onCinematicComplete, this);
+
+      // ─── Register shutdown cleanup on Phaser's lifecycle event ────────────────
+      // Phaser does NOT call scene.shutdown() automatically.
+      // Using 'once' prevents listener accumulation across multiple launches.
+      this.events.once('shutdown', this.shutdown, this);
     } catch (error) {
       console.error('[RealmTransitionScene] Error in create():', error);
       this.emitComplete();
@@ -369,8 +384,25 @@ export class RealmTransitionScene extends Phaser.Scene {
   }
 
   shutdown(): void {
+    // Destroy CinematicPlayer
     this.cinematicPlayer?.destroy();
     this.cinematicPlayer = null;
+
+    // Remove custom event listeners
     this.events.off('cinematic-complete', this.onCinematicComplete, this);
+
+    // Remove input listeners to prevent accumulation
+    this.input.off('pointerdown', this.onAdvance, this);
+    if (this.input.keyboard) {
+      this.input.keyboard.off('keydown-SPACE', this.onAdvance, this);
+      this.input.keyboard.off('keydown-ENTER', this.onAdvance, this);
+    }
+
+    // Clear references
+    this.skipButton = null;
+    this.culturePanel = null;
+
+    // Defensive reset of guard flag
+    this.hasCompleted = false;
   }
 }

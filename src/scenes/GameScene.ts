@@ -331,6 +331,12 @@ export class GameScene extends Phaser.Scene {
     // --- 14. Register game listeners ---
     this.registerGameListeners();
 
+    // --- 14b. Connect shutdown cleanup to Phaser's lifecycle event (BUG-013 fix) ---
+    // Phaser does NOT call scene.shutdown() as a method override.
+    // It only emits the 'shutdown' event. We must register our cleanup explicitly.
+    // Using 'once' ensures no accumulation — it self-removes after firing.
+    this.events.once('shutdown', this.shutdown, this);
+
     // --- 15. Launch HUDScene with handshake (BUG-009 V2) ---
     this.runId = `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     this.initialWaveStateEmitted = false;
@@ -510,7 +516,7 @@ export class GameScene extends Phaser.Scene {
 
   /**
    * Shutdown: removes all event listeners registered by this scene.
-   * Called automatically by Phaser on scene shutdown/restart.
+   * Called via Phaser's 'shutdown' event (registered in create via BUG-013 fix).
    */
   shutdown(): void {
     this.events.off('player-defeated', this.onPlayerDefeated, this);

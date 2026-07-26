@@ -58,6 +58,9 @@ export class BootScene extends Phaser.Scene {
     // Cargar fondo de pantalla de derrota
     this.load.image('defeat-background', 'src/assets/BackgroundsLevelsMenu/BackgroundNivel6Dialogs.png');
 
+    // Cargar fondo de pantalla de victoria
+    this.load.image('victory-background', 'src/assets/BackgroundsLevelsMenu/BackgroundFinalScene.png');
+
     // Cargar assets modulares del botón (delegado a módulo centralizado)
     loadButtonAssets(this.load);
 
