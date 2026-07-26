@@ -51,7 +51,6 @@ export class HUDScene extends Phaser.Scene {
 
   // BUG-009 V2: Handshake state
   private runId: string = '';
-  private isHudReady = false;
   private isShuttingDown = false;
 
   constructor() {
@@ -74,7 +73,6 @@ export class HUDScene extends Phaser.Scene {
 
     // BUG-009 V2: Signal GameScene that HUD is fully initialized
     this.isShuttingDown = false;
-    this.isHudReady = true;
     const gameScene = this.scene.get('GameScene');
     gameScene.events.emit('hud-ready', { runId: this.runId });
   }
@@ -520,7 +518,6 @@ export class HUDScene extends Phaser.Scene {
   /** Cleanup: remove own listeners and cancel timers. Called on scene shutdown. */
   shutdown(): void {
     this.isShuttingDown = true;
-    this.isHudReady = false;
 
     const gameScene = this.scene.get('GameScene');
     if (gameScene) {

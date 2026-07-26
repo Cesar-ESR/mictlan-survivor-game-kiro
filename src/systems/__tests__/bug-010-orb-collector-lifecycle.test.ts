@@ -23,22 +23,22 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // --- Typed fakes (no Phaser dependency) ---
 
 interface FakeEventEmitter {
-  listeners: Map<string, Array<(...args: unknown[]) => void>>;
-  on(event: string, fn: (...args: unknown[]) => void): void;
-  off(event: string, fn?: (...args: unknown[]) => void): void;
+  listeners: Map<string, Function[]>;
+  on(event: string, fn: Function): void;
+  off(event: string, fn?: Function): void;
   emit(event: string, ...args: unknown[]): void;
   listenerCount(event: string): number;
 }
 
 function createFakeEventEmitter(): FakeEventEmitter {
-  const listeners = new Map<string, Array<(...args: unknown[]) => void>>();
+  const listeners = new Map<string, Function[]>();
   return {
     listeners,
-    on(event: string, fn: (...args: unknown[]) => void): void {
+    on(event: string, fn: Function): void {
       if (!listeners.has(event)) listeners.set(event, []);
       listeners.get(event)!.push(fn);
     },
-    off(event: string, fn?: (...args: unknown[]) => void): void {
+    off(event: string, fn?: Function): void {
       if (!fn) {
         // Remove ALL listeners for event (old buggy behavior)
         listeners.delete(event);
@@ -123,7 +123,6 @@ function createFakeScene(): FakeScene {
  */
 class TestableOrbCollector {
   private scene: FakeScene;
-  private player: { addXP(value: number): unknown } | null;
   private orbs: FakeOrb[] = [];
   private isDestroyed = false;
   spawnOrbCalls: Array<{ x: number; y: number; value: number; variant?: string }> = [];
@@ -134,9 +133,8 @@ class TestableOrbCollector {
     this.spawnOrb({ x: data.x, y: data.y }, data.xpReward, data.xpOrbVariant);
   };
 
-  constructor(scene: FakeScene, player?: { addXP(value: number): unknown }) {
+  constructor(scene: FakeScene, _player?: { addXP(value: number): unknown }) {
     this.scene = scene;
-    this.player = player ?? null;
 
     // BUG-010 V3: NO scene.add.group() call — plain array only
     // (XPOrb adds itself to scene in its constructor)

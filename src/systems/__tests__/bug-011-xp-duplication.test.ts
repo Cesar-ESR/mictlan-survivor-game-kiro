@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 /**
  * BUG-011: XPOrb duplicates and XP is applied more than once, especially after Retry.
@@ -21,22 +21,22 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // --- Typed fakes (no Phaser dependency) ---
 
 interface FakeEventEmitter {
-  listeners: Map<string, Array<{ fn: (...args: unknown[]) => void; context?: unknown }>>;
-  on(event: string, fn: (...args: unknown[]) => void, context?: unknown): void;
-  off(event: string, fn?: (...args: unknown[]) => void, context?: unknown): void;
+  listeners: Map<string, Array<{ fn: Function; context?: unknown }>>;
+  on(event: string, fn: Function, context?: unknown): void;
+  off(event: string, fn?: Function, context?: unknown): void;
   emit(event: string, ...args: unknown[]): void;
   listenerCount(event: string): number;
 }
 
 function createFakeEventEmitter(): FakeEventEmitter {
-  const listeners = new Map<string, Array<{ fn: (...args: unknown[]) => void; context?: unknown }>>();
+  const listeners = new Map<string, Array<{ fn: Function; context?: unknown }>>();
   return {
     listeners,
-    on(event: string, fn: (...args: unknown[]) => void, context?: unknown): void {
+    on(event: string, fn: Function, context?: unknown): void {
       if (!listeners.has(event)) listeners.set(event, []);
       listeners.get(event)!.push({ fn, context });
     },
-    off(event: string, fn?: (...args: unknown[]) => void, context?: unknown): void {
+    off(event: string, fn?: Function, context?: unknown): void {
       if (!fn) {
         listeners.delete(event);
         return;

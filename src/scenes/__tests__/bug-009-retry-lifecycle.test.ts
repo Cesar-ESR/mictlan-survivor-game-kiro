@@ -211,7 +211,7 @@ describe('BUG-009 V2: HUD-Ready Handshake', () => {
       let isShuttingDown = false;
       let waveTextUpdated = false;
 
-      const updateWaveDisplay = (wave: number) => {
+      const updateWaveDisplay = (_wave: number) => {
         if (isShuttingDown) return;
         waveTextUpdated = true;
       };

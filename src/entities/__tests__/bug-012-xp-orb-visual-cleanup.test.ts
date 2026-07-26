@@ -40,22 +40,22 @@ interface FakeBody {
 }
 
 interface FakeEventEmitter {
-  listeners: Map<string, Array<(...args: unknown[]) => void>>;
-  on(event: string, fn: (...args: unknown[]) => void): void;
-  off(event: string, fn?: (...args: unknown[]) => void): void;
+  listeners: Map<string, Function[]>;
+  on(event: string, fn: Function): void;
+  off(event: string, fn?: Function): void;
   emit(event: string, ...args: unknown[]): void;
   listenerCount(event: string): number;
 }
 
 function createFakeEventEmitter(): FakeEventEmitter {
-  const listeners = new Map<string, Array<(...args: unknown[]) => void>>();
+  const listeners = new Map<string, Function[]>();
   return {
     listeners,
-    on(event: string, fn: (...args: unknown[]) => void): void {
+    on(event: string, fn: Function): void {
       if (!listeners.has(event)) listeners.set(event, []);
       listeners.get(event)!.push(fn);
     },
-    off(event: string, fn?: (...args: unknown[]) => void): void {
+    off(event: string, fn?: Function): void {
       if (!fn) {
         listeners.delete(event);
         return;
