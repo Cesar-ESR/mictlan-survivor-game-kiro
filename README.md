@@ -1,7 +1,7 @@
 # mictlan-survivor-game-kiro  
 
 Survivor-like 2D inspirado en el Mictlán, desarrollado con Phaser 3, TypeScript y Vite.
-Mictlán Survivor is a browser-based roguelite inspired by Aztec mythology. Players descend through the different realms of Mictlán while defeating enemies, collecting memories, and unlocking blessings that shape each run.
+Mictlán El honor del guerrero jaguar is a browser-based survivor-like inspired by Aztec mythology. Players descend through the different realms of Mictlán while defeating enemies, collecting memories, and unlocking blessings that shape each run.
 
 - Instalación  
 npm install  
