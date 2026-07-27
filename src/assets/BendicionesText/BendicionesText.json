@@ -1,0 +1,77 @@
+{
+  "id": "initial_blessing_selection",
+  "title": "Las puertas del Mictlán se han abierto.",
+  "subtitle": "Elige la bendición que guiará tu camino.",
+  "choices": [
+    {
+      "id": "mictlantecuhtli",
+      "ruler": {
+        "id": "mictlantecuhtli",
+        "name": "Mictlantecuhtli",
+        "portrait": "Gobernante1"
+      },
+      "primaryBlessing": {
+        "id": "orgullo_del_inframundo",
+        "name": "Orgullo del Inframundo",
+        "badge": "OrgulloDelInframundo",
+        "image": "OrgulloDelInframundo",
+        "level": 1,
+        "maxLevel": 5,
+        "description": "La fuerza de los muertos alimenta el espíritu de quien se niega a retroceder.",
+        "style": "Ofensivo y agresivo.",
+        "effects": [
+          "+15 % de daño.",
+          "Al derrotar enemigos consecutivamente, aumenta temporalmente la velocidad de ataque."
+        ]
+      },
+      "secondaryBlessing": {
+        "id": "furia_del_inframundo",
+        "name": "Furia del Inframundo",
+        "badge": "FuriaDelInframundo",
+        "image": "FuriaDelInframundo",
+        "level": 1,
+        "maxLevel": 5,
+        "trigger": "Después de derrotar 10 enemigos en menos de 8 segundos.",
+        "effects": [
+          "+20 % de velocidad de ataque.",
+          "Duración: 5 segundos."
+        ]
+      }
+    },
+    {
+      "id": "mictecacihuatl",
+      "ruler": {
+        "id": "mictecacihuatl",
+        "name": "Mictecacíhuatl",
+        "portrait": "Gobernante2"
+      },
+      "primaryBlessing": {
+        "id": "eco_de_los_recuerdos",
+        "name": "Eco de los Recuerdos",
+        "badge": "EcoDeLosRecuerdos",
+        "image": "EcoDeLosRecuerdos",
+        "level": 1,
+        "maxLevel": 5,
+        "description": "Cada recuerdo recuperado protege al espíritu de desaparecer en la oscuridad.",
+        "style": "Espiritual, defensivo y centrado en la supervivencia.",
+        "effects": [
+          "+15 % de vida máxima.",
+          "Cada vez que el jugador recupera un Recuerdo al subir de nivel, restaura parte de su vida."
+        ]
+      },
+      "secondaryBlessing": {
+        "id": "consuelo_de_la_memoria",
+        "name": "Consuelo de la Memoria",
+        "badge": "ConsueloDeLaMemoria",
+        "image": "ConsueloDeLaMemoria",
+        "level": 1,
+        "maxLevel": 5,
+        "trigger": "Al elegir un Recuerdo.",
+        "effects": [
+          "Recupera 8 % de la vida máxima.",
+          "Obtiene 3 segundos de reducción de daño."
+        ]
+      }
+    }
+  ]
+}

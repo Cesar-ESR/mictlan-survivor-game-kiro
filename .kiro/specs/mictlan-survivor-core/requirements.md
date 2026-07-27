@@ -20,6 +20,9 @@ Las mecánicas core incluyen: game loop principal, movimiento del personaje, spa
 - **Spawn_Manager**: Subsistema que genera enemigos en posiciones fuera de la pantalla visible.
 - **Damage_System**: Subsistema que calcula y aplica daño entre entidades basado en sus atributos.
 - **Scene_Manager**: Controlador de Phaser que gestiona transiciones entre escenas del juego.
+- **Delta_Time**: Tiempo transcurrido entre el frame actual y el anterior, usado para independizar la lógica del juego de la tasa de frames.
+- **Modo_Campaña**: Modo de juego con un número finito de oleadas configuradas; completar la oleada final resulta en Victoria.
+- **Modo_Infinito**: Modo de juego donde finalWave es null y las oleadas continúan indefinidamente usando la última configuración disponible sin escalado adicional.
 
 ## Requirements
 
@@ -33,7 +36,7 @@ Las mecánicas core incluyen: game loop principal, movimiento del personaje, spa
 2. WHILE la escena de juego está activa, THE Game_Loop SHALL ejecutar la lógica de actualización y renderizado a un mínimo de 60 frames por segundo.
 3. WHEN la escena de juego se carga, THE Scene_Manager SHALL posicionar al Guerrero_Jaguar en el centro geométrico del mapa, calculado como (ancho_mapa / 2, alto_mapa / 2) en píxeles.
 4. IF la carga de la escena de juego excede los 3 segundos o falla por error de carga de assets, THEN THE Scene_Manager SHALL cancelar la carga, mostrar un mensaje de error indicando que la escena no pudo cargarse, y permitir al jugador reintentar la acción desde el menú principal.
-5. WHEN la escena de juego se carga, THE Game_Loop SHALL inicializar al Guerrero_Jaguar con los siguientes valores base: puntos de vida máximos según configuración del personaje, Nivel 1, XP acumulada en 0, y el Arma_Automatica inicial asignada.
+5. WHEN la escena de juego se carga, THE Game_Loop SHALL inicializar al Guerrero_Jaguar con los siguientes valores base: puntos de vida máximos según la configuración del personaje, Nivel 1, XP del nivel actual en 0, XP total de la partida en 0 y el Arma_Automatica inicial asignada.
 
 ### Requirement 2: Movimiento del Guerrero Jaguar
 
@@ -46,7 +49,7 @@ Las mecánicas core incluyen: game loop principal, movimiento del personaje, spa
 3. WHEN el jugador deja de presionar todas las teclas de dirección, THE Guerrero_Jaguar SHALL detenerse completamente en un máximo de 1 frame.
 4. WHILE el Guerrero_Jaguar se desplaza, THE Game_Loop SHALL actualizar la posición de la cámara para mantener al Guerrero_Jaguar centrado en la pantalla, excepto cuando la cámara alcance los límites del mapa.
 5. IF el Guerrero_Jaguar alcanza el límite del mapa, THEN THE Game_Loop SHALL restringir el movimiento para que el Guerrero_Jaguar permanezca dentro de los límites del mapa (dimensiones: 3200 x 3200 píxeles).
-6. WHEN el jugador presiona dos teclas de dirección opuestas simultáneamente (e.g., W y S, A y D), THE Guerrero_Jaguar SHALL detenerse completamente (vector resultante igual a cero).
+6. WHEN el jugador presiona dos teclas de dirección opuestas en el mismo eje simultáneamente, THE Guerrero_Jaguar SHALL cancelar el movimiento únicamente en ese eje, conservando el movimiento del eje perpendicular si existe input activo (e.g., W + S + D produce movimiento hacia la derecha; A + D sin input vertical produce velocidad cero).
 
 ### Requirement 3: Spawn y Comportamiento de Enemigos
 
@@ -54,12 +57,13 @@ Las mecánicas core incluyen: game loop principal, movimiento del personaje, spa
 
 #### Acceptance Criteria
 
-1. WHILE una oleada está activa, THE Spawn_Manager SHALL generar enemigos en posiciones aleatorias fuera del área visible de la cámara a una distancia mínima de 50 píxeles y máxima de 300 píxeles del borde de la pantalla, con un intervalo base de 2 segundos entre spawns.
-2. WHILE un Enemigo está activo, THE Enemigo SHALL desplazarse en dirección al Guerrero_Jaguar a una velocidad definida por su tipo, recalculando la dirección cada frame.
-3. WHEN un Enemigo es derrotado, THE Enemigo SHALL desaparecer de la escena y liberar un orbe de XP en su posición con un valor determinado por el tipo de Enemigo.
-4. IF la cantidad de enemigos activos supera el límite máximo de 100 enemigos configurado para la oleada, THEN THE Spawn_Manager SHALL detener la generación de nuevos enemigos hasta que la cantidad descienda por debajo del límite.
-5. WHEN un Enemigo se encuentra a una distancia mayor a 1500 píxeles del Guerrero_Jaguar, THE Spawn_Manager SHALL eliminar al Enemigo sin otorgar XP y sin liberar orbe.
-6. WHEN una oleada finaliza y comienza la siguiente, THE Spawn_Manager SHALL mantener activos a los enemigos existentes de la oleada anterior.
+1. WHILE una oleada está activa, THE Spawn_Manager SHALL generar enemigos en posiciones aleatorias que cumplan simultáneamente: estar fuera del viewport de la cámara, estar dentro de los límites del mapa (3200 × 3200 píxeles), y estar a una distancia entre 50 y 300 píxeles del borde visible de la cámara, con un intervalo base de 2 segundos entre spawns.
+2. IF no existe una posición válida que cumpla las tres condiciones de spawn (fuera del viewport, dentro del mapa, entre 50 y 300 píxeles del borde visible), THEN THE Spawn_Manager SHALL cancelar el intento de spawn actual y reintentarlo en el siguiente intervalo de spawn.
+3. WHILE un Enemigo está activo, THE Enemigo SHALL desplazarse en dirección al Guerrero_Jaguar a una velocidad definida por su tipo, recalculando la dirección cada frame.
+4. WHEN un Enemigo es derrotado, THE Enemigo SHALL desaparecer de la escena y liberar un orbe de XP en su posición con un valor determinado por el tipo de Enemigo.
+5. IF la cantidad de enemigos activos alcanza o supera el límite máximo configurado para la oleada (valor predeterminado: 100, configurable por oleada), THEN THE Spawn_Manager SHALL detener la generación de nuevos enemigos hasta que la cantidad descienda por debajo del límite.
+6. WHEN un Enemigo se encuentra a una distancia mayor a 1500 píxeles del Guerrero_Jaguar, THE Spawn_Manager SHALL eliminar al Enemigo sin otorgar XP y sin liberar orbe.
+7. WHEN una oleada finaliza y comienza la siguiente, THE Spawn_Manager SHALL mantener activos a los enemigos existentes de la oleada anterior.
 
 ### Requirement 4: Sistema de Combate Automático
 
@@ -80,14 +84,17 @@ Las mecánicas core incluyen: game loop principal, movimiento del personaje, spa
 
 #### Acceptance Criteria
 
-1. WHEN el Guerrero_Jaguar recoge un orbe de XP, THE Game_Loop SHALL incrementar la XP acumulada del Guerrero_Jaguar en el valor del orbe.
-2. WHEN la XP acumulada del Guerrero_Jaguar alcanza o supera el umbral del siguiente Nivel, THE Game_Loop SHALL incrementar el Nivel del Guerrero_Jaguar en 1, pausar el juego, y conservar el exceso de XP como progreso hacia el siguiente nivel.
+1. WHEN el Guerrero_Jaguar recoge un orbe de XP, THE Game_Loop SHALL incrementar la XP del nivel actual del Guerrero_Jaguar en el valor del orbe, y SHALL incrementar la XP total de la partida en el mismo valor.
+2. WHEN la XP del nivel actual del Guerrero_Jaguar alcanza o supera el umbral del siguiente Nivel, THE Game_Loop SHALL incrementar el Nivel en 1 y restar el umbral anterior, conservando el exceso como progreso hacia el siguiente nivel. IF el nuevo Nivel es menor que 20, THEN THE Game_Loop SHALL pausar el juego para mostrar la selección de mejoras.
 3. WHEN el Guerrero_Jaguar sube de Nivel, THE HUD SHALL mostrar un panel de selección con 3 mejoras aleatorias únicas (sin repetición) elegidas de un pool de mejoras disponibles.
-4. WHEN el jugador selecciona una mejora del panel, THE Game_Loop SHALL aplicar la mejora al Guerrero_Jaguar y reanudar el juego.
-5. THE Game_Loop SHALL calcular el umbral de XP para el siguiente Nivel usando la fórmula: umbral = nivel_actual * 10 + 5.
-6. WHEN el Guerrero_Jaguar se inicializa, THE Game_Loop SHALL establecer el Nivel en 1 con XP acumulada de 0 y un umbral inicial de 15 XP.
-7. IF el pool de mejoras disponibles contiene menos de 3 opciones, THEN THE HUD SHALL mostrar todas las opciones disponibles restantes en el panel de selección.
-8. IF el Guerrero_Jaguar alcanza el Nivel 20, THEN THE Game_Loop SHALL dejar de incrementar el Nivel y no mostrar más paneles de mejora.
+4. WHILE el panel de selección de mejoras está visible, THE Game_Loop SHALL pausar completamente: movimiento del Guerrero_Jaguar y enemigos, proyectiles, armas automáticas y sus cooldowns, físicas y colisiones, aplicación de daño, generación de enemigos (spawns), temporizadores de oleada y supervivencia, y movimiento y recolección de orbes.
+5. WHEN el jugador selecciona una mejora del panel, THE Game_Loop SHALL aplicar la mejora al Guerrero_Jaguar y reanudar todos los sistemas desde el estado y tiempo restante anteriores a la pausa.
+6. THE Game_Loop SHALL calcular el umbral de XP para el siguiente Nivel usando la fórmula: umbral = nivel_actual * 10 + 5.
+7. WHEN el Guerrero_Jaguar se inicializa, THE Game_Loop SHALL establecer el Nivel en 1 con XP del nivel actual en 0, XP total en 0, y un umbral inicial de 15 XP.
+8. IF el pool de mejoras disponibles contiene una o dos opciones, THEN THE HUD SHALL mostrar todas las opciones disponibles en el panel de selección.
+9. IF el pool de mejoras disponibles no contiene ninguna opción, THEN THE Game_Loop SHALL omitir el panel de selección y reanudar el juego inmediatamente.
+10. IF el Guerrero_Jaguar alcanza el Nivel 20, THEN THE Game_Loop SHALL dejar de incrementar el Nivel, no mostrar más paneles de mejora, y continuar acumulando XP total para las estadísticas de la partida; la barra de XP del HUD SHALL permanecer al 100% sin excederlo.
+11. IF el incremento de Nivel hace que el Guerrero_Jaguar alcance el Nivel 20, THEN THE Game_Loop SHALL no pausar la partida ni mostrar el panel de selección de mejoras.
 
 ### Requirement 6: Gestión de Oleadas y Dificultad
 
@@ -97,9 +104,9 @@ Las mecánicas core incluyen: game loop principal, movimiento del personaje, spa
 
 1. WHEN una oleada finaliza tras 30 segundos de duración, THE Spawn_Manager SHALL iniciar la siguiente oleada en un máximo de 2 segundos y THE HUD SHALL mostrar brevemente el número de la nueva oleada.
 2. WHILE una oleada está activa, THE Spawn_Manager SHALL generar enemigos respetando el intervalo de spawn y los tipos de enemigos definidos para esa oleada, comenzando con un intervalo base de 2 segundos entre spawns en la oleada 1.
-3. WHEN una oleada finaliza, THE Spawn_Manager SHALL incrementar la dificultad para la siguiente oleada aumentando la frecuencia de spawn en un 10%, los puntos de vida de los enemigos en un 15%, y la velocidad de los enemigos en un 5%, sin exceder un intervalo mínimo de spawn de 0.5 segundos, un máximo de 500% de los puntos de vida base, ni un máximo de 200% de la velocidad base.
-4. IF el jugador sobrevive la oleada 10, THEN THE Scene_Manager SHALL mostrar la pantalla de "Victoria" con las estadísticas de la partida incluyendo: tiempo total de supervivencia, oleada máxima alcanzada, enemigos derrotados, XP total obtenida y nivel alcanzado.
-5. IF el número de oleada actual supera el total de oleadas configuradas y no se ha definido oleada final, THEN THE Spawn_Manager SHALL repetir los parámetros de la última oleada configurada sin incrementar dificultad adicional.
+3. WHEN una oleada finaliza, THE Spawn_Manager SHALL calcular la dificultad de la siguiente oleada usando las fórmulas: spawnInterval = max(baseSpawnInterval × 0.9^(wave - 1), 0.5), hpMultiplier = min(1.15^(wave - 1), 5), speedMultiplier = min(1.05^(wave - 1), 2), donde wave es el número de la nueva oleada y baseSpawnInterval es 2 segundos. La fórmula de spawnInterval representa una reducción acumulativa del 10% del intervalo de spawn por cada oleada, hasta alcanzar el mínimo de 0.5 segundos.
+4. WHERE el modo de juego es Modo_Campaña, IF el jugador sobrevive la oleada final configurada, THEN THE Scene_Manager SHALL mostrar la pantalla de "Victoria" con las estadísticas de la partida incluyendo: tiempo total de supervivencia, oleada máxima alcanzada, enemigos derrotados, XP total obtenida y nivel alcanzado.
+5. WHERE el modo de juego es Modo_Infinito (finalWave es null), THE Spawn_Manager SHALL continuar generando oleadas indefinidamente; cuando el número de oleada supere la última oleada configurada, SHALL repetir los parámetros de la última oleada configurada sin aplicar escalado de dificultad adicional.
 
 ### Requirement 7: HUD e Información de Estado
 
@@ -111,8 +118,8 @@ Las mecánicas core incluyen: game loop principal, movimiento del personaje, spa
 2. WHILE la escena de juego está activa, THE HUD SHALL mostrar la barra de experiencia del Guerrero_Jaguar como un relleno horizontal que representa el porcentaje de XP acumulada en el nivel actual respecto al umbral del siguiente Nivel (0% al inicio del nivel, 100% al alcanzar el umbral).
 3. WHILE la escena de juego está activa, THE HUD SHALL mostrar el número de oleada actual como un valor entero y el tiempo transcurrido de la partida en formato MM:SS.
 4. WHEN los puntos de vida del Guerrero_Jaguar cambian, THE HUD SHALL actualizar la barra de vida en el mismo frame.
-5. WHEN la XP del Guerrero_Jaguar cambia, THE HUD SHALL actualizar la barra de experiencia en el mismo frame.
-6. WHEN el Guerrero_Jaguar sube de Nivel, THE HUD SHALL reiniciar el relleno de la barra de experiencia a 0% para reflejar el progreso hacia el nuevo umbral.
+5. WHEN la XP del nivel actual del Guerrero_Jaguar cambia, THE HUD SHALL actualizar la barra de experiencia en el mismo frame.
+6. WHEN el Guerrero_Jaguar sube de Nivel, THE HUD SHALL actualizar el relleno de la barra de experiencia para representar la XP excedente respecto al nuevo umbral (exceso_XP / nuevo_umbral × 100%); no se reinicia necesariamente a 0%.
 
 ### Requirement 8: Recolección de Orbes de XP
 
@@ -122,9 +129,10 @@ Las mecánicas core incluyen: game loop principal, movimiento del personaje, spa
 
 1. WHEN un orbe de XP se genera, THE Game_Loop SHALL posicionar el orbe en la ubicación donde el Enemigo fue derrotado y el orbe permanecerá estático hasta ser atraído.
 2. WHEN el Guerrero_Jaguar se encuentra a una distancia menor o igual a 100 píxeles de un orbe de XP, THE Game_Loop SHALL mover el orbe hacia el Guerrero_Jaguar a una velocidad de 400 píxeles por segundo, manteniendo la atracción hasta que el orbe sea recogido.
-3. WHEN un orbe de XP colisiona con la Hitbox del Guerrero_Jaguar, THE Game_Loop SHALL añadir el valor del orbe a la XP acumulada y eliminar el orbe de la escena.
+3. WHEN un orbe de XP colisiona con la Hitbox del Guerrero_Jaguar, THE Game_Loop SHALL incrementar la XP del nivel actual y la XP total de la partida en el valor del orbe, y eliminar el orbe de la escena.
 4. IF un orbe de XP permanece en la escena durante más de 30 segundos sin ser recogido, THEN THE Game_Loop SHALL eliminar el orbe de la escena.
 5. IF la cantidad de orbes activos en la escena supera 200, THEN THE Game_Loop SHALL eliminar los orbes más antiguos para mantener el límite de rendimiento.
+6. WHILE el Guerrero_Jaguar se encuentre en el Nivel 20, WHEN recoja un orbe de XP, THE Game_Loop SHALL incrementar únicamente la XP total de la partida, mantener la XP del nivel actual limitada a su umbral máximo y mantener la barra de XP del HUD al 100%.
 
 ### Requirement 9: Tipos de Enemigos
 
@@ -132,17 +140,81 @@ Las mecánicas core incluyen: game loop principal, movimiento del personaje, spa
 
 #### Acceptance Criteria
 
-1. THE Game_Loop SHALL incluir los siguientes 4 arquetipos de enemigos: Esqueleto (HP: 30, velocidad: 80 px/s, daño: 5, XP: 5, comportamiento: persecución directa), Murciélago (HP: 15, velocidad: 150 px/s, daño: 3, XP: 3, comportamiento: movimiento en zigzag), Calavera Llameante (HP: 50, velocidad: 60 px/s, daño: 10, XP: 10, comportamiento: explosión al morir que inflige 15 de daño en radio de 100 px), y Serpiente Emplumada (HP: 80, velocidad: 100 px/s, daño: 8, XP: 15, comportamiento: persecución con aceleración progresiva).
+1. THE EnemyRegistry SHALL registrar los siguientes 4 arquetipos de enemigos: Esqueleto (HP: 30, velocidad: 80 px/s, daño: 5, XP: 5, comportamiento: persecución directa hacia el Guerrero_Jaguar), Murciélago (HP: 15, velocidad: 150 px/s, daño: 3, XP: 3, comportamiento: persecución con patrón de movimiento en zigzag oscilando perpendicularmente a la dirección de avance), Calavera Llameante (HP: 50, velocidad: 60 px/s, daño: 10, XP: 10, comportamiento: persecución directa y al morir explota infligiendo 15 puntos de daño únicamente al Guerrero_Jaguar si se encuentra dentro de un radio de 100 píxeles), y Serpiente Emplumada (HP: 80, velocidad inicial: 100 px/s, daño: 8, XP: 15, comportamiento: persecución con aceleración progresiva hasta una velocidad máxima configurable).
 2. EACH Enemigo SHALL heredar de una clase base Enemy que defina la interfaz común con propiedades: hp, maxHp, speed, damage, xpReward, y métodos: update(), takeDamage(), onDefeat().
 3. EACH Enemigo SHALL definir sus propios puntos de vida, velocidad, daño, recompensa de XP, animaciones de sprite y comportamiento especial según su arquetipo.
 4. THE Spawn_Manager SHALL configurar la aparición de enemigos por oleada: oleadas 1-3 solo Esqueletos; oleadas 4-6 Esqueletos y Murciélagos; oleadas 7-8 Esqueletos, Murciélagos y Calaveras Llameantes; oleadas 9-10 los 4 tipos.
 5. THE Spawn_Manager SHALL soportar la adición de nuevos tipos de enemigos sin modificar la arquitectura de enemigos existente, mediante un registro de tipos de enemigos (EnemyRegistry).
 
+### Requirement 10: Generación del Mapa
+
+**User Story:** Como jugador, quiero explorar un mapa variado con suelo,
+muros, obstáculos, líquidos y decoración, para que el escenario sea
+visualmente atractivo y afecte las decisiones de movimiento.
+
+#### Acceptance Criteria
+
+1. WHEN inicia una partida, THE Map_Generator SHALL construir un mapa de
+100 × 100 tiles utilizando tiles de 32 × 32 píxeles, produciendo un mundo
+de 3200 × 3200 píxeles.
+
+2. THE Map_Generator SHALL crear capas independientes para:
+Ground, Liquids, Borders, Walls, Obstacles y Decorations.
+
+3. THE Ground_Layer SHALL cubrir todas las celdas transitables del mapa sin
+utilizar tiles vacíos o transparentes y SHALL aplicar variaciones visuales
+configurables.
+
+4. THE Liquid_Layer SHALL generar áreas de líquido utilizando grupos de tiles
+contiguos y SHALL permitir configurar cada tipo de líquido como transitable,
+bloqueante o dañino.
+
+5. THE Border_Layer SHALL representar las transiciones visuales entre el suelo,
+los líquidos, los muros y los acantilados, y SHALL no utilizarse como sustituto
+del suelo base.
+
+6. THE Wall_Layer y THE Obstacle_Layer SHALL aplicar colisiones físicas al
+Guerrero_Jaguar y a los Enemigos.
+
+7. THE Decoration_Layer SHALL no aplicar colisiones. Los elementos decorativos
+que deban bloquear el movimiento SHALL clasificarse y colocarse en la
+Obstacle_Layer.
+
+8. WHEN se genera el mapa, THE Map_Generator SHALL mantener libre de muros,
+obstáculos y líquidos bloqueantes un área segura configurable alrededor del
+punto central donde aparece el Guerrero_Jaguar.
+
+9. WHEN termina la generación, THE Map_Validator SHALL comprobar que el punto
+inicial del Guerrero_Jaguar sea transitable y que las zonas principales del
+mapa destinadas al gameplay sean accesibles desde dicho punto.
+
+10. THE Map_Validator SHALL comprobar que al menos el porcentaje mínimo
+configurado de las celdas transitables pertenezca a una misma región accesible
+desde el punto inicial.
+
+11. IF el mapa generado no cumple las reglas de accesibilidad, THEN THE
+Map_Generator SHALL descartarlo y generar uno nuevo utilizando una semilla
+diferente, sin exceder el número máximo de intentos configurado.
+
+12. IF ningún mapa válido puede generarse dentro del número máximo de intentos,
+THEN THE Map_Generator SHALL cancelar la inicialización, registrar el motivo
+del fallo y permitir reintentar la generación.
+
+13. THE Map_Generator SHALL aceptar una semilla configurable. WHEN se utiliza
+la misma semilla, la misma configuración y el mismo catálogo de tiles, THEN
+THE Map_Generator SHALL producir la misma distribución del mapa.
+
+14. THE Map_Generator SHALL utilizar exclusivamente tiles registrados y
+clasificados en el Tile_Catalog correspondiente a cada capa.
+
+15. THE Map_Generator SHALL completar la generación y validación del mapa
+dentro del límite máximo de carga de 3 segundos definido para la escena.
+
 ## Non-Functional Requirements
 
 ### Performance
 
-1. THE Game_Loop SHALL mantener un mínimo de 60 frames por segundo en la plataforma objetivo.
+1. THE Game_Loop SHALL mantener un promedio mínimo de 60 frames por segundo durante una prueba continua de 5 minutos con hasta 100 enemigos activos, hasta 200 orbes activos, proyectiles, colisiones y HUD funcionando simultáneamente en la plataforma objetivo documentada.
 
 ### Architecture
 
@@ -150,7 +222,113 @@ Las mecánicas core incluyen: game loop principal, movimiento del personaje, spa
 2. THE project SHALL utilizar Phaser 3 como motor de juego.
 3. THE code SHALL seguir una arquitectura modular con separación clara de responsabilidades.
 
+### Frame-Rate Independence
+
+1. THE Game_Loop SHALL aplicar Delta_Time a todos los movimientos, aceleraciones, cooldowns de armas y daño, temporizadores de spawn y oleada, tiempo de supervivencia, tiempo de vida de proyectiles y orbes, y cualquier otro cálculo dependiente del tiempo, para garantizar que la simulación sea independiente de la tasa de frames.
+
 ### Maintainability
 
 1. Cada sistema SHALL tener una única responsabilidad (Single Responsibility Principle).
 2. THE game logic SHALL ser independiente del renderizado siempre que sea posible, separando lógica de presentación.
+
+
+---
+
+### Requirement 11: Recuerdos de la vida pasada
+
+**User Story:** Como jugador, quiero recuperar recuerdos de la vida pasada del guerrero al subir de nivel, para fortalecer distintas áreas de su capacidad durante una partida.
+
+#### Acceptance Criteria
+
+##### 11.1 Recuerdos disponibles
+
+El sistema debe contener exactamente tres Recuerdos:
+
+1. Recuerdo de la Guerra.
+2. Recuerdo de la Familia.
+3. Recuerdo del Hogar.
+
+No deben mostrarse al jugador las mejoras anteriores:
+
+- Corazón de Obsidiana.
+- Garras de Ocelotl.
+- Cadencia del Colibrí.
+
+##### 11.2 Recuerdo de la Guerra
+
+WHEN el jugador seleccione Recuerdo de la Guerra, THE WeaponSystem SHALL aumentar el daño del arma en 8; WeaponSystem SHALL conservar la fuente de verdad del daño; la mejora SHALL aplicarse exactamente una vez por selección.
+
+##### 11.3 Recuerdo de la Familia
+
+WHEN el jugador seleccione Recuerdo de la Familia, THE Player SHALL aumentar maxHp en 20; hp SHALL recuperarse en 20; hp SHALL NOT superar el nuevo maxHp; THE Game_Loop SHALL emitir hp-changed con los valores actualizados.
+
+##### 11.4 Recuerdo del Hogar
+
+WHEN el jugador seleccione Recuerdo del Hogar, THE WeaponSystem SHALL reducir el intervalo de disparo en 100 ms; el intervalo SHALL NEVER ser menor que 250 ms; WeaponSystem SHALL utilizar inmediatamente el valor actualizado.
+
+##### 11.5 Progresión
+
+EACH Recuerdo SHALL comenzar en nivel 0; SHALL tener un máximo de 6 niveles; SHALL incrementar un nivel después de aplicar correctamente su efecto; puede seleccionarse nuevamente mientras su nivel sea menor que 6; SHALL NOT superar el nivel máximo.
+
+##### 11.6 Opciones disponibles
+
+WHEN ocurra un level-up, THE LevelUpCoordinator SHALL mostrar todos los Recuerdos que aún no estén al máximo; SHALL mostrar en el orden: 1. Guerra, 2. Familia, 3. Hogar; SHALL NOT utilizar selección aleatoria para estas tres ramas; un Recuerdo al máximo SHALL dejar de aparecer.
+
+##### 11.7 Sin opciones disponibles
+
+WHEN los tres Recuerdos estén al máximo, THE LevelUpCoordinator SHALL NOT pausar el juego; LevelUpPanel SHALL NOT abrirse; SHALL NOT mostrarse un panel vacío; la partida SHALL continuar normalmente.
+
+##### 11.8 Selección segura
+
+THE LevelUpCoordinator SHALL garantizar que: solo pueda elegirse una opción mostrada; un doble clic no aplique dos niveles; un id inválido no aplique efectos; un error no incremente el nivel; PauseSystem siempre se reanude después de procesar la selección.
+
+##### 11.9 Reinicio por partida
+
+WHEN se inicie una partida nueva o se reintente, THE XPSystem SHALL restaurar los tres Recuerdos a nivel 0; damage SHALL volver a su valor inicial; maxHp y hp SHALL volver a sus valores iniciales; fireRateMs SHALL volver a su valor inicial; dos partidas SHALL NOT compartir estado mutable.
+
+##### 11.10 Presentación
+
+EACH tarjeta de Recuerdo SHALL mostrar: nombre, texto narrativo, efecto, nivel actual, siguiente nivel. Los textos SHALL NOT desbordar las tarjetas.
+
+
+---
+
+### Requirement 12: Progresión narrativa de Recuerdos
+
+**User Story:** Como jugador, quiero que cada nivel de un Recuerdo me revele un fragmento de la historia del guerrero jaguar, para sentir una conexión emocional con su viaje por el Mictlán.
+
+#### Acceptance Criteria
+
+##### 12.1 Fragmentos por Recuerdo
+
+EACH Recuerdo SHALL tener 6 fragmentos narrativos, uno por cada nivel (1–6). Un fragmento se desbloquea inmediatamente después de subir el nivel correspondiente.
+
+##### 12.2 Panel de fragmento
+
+WHEN se desbloquea un fragmento con contenido narrativo, THE HUDScene SHALL mostrar un panel con: título del Recuerdo, indicador "Fragmento X de 6", texto del fragmento y botón "Continuar".
+
+##### 12.3 Flujo de pausa extendida
+
+WHILE el panel de fragmento está visible, THE Game_Loop SHALL permanecer pausado. WHEN el jugador presiona "Continuar", THE Game_Loop SHALL reanudar.
+
+##### 12.4 Contenido narrativo parcial
+
+IF un Recuerdo no tiene contenido narrativo definido (fragmentos vacíos), THEN THE LevelUpCoordinator SHALL omitir el panel de fragmento y reanudar inmediatamente tras aplicar el efecto.
+
+##### 12.5 Narrativa de Guerra
+
+THE Recuerdo de la Guerra SHALL contener 6 fragmentos completos que narran los ecos de una batalla pasada del guerrero jaguar.
+
+##### 12.6 Narrativas de Familia y Hogar
+
+THE Recuerdo de la Familia SHALL contener 6 fragmentos completos que narran los recuerdos familiares del guerrero jaguar junto al fuego.
+
+THE Recuerdo del Hogar SHALL contener 6 fragmentos completos que narran el regreso del guerrero jaguar hacia su hogar guiado por su xoloitzcuintle.
+
+##### 12.7 Estado de fragmentos desbloqueados
+
+THE LevelUpCoordinator SHALL mantener un registro de fragmentos desbloqueados por partida; un fragmento solo puede desbloquearse una vez por nivel; el estado se reinicia con cada partida nueva.
+
+##### 12.8 Protección contra doble clic
+
+THE panel de fragmento SHALL ignorar clicks adicionales en "Continuar" después del primer click; SHALL emitir `memory-fragment-closed` exactamente una vez por panel mostrado.

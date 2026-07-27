@@ -1,0 +1,75 @@
+import Phaser from 'phaser';
+import { Enemy } from '../Enemy';
+import type { EnemySpawnConfig } from '../../types/interfaces';
+import { calculateDirectChaseVelocity, calculateDistance } from './enemy-movement.pure';
+import { GAME_CONSTANTS } from '../../config/constants';
+import { getWalkAnimationKey, getAttackAnimationKey, getDeathAnimationKey } from '../../config/enemy-assets';
+
+/**
+ * Calavera Llameante: persecución directa, explota al morir si el jugador está cerca.
+ * HP=50, speed=60, damage=10, xpReward=10
+ */
+export class CalaveraLlameante extends Enemy {
+  hp: number;
+  maxHp: number;
+  speed: number;
+  damage: number;
+  xpReward: number;
+  private speedMultiplier: number;
+  private playerPos: { x: number; y: number };
+
+  constructor(scene: Phaser.Scene, x: number, y: number, config: EnemySpawnConfig) {
+    super(scene, x, y, 'calavera_llameante_sprite');
+    this.hp = 50 * config.hpMultiplier;
+    this.maxHp = 50 * config.hpMultiplier;
+    this.speed = 60;
+    this.damage = 10;
+    this.xpReward = 10;
+    this.speedMultiplier = config.speedMultiplier;
+    this.playerPos = { x: 0, y: 0 };
+    this.xpOrbVariant = 'rare';
+
+    // Register animation keys (BUG-006)
+    this.walkAnimKey = getWalkAnimationKey('calavera_llameante_sprite') ?? '';
+    this.attackAnimKey = getAttackAnimationKey('calavera_llameante_sprite') ?? '';
+    this.deathAnimKey = getDeathAnimationKey('calavera_llameante_sprite') ?? '';
+
+    if (this.walkAnimKey && this.scene.anims.exists(this.walkAnimKey)) {
+      this.play(this.walkAnimKey);
+    }
+  }
+
+  update(_delta: number, playerPos: { x: number; y: number }): void {
+    if (this.animState === 'dying') return; // Don't move while dying (BUG-007)
+
+    this.playerPos = playerPos;
+    const velocity = calculateDirectChaseVelocity(
+      { x: this.x, y: this.y },
+      playerPos,
+      this.speed,
+      this.speedMultiplier,
+    );
+    this.setVelocity(velocity.x, velocity.y);
+    this.updateFacing(playerPos);
+  }
+
+  onDefeat(): void {
+    // Explosion check BEFORE calling super (which plays death anim) — BUG-007
+    const distance = calculateDistance(
+      { x: this.x, y: this.y },
+      this.playerPos,
+    );
+
+    if (distance <= GAME_CONSTANTS.EXPLOSION_RADIUS) {
+      this.scene.events.emit('explosion-damage', {
+        x: this.x,
+        y: this.y,
+        radius: GAME_CONSTANTS.EXPLOSION_RADIUS,
+        damage: GAME_CONSTANTS.EXPLOSION_DAMAGE,
+      });
+    }
+
+    // Call parent which handles dying state, events, and death animation
+    super.onDefeat();
+  }
+}
