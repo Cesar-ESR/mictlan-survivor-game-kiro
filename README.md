@@ -8,6 +8,7 @@ npm run dev
 
 **Controls**
  **W A S D — Move** 
+ Proyecto pensado para PC/laptops, no esta adaptado para dispositivos moviles.
 <img width="1685" height="1265" alt="image" src="https://github.com/user-attachments/assets/3bdf1556-a895-441f-8d92-9f3def741eac" />
 *La muerte no es el final, sino el primer paso del viaje.*
 <img width="1679" height="1273" alt="image" src="https://github.com/user-attachments/assets/06371717-85fe-418f-8dc0-988d5bf39fce" />
